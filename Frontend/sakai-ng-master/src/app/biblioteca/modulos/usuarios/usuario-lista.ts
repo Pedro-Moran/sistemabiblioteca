@@ -29,10 +29,6 @@ import { Usuario } from '../../interfaces/usuario';
                         <p-select [(ngModel)]="rolFiltro" [options]="dataRolesFiltro" optionLabel="descripcion" placeholder="Seleccionar" />
 
                         </div>
-                        <div class="flex flex-col grow basis-0 gap-2">
-                        <p-select [(ngModel)]="sedeFiltro" [options]="dataSedesFiltro" optionLabel="descripcion" placeholder="Seleccionar" />
-
-                        </div>
                         <button pButton type="button" icon="pi pi-search" class="mr-2 p-inputtext-sm"
                         (click)="listaUsuarios()" [disabled]="loading" pTooltip="Actualizar Lista"
                         tooltipPosition="bottom"></button>
@@ -47,10 +43,10 @@ import { Usuario } from '../../interfaces/usuario';
 </ng-template>
 </p-toolbar>
 <p-table #dt1 [value]="data" dataKey="id" [rows]="10" [showCurrentPageReport]="true"
-				currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-				[rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true"
-				styleClass="p-datatable-gridlines" [paginator]="true"
-				[globalFilterFields]="['rol.descripcion','tipodocumento.descripcion','numerodocumento','nombres','email','telefono','celular','direccion','activo','nombreFacultad','nombrePrograma']"
+                                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+                                [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true"
+                                styleClass="p-datatable-gridlines" [paginator]="true"
+                                [globalFilterFields]="['id','email','rol.descripcion']"
                 responsiveLayout="scroll">
 				<ng-template pTemplate="caption">
 
@@ -62,85 +58,48 @@ import { Usuario } from '../../interfaces/usuario';
             </p-iconfield>
         </div>
                     </ng-template>
-				<ng-template pTemplate="header">
-					<tr>
-						<th style="width: 4rem" pSortableColumn="rol.descripcion">ROL <p-sortIcon field="rol.descripcion"></p-sortIcon></th>
-						<th pSortableColumn="tipodocumento.descripcion">TIPO DOC. <p-sortIcon
-								field="tipodocumento.descripcion"></p-sortIcon></th>
-						<th style="width: 4rem" pSortableColumn="numerodocumento">NUM. DOC. <p-sortIcon
-								field="numerodocumento"></p-sortIcon></th>
-						<th pSortableColumn="nombres" style="min-width:200px">Nombres<p-sortIcon
-								field="nombres"></p-sortIcon></th>
-						<th pSortableColumn="email" style="min-width:200px">Email<p-sortIcon field="email"></p-sortIcon>
-						</th>
+                                <ng-template pTemplate="header">
+                                        <tr>
+                                                <th style="width: 4rem" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+                                                <th pSortableColumn="email" style="min-width:200px">Correo<p-sortIcon field="email"></p-sortIcon></th>
+                                                <th pSortableColumn="rol.descripcion" style="min-width:200px">Rol<p-sortIcon field="rol.descripcion"></p-sortIcon></th>
+                                                <th style="min-width:95px;">Opciones</th>
 
-						<th pSortableColumn="telefono" style="min-width:100px">Telefono<p-sortIcon
-								field="telefono"></p-sortIcon></th>
-						<th pSortableColumn="celular" style="min-width:100px">Celular<p-sortIcon
-								field="celular"></p-sortIcon></th>
-						<th pSortableColumn="direccion" style="min-width:200px">Direccion<p-sortIcon
-								field="direccion"></p-sortIcon></th>
-						<th style="width: 4rem" pSortableColumn="activo">Estado <p-sortIcon field="activo"></p-sortIcon>
-						</th>
-						<th style="min-width:95px;">Opciones</th>
+                                        </tr>
+                                </ng-template>
+                                <ng-template pTemplate="body" let-objeto>
+                                        <tr>
+                                                <td>
+                                                        {{objeto.id}}
+                                                </td>
+                                                <td>
+                                                        {{objeto.email}}
+                                                </td>
+                                                <td>
+                                                        {{ objeto.rol?.descripcion || (objeto.roles.length > 0 ? objeto.roles[0].descripcion : 'Sin rol') }}
+                                                </td>
+                                                <td class="text-center">
+                                                        <div style="position: relative;">
+                                                                <button pButton type="button" icon="pi pi-ellipsis-v"
+                                                                        class="p-button-rounded p-button-text p-button-plain"
+                                                                        (click)="showMenu($event, objeto)"></button>
+                                                                <p-menu #menu [popup]="true" [model]="items" appendTo="body"></p-menu>
+                                                        </div>
 
-					</tr>
-				</ng-template>
-				<ng-template pTemplate="body" let-objeto>
-					<tr>
-						<td>
-							{{ objeto.rol?.descripcion || (objeto.roles.length > 0 ? objeto.roles[0].descripcion : 'Sin rol') }}
-						</td>
-						<td>
-							{{objeto.tipodocumento.descripcion}}
-						</td>
-						<td>
-							{{objeto.numDocumento}}
-						</td>
-						<td>
-							{{objeto.nombreUsuario}}
-						</td>
-						<td>
-							{{objeto.email}}
-						</td>
-						<td>
-							{{objeto.telefono}}
-						</td>
-						<td>
-							{{objeto.telefono}}
-						</td>
-						<td>
-							{{objeto.direccion}}
-						</td>
-						<td>
-							@if(objeto.idEstado == "ACTIVO"){
-							<span class="customer-badge status-qualified">ACTIVO</span>
-							}@else{
-							<span class="customer-badge status-unqualified">DESACTIVADO</span>
-							}
-						</td>
-						<td class="text-center">
-							<div style="position: relative;">
-								<button pButton type="button" icon="pi pi-ellipsis-v"
-									class="p-button-rounded p-button-text p-button-plain"
-									(click)="showMenu($event, objeto)"></button>
-								<p-menu #menu [popup]="true" [model]="items" appendTo="body"></p-menu>
-							</div>
-
-						</td>
-					</tr>
-				</ng-template>
-				<ng-template pTemplate="emptymessage">
-					<tr>
-						<td colspan="11">No se encontraron registros.</td>
-					</tr>
-				</ng-template>
-				<ng-template pTemplate="loadingbody">
-					<tr>
-						<td colspan="11">Cargando datos. Espere por favor.</td>
-					</tr>
-				</ng-template>
-			</p-table>
+                                                </td>
+                                        </tr>
+                                </ng-template>
+                                <ng-template pTemplate="emptymessage">
+                                        <tr>
+                                                <td colspan="4">No se encontraron registros.</td>
+                                        </tr>
+                                </ng-template>
+                                <ng-template pTemplate="loadingbody">
+                                        <tr>
+                                                <td colspan="4">Cargando datos. Espere por favor.</td>
+                                        </tr>
+                                </ng-template>
+                        </p-table>
 </div>
 </div>
 </div>
@@ -241,7 +200,6 @@ import { Usuario } from '../../interfaces/usuario';
     <ng-template pTemplate="content">
     <p-select appendTo="body" [(ngModel)]="objetoRol" [options]="dataRolesU"
         optionLabel="descripcion" placeholder="Seleccionar" class="col-12 md:col-10 text-left lg:text-left mr-2"/>
-        <p-select [(ngModel)]="sedeFiltro" [options]="dataSedesFiltro" optionLabel="descripcion" placeholder="Seleccionar" class="mr-2"/>
 
         <button type="button" pButton pRipple icon="pi pi-plus" [disabled]="!objetoRol" (click)="agregarRol()" class="p-button-success mr-2 mb-2"  pTooltip="Agregar modulo" tooltipPosition="bottom" styleClass="p-button-sm"></button>
 
@@ -249,7 +207,7 @@ import { Usuario } from '../../interfaces/usuario';
                 [showCurrentPageReport]="true"
                 currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
                 [rowsPerPageOptions]="[10, 25, 50]" [loading]="loadingAgregarRol" [rowHover]="true" styleClass="p-datatable-gridlines" [paginator]="true"
-                [globalFilterFields]="['id','descripcion','activo']" responsiveLayout="scroll">
+                [globalFilterFields]="['idUsuario','email','descripcion']" responsiveLayout="scroll">
 
 
 				<ng-template pTemplate="caption">
@@ -262,42 +220,46 @@ import { Usuario } from '../../interfaces/usuario';
             </p-iconfield>
         </div>
 				</ng-template>
-				<ng-template pTemplate="header">
-					<tr>
-						<th style="width: 4rem" pSortableColumn="id" >ID <p-sortIcon field="id"></p-sortIcon></th>
-						<th pSortableColumn="descripcion" style="min-width:200px">Descripcion<p-sortIcon field="descripcion"></p-sortIcon></th>
-						<th style="width: 14rem" >Opciones</th>
+                                <ng-template pTemplate="header">
+                                        <tr>
+                                                <th style="width: 4rem" pSortableColumn="idUsuario" >ID <p-sortIcon field="idUsuario"></p-sortIcon></th>
+                                                <th pSortableColumn="email" style="min-width:200px">Correo<p-sortIcon field="email"></p-sortIcon></th>
+                                                <th pSortableColumn="descripcion" style="min-width:200px">Rol<p-sortIcon field="descripcion"></p-sortIcon></th>
+                                                <th style="width: 14rem" >Opciones</th>
 
-					</tr>
-				</ng-template>
-				<ng-template pTemplate="body" let-objeto>
-					<tr>
-						<td>
-							{{objeto.id}}
-						</td>
-						<td>
-							{{objeto.descripcion}}
-						</td>
-						<td class="text-center">
-							<button pButton pRipple icon="pi pi-trash"
-							class="p-button-rounded p-button-danger"
-							(click)="quitarRol(objeto)"></button>
+                                        </tr>
+                                </ng-template>
+                                <ng-template pTemplate="body" let-objeto>
+                                        <tr>
+                                                <td>
+                                                        {{objeto.idUsuario}}
+                                                </td>
+                                                <td>
+                                                        {{objeto.email}}
+                                                </td>
+                                                <td>
+                                                        {{objeto.descripcion}}
+                                                </td>
+                                                <td class="text-center">
+                                                        <button pButton pRipple icon="pi pi-trash"
+                                                        class="p-button-rounded p-button-danger"
+                                                        (click)="quitarRol(objeto)"></button>
 
 
-						</td>
-					</tr>
-				</ng-template>
-				<ng-template pTemplate="emptymessage">
-					<tr>
-						<td colspan="8">No se encontraron registros.</td>
-					</tr>
-				</ng-template>
-				<ng-template pTemplate="loadingbody">
-					<tr>
-						<td colspan="8">Cargando datos. Espere por favor.</td>
-					</tr>
-				</ng-template>
-    		</p-table>
+                                                </td>
+                                        </tr>
+                                </ng-template>
+                                <ng-template pTemplate="emptymessage">
+                                        <tr>
+                                                <td colspan="4">No se encontraron registros.</td>
+                                        </tr>
+                                </ng-template>
+                                <ng-template pTemplate="loadingbody">
+                                        <tr>
+                                                <td colspan="4">Cargando datos. Espere por favor.</td>
+                                        </tr>
+                                </ng-template>
+                </p-table>
     </ng-template>
 
     <ng-template pTemplate="footer">
@@ -321,13 +283,11 @@ export class UsuarioLista implements OnInit {
     objetoDialog!: boolean;
     objetoDialogPermisos!: boolean;
     rolFiltro: ClaseGeneral = new ClaseGeneral();
-    sedeFiltro: ClaseGeneral = new ClaseGeneral();
     dataRoles: ClaseGeneral[] = [];
     dataRolesU: ClaseGeneral[] = [];
     dataRolesUsuario: ClaseGeneral[] = [];
     dataRolesFiltro: ClaseGeneral[] = [];
     dataSedes: ClaseGeneral[] = [];
-    dataSedesFiltro: ClaseGeneral[] = [];
     dataTipoDocumento!: ClaseGeneral[];
     items: MenuItem[] | undefined;
     selectedItem: Usuario = new Usuario();
@@ -402,8 +362,6 @@ export class UsuarioLista implements OnInit {
             const result: any = await this.genericoService.sedes_get('api/equipos/sedes').toPromise();
             const sedes = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [];
             this.dataSedes = sedes;
-            this.dataSedesFiltro = [{ id: 0, descripcion: 'TODAS LAS SEDES', activo: true, estado: 1 }, ...sedes];
-            this.sedeFiltro = this.dataSedesFiltro[0];
         } catch (error) {
             console.log(error);
             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrió un error. No se pudo cargar Sede' });
@@ -449,7 +407,6 @@ export class UsuarioLista implements OnInit {
     async listaUsuarios() {
         this.loading = true;
         const rolId = this.rolFiltro.idRol ?? this.rolFiltro.id;
-        const sedeId = (this.sedeFiltro as any).id ?? (this.sedeFiltro as any).idSede ?? (this.sedeFiltro as any).bibliotecaId;
         const url = `listaPorRol/${rolId}`;
         this.usuarioService
             .api_usuarios_lista(url)
@@ -461,11 +418,7 @@ export class UsuarioLista implements OnInit {
                         const r = obj.rol?.idRol ?? (obj.roles?.length ? obj.roles[0].idRol : obj.idRol);
                         return r === rolId;
                     } : () => true;
-                    const filtroSede = sedeId && sedeId !== 0 ? (obj: any) => {
-                        const s = obj.sede?.id ?? obj.detalleBiblioteca?.id ?? obj.detalleBibliotecaDTO?.bibliotecaId ?? obj.bibliotecaId ?? obj.idSede ?? obj.sedeId;
-                        return Number(s) === Number(sedeId);
-                    } : () => true;
-                    this.data = registros.filter((obj: any) => filtroRol(obj) && filtroSede(obj));
+                    this.data = registros.filter((obj: any) => filtroRol(obj));
                 },
                 (_error: HttpErrorResponse) => {
                     this.loading = false;
@@ -577,15 +530,16 @@ export class UsuarioLista implements OnInit {
 
 
     async permisosRegistro(objeto: Usuario) {
-        this.loadingAgregarRol=true;
-        this.rolAsignados(objeto.idUsuario);
-        let objt = {
-            id: objeto.idUsuario,
+        this.loadingAgregarRol = true;
+        const id = objeto.idUsuario ?? objeto.id; // Usa el ID disponible
+        this.objetoUsuario = {
+            id,
+            email: objeto.email,
             descripcion: objeto.nombres
-        }
-        this.objetoUsuario = objt;
-        this.objetoRol=new ClaseGeneral();
+        };
+        this.objetoRol = new ClaseGeneral();
         this.objetoDialogPermisos = true;
+        this.rolAsignados(id);
     }
 
     rolAsignados(idusuario: any) {
@@ -597,7 +551,11 @@ export class UsuarioLista implements OnInit {
                 (result: any) => {
                     this.loadingAgregarRol = false;
                     if (result.status == "0") {
-                        this.dataRolesUsuario = result.data;
+                        this.dataRolesUsuario = result.data.map((r: any) => ({
+                            ...r,
+                            idUsuario: idusuario,
+                            email: this.objetoUsuario.email
+                        }));
                     }
                 }
                 , (error: HttpErrorResponse) => {
