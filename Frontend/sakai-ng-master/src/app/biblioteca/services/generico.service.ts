@@ -15,10 +15,10 @@ export class GenericoService {
   }
 
   conf_event_get(url: string):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>(`${environment.apiUrl}/${url}`);
+    return this.http.get<any[]>(
+      `${this.apiUrl}/${url}`,
+      { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
+    );
   }
   conf_event_post(request: any,modulo: any):Observable<any>{
     return this.http.post<any>(`${this.apiUrl}/${modulo}`
@@ -48,10 +48,10 @@ export class GenericoService {
   }
 
   roles_get(url: string):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>(`${environment.apiUrl}/${url}`);
+    return this.http.get<any[]>(
+      `${this.apiUrl}/${url}`,
+      { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
+    );
   }
 
   sedes_get(modulo: any):Observable<any>{
