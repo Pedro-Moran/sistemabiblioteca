@@ -948,7 +948,11 @@ finalizar(): void {
         this.loading = false;
 
         if (status === 0) {
-          this.messageService.add({severity:'success', summary:'Éxito', detail:'Guardado correctamente'});
+          const detail = dto.id
+            ? 'Guardado correctamente'
+            : 'Material bibliográfico pendiente de aprobación. Revise el módulo Aceptaciones MB.';
+
+          this.messageService.add({severity:'success', summary:'Éxito', detail});
           this.displayDetalle = false;      // cierra el wizard
 
           /** 🔔  Avisamos al padre para que recargue la tabla */
