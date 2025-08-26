@@ -98,12 +98,12 @@ import { InputValidation } from '../../input-validation';
                             <ng-template pTemplate="body" let-objeto>
                                 <tr>
                                 <td>
-                                <img [src]="objeto.imagenUrl" [alt]="objeto.titulo" width="50" class="shadow-lg" />
+                                <img [src]="objeto.urlPortada || objeto.imagenUrl || objeto.imagen" [alt]="objeto.titulo" width="50" class="shadow-lg" />
                                     </td>
                                 <td>{{objeto.titular}}
                                     </td>
                                     <td>
-                                        {{objeto.fechacreacion}}
+                                        {{ objeto.fecha || (objeto.fechacreacion | date:'dd/MM/yyyy') }}
 
                                     </td>
                                     <td>
@@ -143,7 +143,12 @@ import { InputValidation } from '../../input-validation';
                 <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
                       <div class="flex flex-col gap-2 w-full md:w-1/4">
                       <label for="fecha">Fecha</label>
-                                <input pInputText id="fecha" type="text" formControlName="fecha"  />
+                                <p-datepicker
+                                  id="fecha"
+                                  formControlName="fecha"
+                                  appendTo="body"
+                                  [readonlyInput]="true"
+                                  dateFormat="dd/mm/yy"></p-datepicker>
                                 <app-input-validation
                   [form]="form"
                   modelo="fecha"
@@ -304,8 +309,7 @@ export class Noticias implements OnInit{
         this.filter.nativeElement.value = '';
       }
        cambiarEstadoRegistro(n: PortalNoticia) {
-           const decoded = this.authService.getUser();
-             const usuario = decoded.sub;
+           const usuario = this.authService.getUser()?.sub ?? 0;
          // Por ejemplo: si está en 2 lo ponemos en 5, y viceversa
          const nuevoEstadoId = n.estadoId === 2 ? 5 : 2;
 // conviertes a descripción con un ternario
@@ -339,33 +343,26 @@ export class Noticias implements OnInit{
 
 
           formValidar() {
-            let dataObjeto = JSON.parse(JSON.stringify(this.objeto));
-
+            const dataObjeto = JSON.parse(JSON.stringify(this.objeto));
             this.form = this.fb.group({
               id: [dataObjeto.id],
-
               adjunto: [''],
               link: [dataObjeto.link ?? null, [Validators.required]],
               titulo: [dataObjeto.titular, [Validators.required, Validators.maxLength(100), Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\\s\\-()]+$')]],
-              subtitulo: [dataObjeto.subtitulo, [ Validators.maxLength(200), Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\\s\\-()]+$')]],
+              subtitulo: [dataObjeto.subtitulo, [Validators.maxLength(200), Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\\s\\-()]+$')]],
               detalle: [dataObjeto.detalle, [Validators.required, Validators.maxLength(600)]],
-              fecha: [dataObjeto.fecha, [Validators.required]],
+              fecha: [dataObjeto.fecha ? this.toDate(dataObjeto.fecha) : null, [Validators.required]],
               anunciante: [dataObjeto.anunciante, [Validators.required, Validators.maxLength(100), Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\\s\\-()]+$')]],
-
             });
           }
+
   editarRegistro(objeto: PortalNoticia) {
-    // 1) Prepara string vacío por defecto
-      let fechaFormValue = '';
-
-      // 2) Si viene definida, conviértela
-      if (objeto.fechacreacion) {
-        const d    = new Date(objeto.fechacreacion);
-        const pad  = (n: number) => n < 10 ? '0' + n : n.toString();
-        fechaFormValue = `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+      let fechaFormValue: Date | null = null;
+      if (objeto.fecha) {
+        fechaFormValue = this.toDate(objeto.fecha);
+      } else if (objeto.fechacreacion) {
+        fechaFormValue = new Date(objeto.fechacreacion);
       }
-
-      // 3) Parchea todos los campos
       this.form.patchValue({
         id:         objeto.idnoticia,
         fecha:      fechaFormValue,
@@ -374,9 +371,7 @@ export class Noticias implements OnInit{
         anunciante: objeto.autor,
         link:       objeto.enlace,
         detalle:    objeto.descripcion
-        // adjunto:   no lo rellenamos aquí
       });
-
       this.objetoDialog = true;
   }
           deleteRegistro(objeto: PortalNoticia) {
@@ -446,10 +441,17 @@ this.confirmationService.confirm({
                 }, _=> this.loading=false);
             }
 
-          toIso(d: Date) {
-              const pad = (n:number)=>(n<10?'0':'')+n;
-              return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-          }
+  toIso(d: Date) {
+      const pad = (n:number)=>(n<10?'0':'')+n;
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+
+  private toDate(fecha: string): Date | null {
+      if (!fecha) return null;
+      const partes = fecha.split('/');
+      if (partes.length !== 3) return null;
+      return new Date(+partes[2], +partes[1] - 1, +partes[0]);
+  }
           nuevoRegistro(){
             this.formValidar();
             this.objetoDialog = true;
@@ -459,16 +461,18 @@ this.confirmationService.confirm({
           }
           guardar(){
             this.loading = true;
+            // Verificar que exista un token de sesión válido antes de enviar la petición
+            if (!this.authService.getToken()) {
+              this.messageService.add({ severity: 'warn', summary: 'Sesión no válida', detail: 'Debe iniciar sesión' });
+              this.loading = false;
+              return;
+            }
 
-            // 1) Convertir la fecha dd/MM/yyyy a ISO (si tu back espera LocalDateTime)
-              const partes = this.form.get('fecha')!.value.split('/');
-              const fechaIso = new Date(
-                +partes[2],      // año
-                +partes[1] - 1,  // mes (0-11)
-                +partes[0]       // día
-              ).toISOString();
-              const decoded = this.authService.getUser();
-              const usuario = decoded.sub;
+            const fechaControl = this.form.get('fecha')!.value;
+            const fechaIso = fechaControl instanceof Date
+              ? fechaControl.toISOString()
+              : new Date(fechaControl).toISOString();
+              const usuario = this.authService.getUser()?.sub ?? 0;
               // 2) Construir el DTO completo
               const data = {
                 idnoticia:    this.form.get('id')?.value || 0,

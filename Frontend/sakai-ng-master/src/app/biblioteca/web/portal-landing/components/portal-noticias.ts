@@ -11,8 +11,8 @@ import { Product, ProductService } from '../../../../pages/service/product.servi
 import { PhotoService } from '../../../../pages/service/photo.service';
 import { DividerModule } from 'primeng/divider';
 import { PortalService } from '../../../services/portal.service';
-import { HttpErrorResponse } from '@angular/common/http';
 import { PortalNoticia } from '../../../interfaces/portalNoticias';
+import { environment } from '../../../../../environments/environment';
 @Component({
     selector: 'portal-noticias',
     standalone: true,
@@ -40,22 +40,22 @@ import { PortalNoticia } from '../../../interfaces/portalNoticias';
         <div class="grid grid-cols-12 gap-4 justify-between mt-20 md:mt-0">
                 <div class="col-span-12 lg:col-span-4 p-0 md:p-4" *ngFor="let item of data; let i = index">
                     <div class="p-4 flex flex-col border-surface-200 dark:border-surface-600 pricing-card cursor-pointer border-2 hover:border-primary duration-300 transition-all" style="border-radius: 10px">
-                    <a [href]="item.enlace" target="_blank">
-                    <img class="w-full h-56 object-cover" [src]="item.urlPortada" [alt]="item.titular" >
+                    <a [href]="item.link || item.enlace" target="_blank">
+                    <img class="w-full h-56 object-cover" [src]="item.urlPortada || item.imagenUrl || item.imagen" [alt]="item.titular" >
                                 </a>
 
                         <p-divider class="w-full bg-surface-200"></p-divider>
                         <div class="p-6">
-            <i class="pi pi-fw pi-calendar !text-2xl text-primary"></i> {{ item.fechacreacion }}
+            <i class="pi pi-fw pi-calendar !text-2xl text-primary"></i> {{ item.fecha || (item.fechacreacion | date:'dd/MM/yyyy') }}
                 <h3 class="text-xl font-semibold text-gray-900">
-                <a [href]="item.enlace" target="_blank" class="hover:text-primary focus:text-primary transition-colors">
+                <a [href]="item.link || item.enlace" target="_blank" class="hover:text-primary focus:text-primary transition-colors">
   {{ item.titular }}
 </a>
 
                 </h3>
                 <p class="text-gray-500 mt-2">{{ item.descripcion }}</p>
                 <p class="text-gray-500 mt-2"> Por:{{ item.autor }}</p>
-                <a [href]="item.link" target="_blank" class="text-primary mt-4 inline-flex items-center">Leer m&aacute;s <span class="ml-2">→</span></a>
+                <a [href]="item.link || item.enlace" target="_blank" class="text-primary mt-4 inline-flex items-center">Leer m&aacute;s <span class="ml-2">→</span></a>
             </div>
 
                     </div>
@@ -88,11 +88,34 @@ export class PortalNoticias implements OnInit{
     noticias() {
         this.router.navigate(['/noticias']);
       }
-          listar() {
 
-              this.portalService.listar(undefined, undefined).subscribe(r => {
-                this.data = r.data;
-                this.loading = false;
-              }, _=> this.loading=false);
-          }
+    listar() {
+        this.portalService.listar(undefined, undefined).subscribe(r => {
+          this.data = r.data
+            .filter(n => this.esDisponible(n))
+            .map(n => new PortalNoticia({
+              ...n,
+              titulo: n.titular ?? n.titulo,
+              detalle: n.descripcion ?? n.detalle,
+              anunciante: n.autor ?? n.anunciante,
+              link: n.enlace ?? n.link,
+              fecha: n.fechacreacion ?? n.fecha,
+              urlPortada: this.buildImageUrl(n)
+            }));
+          this.loading = false;
+        }, _ => this.loading = false);
+    }
+    private esDisponible(n: any): boolean {
+        const id = Number(n.estadoId ?? n.estado ?? n.idestado ?? n.idEstado ?? n.estado_id);
+        const desc = (n.estadoDescripcion ?? n.estado ?? '').toString().trim().toUpperCase();
+        return id === 2 || desc === 'DISPONIBLE';
+    }
+
+    private buildImageUrl(n: PortalNoticia): string {
+        const raw = n.urlPortada || (n as any).imagenUrl || n.imagen;
+        if (!raw) {
+            return 'assets/logo.png';
+        }
+        return raw.startsWith('http') ? raw : `${environment.filesUrl}/uploads/noticias/${raw}`;
+    }
 }
