@@ -239,6 +239,7 @@ export class HorariosComponent implements OnInit {
           this.filter.nativeElement.value = '';
       }
       editarRegistro(objeto:PortalHorario){
+         this.objeto = objeto;
          this.form.patchValue({
              id:          objeto.id,
              sedeId:      objeto.sedeId,
@@ -247,6 +248,7 @@ export class HorariosComponent implements OnInit {
         this.objetoDialog = true;
       }
       nuevoRegistro(){
+        this.objeto = new PortalHorario();
         this.formValidar();
         this.objetoDialog = true;
       }
@@ -287,49 +289,61 @@ export class HorariosComponent implements OnInit {
       guardar() {
         if (this.form.invalid) return;
 
-          const decoded = this.authService.getUser();
-          const usuario = decoded.sub;    // "admin@gmail.com"
+        const sedeId = this.form.get('sedeId')!.value;
+        const id = this.form.get('id')!.value;
 
-          const dto: PortalHorario = {
-            id:                   this.form.get('id')!.value,
-            descripcion:          this.form.get('descripcion')!.value,
-            estadoId:              2,
-            sedeId:               this.form.get('sedeId')!.value,
-            usuarioCreacion:      usuario,
-            usuarioModificacion:  usuario
-          };
+        // Validar que no exista otro horario para la misma sede
+        const existe = this.data.some(h => h.sedeId === sedeId && h.id !== id);
+        if (existe) {
+          this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: 'Ya existe un horario para este local/filial' });
+          return;
+        }
+
+        const decoded = this.authService.getUser();
+        const usuario = decoded.sub; // "admin@gmail.com"
+
+        // Mantener el estado actual al actualizar; por defecto, DISPONIBLE (2)
+        const estadoActual = this.objeto.estadoId ?? 2;
+
+        const dto: PortalHorario = {
+          id: this.form.get('id')!.value,
+          descripcion: this.form.get('descripcion')!.value,
+          estadoId: estadoActual,
+          sedeId: sedeId,
+          usuarioCreacion: usuario,
+          usuarioModificacion: usuario
+        };
 
         // 3) Llamas al servicio
         this.loading = true;
-        this.portalService.saveHorario(dto)
-          .subscribe({
-            next: res => {
-              this.loading = false;
-              if (res.p_status === 0) {
-                this.messageService.add({
-                  severity: 'success',
-                  summary:  '¡Listo!',
-                  detail:   dto.id ? 'Horario actualizado' : 'Horario creado'
-                });
-                this.objetoDialog = false;
-                this.listar();
-              } else {
-                this.messageService.add({
-                  severity: 'error',
-                  summary:  'Error',
-                  detail:   'No se pudo procesar.'
-                });
-              }
-            },
-            error: () => {
-              this.loading = false;
+        this.portalService.saveHorario(dto).subscribe({
+          next: res => {
+            this.loading = false;
+            if (res.p_status === 0) {
+              this.messageService.add({
+                severity: 'success',
+                summary: '¡Listo!',
+                detail: dto.id ? 'Horario actualizado' : 'Horario creado'
+              });
+              this.objetoDialog = false;
+              this.listar();
+            } else {
               this.messageService.add({
                 severity: 'error',
-                summary:  'Error',
-                detail:   'Error de comunicación con el servidor.'
+                summary: 'Error',
+                detail: 'No se pudo procesar.'
               });
             }
-          });
+          },
+          error: () => {
+            this.loading = false;
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Error de comunicación con el servidor.'
+            });
+          }
+        });
       }
 
 
