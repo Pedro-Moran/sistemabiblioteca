@@ -43,7 +43,8 @@ export class PortalHorarios implements OnInit {
         this.portalService.listarHorarios().subscribe({
             next: res => {
                 if (res.p_status === 0) {
-                    this.data = res.data;
+                    // Solo mostrar los horarios disponibles (estadoId === 2)
+                    this.data = res.data.filter(h => h.estadoId === 2);
                 } else {
                     this.messageService.add({ severity: 'warn', detail: res.message });
                 }
