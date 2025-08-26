@@ -40,10 +40,10 @@ export class UsuarioService {
     );
   }
   api_usuarios_lista(url: string):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any>(`${environment.apiUrl}/${url}`);
+    return this.http.get<any>(
+      `${this.apiUrl}/${url}`,
+      { headers: new HttpHeaders().append('Authorization', `Bearer ${this.authService.getToken()}`) }
+    );
   }
   api_roles_lista(modulo: any):Observable<any>{
     /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`

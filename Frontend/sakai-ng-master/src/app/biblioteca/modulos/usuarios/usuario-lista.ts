@@ -214,16 +214,6 @@ import { Usuario } from '../../interfaces/usuario';
 
                 <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
                     <div class="flex flex-col gap-2 w-full">
-                        <label for="fechaNacimiento">Fecha de nacimiento</label>
-                        <p-datepicker
-                          formControlName="fechaNacimiento"
-                          [showIcon]="true"
-                          [appendTo]="'body'"
-                          [style]="{'width': '100%'}">
-                        </p-datepicker>
-                        <app-input-validation [form]="form" modelo="fechaNacimiento" ver="fechaNacimiento"></app-input-validation>
-                    </div>
-                    <div class="flex flex-col gap-2 w-full">
                         <label for="password">Contraseña</label>
                         <input type="text" pInputText id="password" formControlName="password"/>
                         <app-input-validation [form]="form" modelo="password" ver="password"></app-input-validation>
@@ -397,11 +387,10 @@ export class UsuarioLista implements OnInit {
     async ListaRoles() {
         try {
             const result: any = await this.genericoService.roles_get('roles/lista-roles').toPromise();
-            if (result.status === "0") {
-                this.dataRoles = result.data;
-                this.dataRolesFiltro = this.dataRoles;
-                this.rolFiltro = this.dataRolesFiltro[0];
-            }
+            const roles = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [];
+            this.dataRoles = roles;
+            this.dataRolesFiltro = roles;
+            this.rolFiltro = this.dataRolesFiltro[0] ?? new ClaseGeneral();
         } catch (error) {
             console.log(error);
             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrió un error. No se pudo cargar roles' });
@@ -410,13 +399,11 @@ export class UsuarioLista implements OnInit {
     }
     async ListaSede() {
         try {
-            const result: any = await this.genericoService.sedes_get('sede/lista-activo').toPromise();
-            if (result.status === "0") {
-                this.dataSedes.push({ id: 0, descripcion: 'TODAS LAS SEDES', activo: true, estado: 1 });
-                this.dataSedes.push(...result.data);
-                this.dataSedesFiltro = this.dataSedes;
-                this.sedeFiltro = this.dataSedesFiltro[0];
-            }
+            const result: any = await this.genericoService.sedes_get('api/equipos/sedes').toPromise();
+            const sedes = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [];
+            this.dataSedes = sedes;
+            this.dataSedesFiltro = [{ id: 0, descripcion: 'TODAS LAS SEDES', activo: true, estado: 1 }, ...sedes];
+            this.sedeFiltro = this.dataSedesFiltro[0];
         } catch (error) {
             console.log(error);
             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrió un error. No se pudo cargar Sede' });
@@ -449,7 +436,6 @@ export class UsuarioLista implements OnInit {
             sede: [dataObjeto.sede],
             apellidoPaterno: [dataObjeto.apellidoPaterno, [Validators.required, Validators.maxLength(100), Validators.minLength(5), Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-\\s]+$')]],
             apellidoMaterno: [dataObjeto.apellidoMaterno, [Validators.required, Validators.maxLength(100), Validators.minLength(5), Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-\\s]+$')]],
-            fechaNacimiento: [dataObjeto.fechaNacimiento],
             password: [dataObjeto.password],
             tipodocumento: [dataObjeto.tipodocumento, [Validators.required]],
             numDocumento: [dataObjeto.numDocumento, [Validators.required, Validators.maxLength(20), Validators.pattern('^[0-9]+$')]],
@@ -462,20 +448,29 @@ export class UsuarioLista implements OnInit {
     }
     async listaUsuarios() {
         this.loading = true;
-        this.usuarioService.api_usuarios_lista('listaPorRol/' + this.rolFiltro.idRol)
+        const rolId = this.rolFiltro.idRol ?? this.rolFiltro.id;
+        const sedeId = (this.sedeFiltro as any).id ?? (this.sedeFiltro as any).idSede ?? (this.sedeFiltro as any).bibliotecaId;
+        const url = `listaPorRol/${rolId}`;
+        this.usuarioService
+            .api_usuarios_lista(url)
             .subscribe(
                 (result: any) => {
                     this.loading = false;
-                    if (result.status == "0") {
-                        this.data = result.data;
-                    }
-                    this.loading = false;
-                }
-                , (error: HttpErrorResponse) => {
+                    const registros = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [];
+                    const filtroRol = rolId && rolId !== 0 ? (obj: any) => {
+                        const r = obj.rol?.idRol ?? (obj.roles?.length ? obj.roles[0].idRol : obj.idRol);
+                        return r === rolId;
+                    } : () => true;
+                    const filtroSede = sedeId && sedeId !== 0 ? (obj: any) => {
+                        const s = obj.sede?.id ?? obj.detalleBiblioteca?.id ?? obj.detalleBibliotecaDTO?.bibliotecaId ?? obj.bibliotecaId ?? obj.idSede ?? obj.sedeId;
+                        return Number(s) === Number(sedeId);
+                    } : () => true;
+                    this.data = registros.filter((obj: any) => filtroRol(obj) && filtroSede(obj));
+                },
+                (_error: HttpErrorResponse) => {
                     this.loading = false;
                 }
             );
-
     }
 
 
@@ -653,13 +648,12 @@ export class UsuarioLista implements OnInit {
             nombreUsuario: formValues.nombreUsuario,
             apellidoPaterno: formValues.apellidoPaterno,
             apellidoMaterno: formValues.apellidoMaterno,
-            fechaNacimiento: formValues.fechaNacimiento,
             email: formValues.email,
             emailPersonal: formValues.emailPersonal,
             password: formValues.password,
             horaTrabajo: formValues.horaTrabajo,
-            idSede: formValues.idSede,
-            idTipoDocumento: formValues.tipodocumento,
+            idSede: sede?.id,
+            idTipoDocumento: tipodocumento?.idTipoDocumento,
             numDocumento: formValues.numDocumento,
             telefono: formValues.telefono,
             direccion: formValues.direccion,

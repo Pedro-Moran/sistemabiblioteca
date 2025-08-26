@@ -87,16 +87,6 @@ import { AuthService } from '../../../biblioteca/services/auth.service';
                             <div class="flex flex-col gap-4">
                                 <div class="flex flex-wrap gap-6">
                                     <div class="flex flex-col grow basis-0 gap-2">
-                                        <label for="fechaNacimiento" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Fecha nacimiento</label>
-                                        <p-datePicker
-                                          formControlName="fechaNacimiento"
-                                          dateFormat="yy-mm-dd"
-                                          placeholder="YYYY-MM-DD">
-                                        </p-datePicker>
-
-
-                                    </div>
-                                    <div class="flex flex-col grow basis-0 gap-2">
                                         <label for="email" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Email</label>
                                         <input pInputText id="email" type="text" placeholder="Email" formControlName="email" />
                                         <app-input-validation [form]="form" modelo="email" ver="Email"></app-input-validation>
@@ -156,7 +146,6 @@ export class PortalRegistrate implements OnInit {
             nombreUsuario: '',
             apellidoMaterno: '',
             apellidoPaterno: '',
-            fechaNacimiento: '',
             email: '',
             password: ''
         }
@@ -168,7 +157,6 @@ export class PortalRegistrate implements OnInit {
             nombreUsuario: this.objeto.nombreUsuario,
             apellidoMaterno: this.objeto.apellidoMaterno,
             apellidoPaterno: this.objeto.apellidoPaterno,
-            fechaNacimiento: this.objeto.fechaNacimiento,
             email: this.objeto.email,
             password: this.objeto.password
         };
@@ -177,14 +165,12 @@ export class PortalRegistrate implements OnInit {
             nombreUsuario: [dataObjeto.nombreUsuario, [Validators.required, Validators.maxLength(100), Validators.minLength(3),Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-\\s]+$')]],
             apellidoMaterno: [ dataObjeto.apellidoMaterno , [Validators.required, Validators.maxLength(80), Validators.minLength(3),Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-\\s]+$')]],
             apellidoPaterno: [ dataObjeto.apellidoMaterno , [Validators.required, Validators.maxLength(80), Validators.minLength(3),Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-\\s]+$')]],
-            fechaNacimiento: [ dataObjeto.fechaNacimiento],
             email: [ dataObjeto.email , [Validators.maxLength(150),Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ,.;-@\\s\\-()]+$')]],
             password: [ dataObjeto.password , [Validators.maxLength(150),Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ,.;-\\s\\-()]+$')]]
         });
     }
 
     registrar() {
-        console.log(this.form.value.fechaNacimiento);
         if (this.form.invalid) {
           this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Por favor complete el formulario correctamente.' });
           return;

@@ -4,7 +4,6 @@ export class Registro {
     nombreUsuario:String;
     apellidoMaterno:String;
     apellidoPaterno:String;
-    fechaNacimiento:String;
     email:String;
     password: string;
 
@@ -13,7 +12,6 @@ export class Registro {
         this.nombreUsuario = '';
         this.apellidoMaterno = '';
         this.apellidoPaterno = '';
-        this.fechaNacimiento = '';
         this.email = '';
         this.password = '';
 
