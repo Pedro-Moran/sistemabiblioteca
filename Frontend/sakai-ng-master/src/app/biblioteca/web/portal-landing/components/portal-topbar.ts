@@ -56,6 +56,11 @@ import { ButtonModule } from 'primeng/button';
                     </a>
                 </li>
                 <li>
+                    <a (click)="router.navigate(['/'], { fragment: 'portal-horarios' })" pRipple class="px-0 py-4 text-surface-900 dark:text-surface-0 font-medium text-xl">
+                        <span>Horarios</span>
+                    </a>
+                </li>
+                <li>
                     <a (click)="router.navigate(['/'], { fragment: 'portal-contactanos' })" pRipple class="px-0 py-4 text-surface-900 dark:text-surface-0 font-medium text-xl">
                         <span>Cont&aacute;ctanos</span>
                     </a>

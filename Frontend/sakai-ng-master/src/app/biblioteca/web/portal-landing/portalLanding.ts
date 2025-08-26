@@ -10,6 +10,7 @@ import { FooterWidget } from '../../../pages/landing/components/footerwidget';
 import { HighlightsWidget } from '../../../pages/landing/components/highlightswidget';
 import { Portal } from './components/portal';
 import { PortalNosotros } from './components/portal-nosotros';
+import { PortalHorarios } from './components/portal-horarios';
 import { PricingWidget } from '../../../pages/landing/components/pricingwidget';
 import { TopbarWidget } from '../../../pages/landing/components/topbarwidget.component';
 import { AppFloatingConfigurator } from '../../../layout/component/app.floatingconfigurator';
@@ -24,7 +25,7 @@ import { PortalRecursosElectronicos } from './components/portal-recursos-electro
 @Component({
     selector: 'app-portal-landing',
     standalone: true,
-    imports: [ScrollTopModule,RouterModule, AppFloatingConfigurator,PortalFooter,PortalContactanos,PortalTopbar,PortalEjemplares,PortalNoticias, RippleModule, StyleClassModule, ButtonModule, DividerModule, PortalNosotros,PortalRecursosElectronicos, Portal,ScrollTopModule],
+    imports: [ScrollTopModule,RouterModule, AppFloatingConfigurator,PortalFooter,PortalContactanos,PortalTopbar,PortalEjemplares,PortalNoticias, RippleModule, StyleClassModule, ButtonModule, DividerModule, PortalNosotros,PortalHorarios,PortalRecursosElectronicos, Portal,ScrollTopModule],
     template: `
         <app-floating-configurator />
         <div class="bg-surface-0 dark:bg-surface-900">
@@ -33,6 +34,7 @@ import { PortalRecursosElectronicos } from './components/portal-recursos-electro
                 <portal />
                 <portal-ejemplares />
                 <portal-nosotros />
+                <portal-horarios />
                 <portal-recursos-electronicos />
                 <portal-noticias />
                 <portal-contactanos />

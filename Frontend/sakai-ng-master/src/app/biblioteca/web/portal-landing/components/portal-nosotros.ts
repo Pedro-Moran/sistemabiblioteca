@@ -2,13 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TabsModule } from 'primeng/tabs';
 import { SplitterModule } from 'primeng/splitter';
-import { FormBuilder } from '@angular/forms';
-import { Router } from '@angular/router';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { AuthService } from '../../../services/auth.service';
 import { PortalService, NosotrosDTO } from '../../../services/portal.service';
-import { InputValidation } from '../../../input-validation';
-import { TemplateModule } from '../../../template.module';
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
 import { environment } from '../../../../../../src/environments/environment';
@@ -149,59 +143,15 @@ import { environment } from '../../../../../../src/environments/environment';
 </section>
   </div>
   </div>
-</section>-->
-
-    <div class="py-10"> <div class="py-6 px-6 lg:px-20 mt-8 mx-0 lg:mx-20">
-    <div class="text-surface-900 text-center dark:text-surface-0 font-normal mb-2 text-4xl">Horarios</div>
-
-        <div class="grid grid-cols-12 gap-4 justify-center">
-
-        <div class="col-span-12 md:col-span-12 lg:col-span-4 p-0 lg:pb-8 mt-6 lg:mt-0" *ngFor="let horario of data">
-                <div style="height: 160px; padding: 2px; border-radius: 10px; background: linear-gradient(90deg, rgba(251, 199, 145, 0.2), rgba(246, 158, 188, 0.2)), linear-gradient(180deg, rgba(172, 180, 223, 0.2), rgba(212, 162, 221, 0.2))">
-                    <div class="p-4 bg-surface-0 dark:bg-surface-900 h-full" style="border-radius: 8px">
-                        <div class="flex items-center justify-center bg-rose-200 mb-4" style="width: 3.5rem; height: 3.5rem; border-radius: 10px">
-                            <i class="pi pi-fw pi-map-marker !text-2xl text-rose-700"></i>
-                        </div>
-                        <div class="mt-6 mb-1 text-surface-900 dark:text-surface-0 text-l font-semibold">{{ horario.sedeDescripcion }}</div>
-
-                        <span class="text-surface-600 dark:text-surface-200"><i class="pi pi-fw pi-clock text-primary"></i> {{ horario.descripcion }}</span>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-    </div>`,
-    styleUrl:'portal-nosotros.component.css',
-                    providers: [MessageService, ConfirmationService]
+  </section>-->`,
+    styleUrl:'portal-nosotros.component.css'
 })
 export class PortalNosotros implements OnInit{
-    data: any[]= [];
     datos: NosotrosDTO = { eyebrow: '', title: '', imageUrl: '', body: '' };
-    constructor(private portalService: PortalService,private fb: FormBuilder,
-              private router: Router,private authService: AuthService, private confirmationService: ConfirmationService, private messageService: MessageService) { }
-              async ngOnInit() {
+    constructor(private portalService: PortalService) { }
+    ngOnInit() {
                    this.portalService.getNosotros().subscribe(dto => this.datos = dto);
-                await this.listar();
               }
-    listar() {
-
-        this.portalService.listarHorarios()
-          .subscribe({
-            next: res => {
-              if (res.p_status === 0) {
-                this.data = res.data;
-              } else {
-                this.messageService.add({ severity: 'warn', detail: res.message });
-              }
-
-            },
-            error: () => {
-              this.messageService.add({ severity: 'error', detail: 'Error al cargar horarios' });
-
-            }
-          });
-      }
 
    public getImageUrl(path: string): string {
       // El backend ya devuelve la ruta relativa del archivo
