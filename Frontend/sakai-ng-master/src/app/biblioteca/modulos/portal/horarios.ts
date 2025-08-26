@@ -214,11 +214,9 @@ export class HorariosComponent implements OnInit {
     private async ListaSede() {
         const res: any = await this.genericoService.sedes_get('api/equipos/sedes').toPromise();
         if (res.status === 0) {
-          // agrego “Todas” al inicio si quieres
-          this.dataSede = [
-            { id: 0, descripcion: 'TODAS LAS SEDES', activo: true, estado: 1 },
-            ...res.data
-          ];
+          const sedes = (res.data as Sedes[]).filter(s => s.id !== 0);
+          this.dataSede = sedes;
+          this.dataSedesFiltro = sedes;
         }
       }
         formValidar(){
@@ -243,7 +241,7 @@ export class HorariosComponent implements OnInit {
       editarRegistro(objeto:PortalHorario){
          this.form.patchValue({
              id:          objeto.id,
-             sedeId:      objeto.sedeId ?? null,      // <— aquí “cae” el select
+             sedeId:      objeto.sedeId,
              descripcion: objeto.descripcion
            });
         this.objetoDialog = true;
