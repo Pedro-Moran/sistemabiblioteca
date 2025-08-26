@@ -513,7 +513,10 @@ export class ModalOtrosComponent implements OnInit {
             next: ({status}) => {
                 this.loading = false;
                 if (status === 0) {
-                    this.messageService.add({severity:'success', summary:'Éxito', detail:'Guardado correctamente'});
+                    const detail = dto.id
+                        ? 'Guardado correctamente'
+                        : 'Material bibliográfico pendiente de aprobación. Revise el módulo Aceptaciones MB.';
+                    this.messageService.add({severity:'success', summary:'Éxito', detail});
                     this.displayDetalle = false;
                     this.saved.emit();
                 }
