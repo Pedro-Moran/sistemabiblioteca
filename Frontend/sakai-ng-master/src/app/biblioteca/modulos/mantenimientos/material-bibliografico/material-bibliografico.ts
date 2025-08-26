@@ -195,13 +195,10 @@ export class MaterialBibliografico {
   @ViewChild('menu') menu!: Menu;
   @ViewChild('filter') filter!: ElementRef;
   items!: MenuItem[];
-  dataTipo: ClaseGeneral[] = [];
   dataTipoRecurso: TipoRecurso[] = [];
   dataSede: Sedes[] = [];
   dataSedesFiltro: Sedes[] = [];
   sedeFiltro: Sedes = new Sedes();
-  dataTipoFiltro: ClaseGeneral[] = [];
-  tipoFiltro: ClaseGeneral = new ClaseGeneral();
   dataTipoRecursoFiltro: TipoRecurso[] = [];
   tipoRecursoFiltro: TipoRecurso = new TipoRecurso();
   filtros: ClaseGeneral[] = [];
@@ -246,7 +243,6 @@ export class MaterialBibliografico {
     }
     await this.listarTiposRecurso();
     await this.listaFiltros();
-    await this.ListaTipo();
 //     await this.ListaSede();
     await this.listar();
     this.formValidar();
@@ -393,22 +389,6 @@ onSaved(): void {
   }
 
 
-  async ListaTipo() {
-    try {
-      const result: any = await this.genericoService.tipo_get('conf/tipo-lista').toPromise();
-      if (result.status === "0") {
-        this.dataTipo = result.data;
-        let tipos = [{ id: 0, descripcion: 'TODAS LOS TIPOS', activo: true, estado: 1 }, ...this.dataTipo];
-
-        this.dataTipoFiltro = tipos;
-        this.tipoFiltro = this.dataTipoFiltro[0];
-      }
-    } catch (error) {
-      console.log(error);
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrió un error. No se pudo cargar roles' });
-    }
-
-  }
   async listarTiposRecurso() {
     this.loading = true;
     this.dataTipoRecurso = [];
@@ -442,7 +422,7 @@ onSaved(): void {
       }
     } catch (error) {
       console.log(error);
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrió un error. No se pudo cargar roles' });
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrió un error. No se pudieron cargar las sedes' });
     }
 
   }
