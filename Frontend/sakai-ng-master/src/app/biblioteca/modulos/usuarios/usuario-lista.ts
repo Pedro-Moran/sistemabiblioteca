@@ -215,7 +215,7 @@ import { Usuario } from '../../interfaces/usuario';
                 <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
                     <div class="flex flex-col gap-2 w-full">
                         <label for="password">Contraseña</label>
-                        <input type="text" pInputText id="password" formControlName="password"/>
+                        <p-password id="password" formControlName="password" [toggleMask]="true" [feedback]="false" inputStyleClass="w-full"></p-password>
                         <app-input-validation [form]="form" modelo="password" ver="password"></app-input-validation>
                     </div>
                 </div>
@@ -521,14 +521,17 @@ export class UsuarioLista implements OnInit {
         );
 
       const usuarioPatch = {
-         id: this.objeto.idUsuario, // Corregido para mapear el ID real
+         id: this.objeto.idUsuario ?? this.objeto.id, // Corregido para mapear el ID real
          rol: this.objeto.rol
              ? new ClaseGeneral({ id: this.objeto.rol.idRol, descripcion: this.objeto.rol.descripcion })
              : new ClaseGeneral(),
          sede: this.objeto.sede,
          tipodocumento: documentoSeleccionado,
-         numerodocumento: this.objeto.numDocumento,
-         nombres: this.objeto.nombreUsuario,
+         numDocumento: this.objeto.numDocumento,
+         nombreUsuario: this.objeto.nombreUsuario,
+         apellidoPaterno: this.objeto.apellidoPaterno,
+         apellidoMaterno: this.objeto.apellidoMaterno,
+         password: '',
          email: this.objeto.email,
          telefono: this.objeto.telefono?.toString(),
          celular: this.objeto.celular?.toString(),
@@ -641,16 +644,19 @@ export class UsuarioLista implements OnInit {
         let rol = this.form.get('rol')?.value;
         let sede = this.form.get('sede')?.value;
         const usuarioLogeado = localStorage.getItem('upsjb_reserva') || 'desconocido';
+        const password = formValues.password ? formValues.password : this.objeto.password;
 
         console.log("ver"+rol.idRol);
+        const id = Number(this.form.get('id')?.value) || 0;
         const data = {
-            idUsuario: this.form.get('id')?.value,
+            id,
+            idUsuario: id,
             nombreUsuario: formValues.nombreUsuario,
             apellidoPaterno: formValues.apellidoPaterno,
             apellidoMaterno: formValues.apellidoMaterno,
             email: formValues.email,
             emailPersonal: formValues.emailPersonal,
-            password: formValues.password,
+            password,
             horaTrabajo: formValues.horaTrabajo,
             idSede: sede?.id,
             idTipoDocumento: tipodocumento?.idTipoDocumento,
@@ -661,7 +667,7 @@ export class UsuarioLista implements OnInit {
             usuarioCreacion: usuarioLogeado
         };
 
-       if (!data.idUsuario || data.idUsuario === 0) {
+       if (!id) {
                // Registro nuevo
                this.usuarioService.conf_event_post(data,'admin/register')
                    .subscribe(result => {

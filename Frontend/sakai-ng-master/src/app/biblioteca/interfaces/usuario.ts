@@ -8,6 +8,9 @@ export class Usuario {
     numDocumento?: number;
     tipoDocumento?: number;
     nombreUsuario?: string;
+    apellidoPaterno?: string;
+    apellidoMaterno?: string;
+    password?: string;
     sede?: ClaseGeneral;
     idEstado?: string;
     tipodocumento?: ClaseGeneral;
@@ -36,7 +39,10 @@ export class Usuario {
         this.tipodocumento=new ClaseGeneral();
         this.numerodocumento='';
         this.nombres='';
+        this.apellidoPaterno='';
+        this.apellidoMaterno='';
         this.email='';
+        this.password='';
         this.telefono='';
         this.celular='';
         this.direccion='';
