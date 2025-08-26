@@ -10,7 +10,8 @@ import { Table } from 'primeng/table';
 import { Menu } from 'primeng/menu';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PortalService } from '../../services/portal.service';
-import { Material } from '../../interfaces/material-bibliografico/material';
+import { PortalNoticia } from '../../interfaces/portalNoticias';
+import { environment } from '../../../../environments/environment';
 
 @Component({
     selector: 'noticias-lista',
@@ -34,7 +35,7 @@ import { Material } from '../../interfaces/material-bibliografico/material';
         
         <div class="flex flex-col flex-1 gap-2">
             <label for="palabra-clave" class="block text-sm font-medium text-muted-color">Buscar noticia</label>
-            <input pInputText id="palabra-clave" type="text" />
+            <input pInputText id="palabra-clave" type="text" [(ngModel)]="palabraClave" (keydown.enter)="listar()" />
         </div>
         
         <div class="flex items-end">
@@ -67,23 +68,33 @@ import { Material } from '../../interfaces/material-bibliografico/material';
                         <div *ngFor="let item of items; let i = index">
                             <div class="flex flex-col sm:flex-row sm:items-center p-6 gap-4 " [ngClass]="{ 'border-t border-surface': i !== 0 }">
                                 <div class="md:w-40 relative ">
-                                <a [href]="item.link" target="_blank">
-                                <img 
+                                <a *ngIf="item.link || item.enlace; else imgSinEnlace" [href]="item.link || item.enlace" target="_blank">
+                                <img
   class="block xl:block mx-auto rounded w-full transition-transform duration-300 transform hover:scale-110 hover:shadow-lg"
-  [src]="item.urlPortada" 
-  [alt]="item.titulo" 
+  [src]="item.urlPortada || item.imagenUrl || item.imagen"
+  [alt]="item.titulo"
 />
                                 </a>
+                                <ng-template #imgSinEnlace>
+                                <img
+  class="block xl:block mx-auto rounded w-full transition-transform duration-300 transform hover:scale-110 hover:shadow-lg"
+  [src]="item.urlPortada || item.imagenUrl || item.imagen"
+  [alt]="item.titulo"
+/>
+                                </ng-template>
                                 </div>
                                 <div class="flex flex-col md:flex-row justify-between md:items-center flex-1 gap-6">
                                     <div class="flex flex-row md:flex-col justify-between items-start gap-2">
                                         <div>
-                                        <span class="font-medium text-surface-500 dark:text-surface-400 text-sm"><i class="pi pi-fw pi-calendar !text-2xl text-primary"></i> {{ item.fecha }}</span>
-                                        
+                                        <span class="font-medium text-surface-500 dark:text-surface-400 text-sm"><i class="pi pi-fw pi-calendar !text-2xl text-primary"></i> {{ item.fecha || (item.fechacreacion | date:'dd/MM/yyyy') }}</span>
+
                                             <div class="text-lg font-medium mt-2">
-                                                <a [href]="item.link" target="_blank" class="hover:text-primary focus:text-primary transition-colors">
+                                                <ng-container *ngIf="item.link || item.enlace; else tituloPlano">
+                                                <a [href]="item.link || item.enlace" target="_blank" class="hover:text-primary focus:text-primary transition-colors">
                                                 {{ item.titulo }}
                                                 </a>
+                                                </ng-container>
+                                                <ng-template #tituloPlano>{{ item.titulo }}</ng-template>
                                             </div>
                                             <p class="text-gray-500 mt-2"> {{ item.detalle }}</p>
                                             <p class="text-gray-500 mt-2"> Por:{{ item.anunciante }}</p>
@@ -92,9 +103,14 @@ import { Material } from '../../interfaces/material-bibliografico/material';
                                     </div>
                                     <div class="flex flex-col md:items-end gap-8">
                                         <div class="flex flex-row-reverse md:flex-row gap-2">
-                                        <a [href]="item.link" target="_blank" class="flex-auto md:flex-initial whitespace-nowrap">
+                                        <ng-container *ngIf="item.link || item.enlace; else botonDeshabilitado">
+                                        <a [href]="item.link || item.enlace" target="_blank" class="flex-auto md:flex-initial whitespace-nowrap">
                                             <p-button icon="pi pi-arrow-right" label="Leer más"></p-button>
                                         </a>
+                                        </ng-container>
+                                        <ng-template #botonDeshabilitado>
+                                            <p-button icon="pi pi-arrow-right" label="Leer más" [disabled]="true"></p-button>
+                                        </ng-template>
                                         </div>
                                     </div>
                                 </div>
@@ -107,20 +123,31 @@ import { Material } from '../../interfaces/material-bibliografico/material';
                 <div class="grid grid-cols-12 gap-4 justify-between mt-20 md:mt-0">
                 <div class="col-span-12 md:col-span-6 lg:col-span-4 p-0 md:p-4" *ngFor="let item of items; let i = index">
                     <div class="p-4 flex flex-col border-surface-200 dark:border-surface-600 pricing-card cursor-pointer border-2 hover:border-primary duration-300 transition-all" style="border-radius: 10px">
-                    <a [href]="item.link" target="_blank">   
-                    <img class="w-full h-56 object-cover" [src]="item.urlPortada" [alt]="item.titulo">  
-                    </a>                      
-                    
+                    <a *ngIf="item.link || item.enlace; else imgGridSinEnlace" [href]="item.link || item.enlace" target="_blank">
+                    <img class="w-full h-56 object-cover" [src]="item.urlPortada || item.imagenUrl || item.imagen" [alt]="item.titulo">
+                    </a>
+                    <ng-template #imgGridSinEnlace>
+                    <img class="w-full h-56 object-cover" [src]="item.urlPortada || item.imagenUrl || item.imagen" [alt]="item.titulo">
+                    </ng-template>
+
                         <p-divider class="w-full bg-surface-200"></p-divider>
                         <div class="p-6">
-            <i class="pi pi-fw pi-calendar !text-2xl text-primary"></i> {{ item.fecha }} 
+            <i class="pi pi-fw pi-calendar !text-2xl text-primary"></i> {{ item.fecha || (item.fechacreacion | date:'dd/MM/yyyy') }}
                 <h3 class="text-xl font-semibold text-gray-900">
-                <a [href]="item.link" target="_blank" class="hover:text-primary focus:text-primary transition-colors">
+                <ng-container *ngIf="item.link || item.enlace; else tituloGridPlano">
+                <a [href]="item.link || item.enlace" target="_blank" class="hover:text-primary focus:text-primary transition-colors">
                 {{ item.titulo }}
-                </a>    </h3>
+                </a>
+                </ng-container>
+                <ng-template #tituloGridPlano>{{ item.titulo }}</ng-template>    </h3>
                 <p class="text-gray-500 mt-2">{{ item.detalle }}</p>
                 <p class="text-gray-500 mt-2"> Por:{{ item.anunciante }}</p>
-                <a [href]="item.link" target="_blank"  class="text-primary mt-4 inline-flex items-center">Leer m&aacute;s <span class="ml-2">→</span></a>
+                <ng-container *ngIf="item.link || item.enlace; else leerMasTexto">
+                <a [href]="item.link || item.enlace" target="_blank"  class="text-primary mt-4 inline-flex items-center">Leer m&aacute;s <span class="ml-2">→</span></a>
+                </ng-container>
+                <ng-template #leerMasTexto>
+                <span class="text-primary mt-4 inline-flex items-center opacity-50 cursor-not-allowed">Leer m&aacute;s <span class="ml-2">→</span></span>
+                </ng-template>
             </div>
                        
                     </div>
@@ -170,8 +197,8 @@ import { Material } from '../../interfaces/material-bibliografico/material';
 export class NoticiasLista implements OnInit {
     layout: 'list' | 'grid' = 'grid';
     options = ['list', 'grid'];
-    modulo: string = "catalogo";
-    data: Material[] = [];
+    data: PortalNoticia[] = [];
+    palabraClave: string = '';
     @ViewChild('menu') menu!: Menu;
     @ViewChild('filter') filter!: ElementRef;
     items: MenuItem[] | undefined;
@@ -202,22 +229,50 @@ export class NoticiasLista implements OnInit {
     }
 
     listar() {
-
         this.loading = true;
-        this.portalService.api_noticias(this.modulo)
-            .subscribe(
-                (result: any) => {
-                    this.loading = false;
-                    if (result.status == "0") {
-                        this.data = result.data;
-                    }
-                    this.loading = false;
-                }
-                , (error: HttpErrorResponse) => {
-                    this.loading = false;
-                }
-            );
+        this.portalService.api_noticias(this.palabraClave).subscribe({
+            next: (result: any) => {
+                const noticias: PortalNoticia[] = result?.data ?? [];
+                this.data = noticias
+                    .filter(n => this.esDisponible(n))
+                    .map(n => new PortalNoticia({
+                        ...n,
+                        titulo: n.titular ?? n.titulo,
+                        detalle: n.descripcion ?? n.detalle,
+                        anunciante: n.autor ?? n.anunciante,
+                        link: n.enlace ?? n.link,
+                        fecha: n.fechacreacion ?? n.fecha,
+                        urlPortada: this.buildImageUrl(n)
+                    }));
 
+                if (this.palabraClave) {
+                    const term = this.palabraClave.toLowerCase();
+                    this.data = this.data.filter(n =>
+                        n.titulo.toLowerCase().includes(term) ||
+                        n.detalle.toLowerCase().includes(term)
+                    );
+                }
+
+                this.loading = false;
+            },
+            error: (_error: HttpErrorResponse) => {
+                this.loading = false;
+            }
+        });
+    }
+
+    private esDisponible(n: any): boolean {
+        const id = Number(n.estadoId ?? n.estado ?? n.idestado ?? n.idEstado ?? n.estado_id);
+        const desc = (n.estadoDescripcion ?? n.estado ?? '').toString().trim().toUpperCase();
+        return id === 2 || desc === 'DISPONIBLE';
+    }
+
+    private buildImageUrl(n: PortalNoticia): string {
+        const raw = n.urlPortada || (n as any).imagenUrl || n.imagen;
+        if (!raw) {
+            return 'assets/logo.png';
+        }
+        return raw.startsWith('http') ? raw : `${environment.filesUrl}/uploads/noticias/${raw}`;
     }
     async ListaSituacion() {
         try {
