@@ -431,19 +431,6 @@ export class CatalogoEnLineaComponent {
         return undefined;
     }
 
-    private isDisponibleAhora(det: any): boolean {
-        if (!det.horaInicio || !det.horaFin) {
-            return true;
-        }
-        const now = new Date();
-        const start = this.parseTimeAtDate(det.horaInicio, now);
-        const end = this.parseTimeAtDate(det.horaFin, now);
-        if (end <= start) {
-            return now >= start || now <= end;
-        }
-        return now >= start && now <= end;
-    }
-
     constructor(
         private materialBibliograficoService: MaterialBibliograficoService,
         private genericoService: GenericoService,
@@ -459,19 +446,14 @@ export class CatalogoEnLineaComponent {
     }
     listar() {
         // Recupera solo las cabeceras disponibles
+        this.loading = true;
         this.materialBibliograficoService
-            .api_libros_lista('api/biblioteca/disponibles')
+            .api_libros_lista('api/biblioteca/catalogo?estadoId=2')
             .subscribe({
                 next: (result: any) => {
-                    if (result.status !== '0') {
-                        this.loading = false;
-                        return;
-                    }
-
-                    const cabeceras = result.data.filter(
+                    const cabeceras = (Array.isArray(result) ? result : result?.data || []).filter(
                         (b: any) =>
-                            (b.estadoId === 2 || b.estado?.descripcion === 'DISPONIBLE') &&
-                            this.isDisponibleAhora(b)
+                            b.estadoId === 2 || b.estado?.descripcion === 'DISPONIBLE'
                     );
 
                     if (cabeceras.length === 0) {
@@ -488,8 +470,7 @@ export class CatalogoEnLineaComponent {
                                     cab: b,
                                     detalles: det.filter(
                                         d =>
-                                            (d.idEstado === 2 || d.estado?.descripcion === 'DISPONIBLE') &&
-                                            this.isDisponibleAhora(d)
+                                            d.idEstado === 2 || d.estado?.descripcion === 'DISPONIBLE'
                                     )
                                 }))
                             )
@@ -545,9 +526,7 @@ export class CatalogoEnLineaComponent {
             .subscribe({
                 next: (lista: any[]) => {
                     this.detallesPorBiblioteca[row.id] = lista.filter(
-                        d =>
-                            (d.idEstado === 2 || d.estado?.descripcion === 'DISPONIBLE') &&
-                            this.isDisponibleAhora(d)
+                        d => d.idEstado === 2 || d.estado?.descripcion === 'DISPONIBLE'
                     );
                 },
                 error: () => {
