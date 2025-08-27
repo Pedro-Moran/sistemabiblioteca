@@ -35,9 +35,13 @@ export class BibliotecaVirtualService {
       return this.http.put<any>(`${this.apisUrl}/update/${id}`, equipo);
     }
 
-    eliminarEquipo(id: number): Observable<any> {
-      return this.http.delete<any>(`${this.apisUrl}/delete/${id}`);
-    }
+  eliminarEquipo(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apisUrl}/delete/${id}`);
+  }
+
+  eliminarEquipos(ids: number[]): Observable<any> {
+    return this.http.post<any>(`${this.apisUrl}/delete-bulk`, ids);
+  }
 
     listarEquipos(): Observable<any> {
       return this.http.get<any>(`${this.apisUrl}/listWithoutEnProceso`);

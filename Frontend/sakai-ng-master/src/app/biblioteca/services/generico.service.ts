@@ -14,11 +14,16 @@ export class GenericoService {
     this.apiUrl = environment.apiUrl;
   }
 
+  private authHeaders() {
+    const token = this.authService.getToken();
+    return new HttpHeaders().set('Authorization', `Bearer ${token}`);
+  }
+
   conf_event_get(url: string):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>(`${environment.apiUrl}/${url}`);
+    return this.http.get<any[]>(
+      `${this.apiUrl}/${url}`,
+      { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
+    );
   }
   conf_event_post(request: any,modulo: any):Observable<any>{
     return this.http.post<any>(`${this.apiUrl}/${modulo}`
@@ -47,11 +52,12 @@ export class GenericoService {
     );
   }
 
+
   roles_get(url: string):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>(`${environment.apiUrl}/${url}`);
+    return this.http.get<any[]>(
+      `${this.apiUrl}/${url}`,
+      { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
+    );
   }
 
   sedes_get(modulo: any):Observable<any>{
@@ -61,18 +67,16 @@ export class GenericoService {
 //     return this.http.get<any[]>('assets/demo/biblioteca/sedes.json');
   }
 
-  tipodocumento_get(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/tipos-documento.json');
+  tipodocumento_get(modulo: any): Observable<any> {
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+      { headers: this.authHeaders() }
+    );
   }
 
-  tipo_get(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/tipo.json');
+  tipo_get(modulo: any): Observable<any> {
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+      { headers: this.authHeaders() }
+    );
   }
 
   tiporecurso_get(modulo: any):Observable<any>{
@@ -82,10 +86,9 @@ export class GenericoService {
 //     return this.http.get<any[]>('assets/demo/biblioteca/tipos-recurso.json');
   }
 
-  categoriarecurso_get(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/categoria-recurso.json');
+  categoriarecurso_get(modulo: any): Observable<any> {
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+      { headers: this.authHeaders() }
+    );
   }
 }

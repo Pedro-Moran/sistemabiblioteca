@@ -7,8 +7,8 @@ import { BibliotecaVirtualService } from '../../services/biblioteca-virtual.serv
 import { GenericoService } from '../../services/generico.service';
 import { TemplateModule } from '../../template.module';
 import { Table } from 'primeng/table';
-import { OcurrenciasService } from '../../services/ocurrencias.service';
 import { HttpErrorResponse } from '@angular/common/http';
+import { MaterialBibliograficoService } from '../../services/material-bibliografico.service';
 import { ModalNuevoOcurencia } from './modal-nuevo-ocurrencia';
 import { ModalDetalleOcurencia } from './modal-detalle-ocurrencia';
 
@@ -29,27 +29,27 @@ import { ModalDetalleOcurencia } from './modal-detalle-ocurrencia';
                     <div class="flex flex-col gap-2 col-span-6 md:col-span-4">
                     <label for="alumno" class="block text-sm font-medium">Alumno</label>
                                 <input [(ngModel)]="alumno"pInputText id="alumno" type="text" placeholder="Alumno"/>
-                       
+
                     </div>
                     <div class="flex items-end">
-            <button 
-                pButton 
-                type="button" 
-                class="p-button-rounded p-button-danger" 
+            <button
+                pButton
+                type="button"
+                class="p-button-rounded p-button-danger"
                 icon="pi pi-search"(click)="buscar()" [disabled]="loading"  pTooltip="Ver reporte" tooltipPosition="bottom">
             </button>
         </div>
                     </div>
-                    
-                   
-               
+
+
+
             </div>
             </ng-template>
             <ng-template #end>
-                 <button pButton type="button" label="Nuevo" icon="pi pi-plus" class="p-button-success mr-2" [disabled]="loading" (click)="nuevoRegistro()" 
+                 <button pButton type="button" label="Nuevo" icon="pi pi-plus" class="p-button-success mr-2" [disabled]="loading" (click)="nuevoRegistro()"
                                 pTooltip="Nuevo registro" tooltipPosition="bottom"></button>
-                                
-                                
+
+
             </ng-template>
     </p-toolbar>
     <p-tabs value="0">
@@ -63,13 +63,13 @@ import { ModalDetalleOcurencia } from './modal-detalle-ocurrencia';
                                 <p-table #dt1 [value]="data" dataKey="id" [rows]="10"
                         [showCurrentPageReport]="true"
                         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-                        [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true" styleClass="p-datatable-gridlines" [paginator]="true" 
+                        [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true" styleClass="p-datatable-gridlines" [paginator]="true"
                         [globalFilterFields]="['id','ocurrencia','semestre','sede','ciclo','laboratorio','fecha']" responsiveLayout="scroll">
                         <ng-template pTemplate="caption">
-                       
+
                        <div class="flex items-center justify-between">
                <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt1)" />
-               
+
                <p-iconfield>
                    <input pInputText type="text" placeholder="Filtrar" #filter (input)="onGlobalFilter(dt1, $event)"/>
                </p-iconfield>
@@ -84,40 +84,40 @@ import { ModalDetalleOcurencia } from './modal-detalle-ocurrencia';
                                     <th pSortableColumn="ciclo"  style="min-width:200px">Ciclo<p-sortIcon field="ciclo"></p-sortIcon></th>
                                     <th pSortableColumn="laboratorio"  style="min-width:200px">Laboratorio<p-sortIcon field="laboratorio"></p-sortIcon></th>
                                     <th pSortableColumn="fecha" style="width: 8rem">Fecha<p-sortIcon field="fecha"></p-sortIcon></th>
-                                    
+
                                 </tr>
                             </ng-template>
                             <ng-template pTemplate="body" let-objeto>
-                                <tr> 
+                                <tr>
                                     <td>
                                     <div class="flex flex-wrap justify-center gap-2">
                                 <p-button outlined icon="pi pi-pencil" pTooltip="Más información" tooltipPosition="bottom" (click)="editar()"/>
                                                            </div>
-                                    </td> 
+                                    </td>
                                 <td>{{objeto.ocurrencia}}
                                     </td>
                                     <td>
                                         {{objeto.semestre}}
-                                       
-                                    </td>	
+
+                                    </td>
                                     <td>
                                         {{objeto.sede}}
-                                       
-                                    </td>	
+
+                                    </td>
                                     <td>
                                         {{objeto.ciclo}}
-                                    </td>	 
+                                    </td>
                                     <td>
                                         {{objeto.laboratorio}}
-                                    </td>	                                     
+                                    </td>
                                     <td>
                                         {{objeto.fecha}}
-                                    </td>	
+                                    </td>
                                     <td>
                                         <div class="flex flex-wrap justify-center gap-2">
                                             <p-button outlined icon="pi pi-align-justify" pTooltip="Más información" tooltipPosition="bottom" (click)="verDetalle()"/>
                                         </div>
-                                    </td> 	
+                                    </td>
                                 </tr>
                             </ng-template>
                             <ng-template pTemplate="emptymessage">
@@ -135,10 +135,10 @@ import { ModalDetalleOcurencia } from './modal-detalle-ocurrencia';
                             </p-tabpanels>
 </p-tabs>
 
-    
+
     </div>
-    
-    
+
+
 <app-modal-nuevo-ocurrencia #modalNuevoOcurrencia></app-modal-nuevo-ocurrencia>
 <app-modal-detalle-ocurrencia #modalDetalleOcurrencia></app-modal-detalle-ocurrencia>
 <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
@@ -163,30 +163,30 @@ export class OcurrenciasLaboratorio {
     @ViewChild('modalNuevoOcurrencia') modalNuevoOcurrencia!: ModalNuevoOcurencia;
     @ViewChild('modalDetalleOcurrencia') modalDetalleOcurrencia!: ModalDetalleOcurencia;
 
-    constructor(private ocurrenciasService: OcurrenciasService, private genericoService: GenericoService, private fb: FormBuilder,
-    private router: Router, private authService: AuthService, private confirmationService: ConfirmationService, private messageService: MessageService) { }
+    constructor(private genericoService: GenericoService, private fb: FormBuilder,
+    private router: Router, private authService: AuthService, private confirmationService: ConfirmationService, private messageService: MessageService,
+    private materialBsvc: MaterialBibliograficoService) { }
     async ngOnInit() {
         this.buscar();
     }
     buscar(){
-        this.ocurrenciasService.api_ocurrencias_laboratorio('')
-              .subscribe(
-                (result: any) => {
-                  this.loading = false;
-                  if (result.status == "0") {
-                    this.data = result.data;
-                  }
-                }
-                , (error: HttpErrorResponse) => {
-                  this.loading = false;
-                }
-              );
+        this.loading = true;
+        this.materialBsvc.api_ocurrencias_laboratorio().subscribe({
+          next: (lista) => {
+            // Solo listamos ocurrencias marcadas como de laboratorio
+            this.data = lista.filter(o => o.esBiblioteca === false);
+            this.loading = false;
+          },
+          error: (error: HttpErrorResponse) => {
+            this.loading = false;
+          }
+        });
     }
-    
+
       onGlobalFilter(table: Table, event: Event) {
         table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
       }
-    
+
       clear(table: Table) {
         table.clear();
         this.filter.nativeElement.value = '';

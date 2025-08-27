@@ -79,6 +79,14 @@ export class LayoutService {
     private initialized = false;
 
     constructor() {
+
+        const stored = localStorage.getItem('theme');
+        const prefers = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const dark = stored ? stored === 'dark' : prefers;
+        this._config.darkTheme = dark;
+        this.layoutConfig.set({ ...this._config });
+        this.toggleDarkMode(this._config);
+
         effect(() => {
             const config = this.layoutConfig();
             if (config) {
@@ -122,9 +130,11 @@ export class LayoutService {
     toggleDarkMode(config?: layoutConfig): void {
         const _config = config || this.layoutConfig();
         if (_config.darkTheme) {
-            document.documentElement.classList.add('app-dark');
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
         } else {
-            document.documentElement.classList.remove('app-dark');
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
         }
     }
 

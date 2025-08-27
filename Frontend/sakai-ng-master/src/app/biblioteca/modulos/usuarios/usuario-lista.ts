@@ -29,10 +29,6 @@ import { Usuario } from '../../interfaces/usuario';
                         <p-select [(ngModel)]="rolFiltro" [options]="dataRolesFiltro" optionLabel="descripcion" placeholder="Seleccionar" />
 
                         </div>
-                        <div class="flex flex-col grow basis-0 gap-2">
-                        <p-select [(ngModel)]="sedeFiltro" [options]="dataSedesFiltro" optionLabel="descripcion" placeholder="Seleccionar" />
-
-                        </div>
                         <button pButton type="button" icon="pi pi-search" class="mr-2 p-inputtext-sm"
                         (click)="listaUsuarios()" [disabled]="loading" pTooltip="Actualizar Lista"
                         tooltipPosition="bottom"></button>
@@ -47,10 +43,10 @@ import { Usuario } from '../../interfaces/usuario';
 </ng-template>
 </p-toolbar>
 <p-table #dt1 [value]="data" dataKey="id" [rows]="10" [showCurrentPageReport]="true"
-				currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-				[rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true"
-				styleClass="p-datatable-gridlines" [paginator]="true"
-				[globalFilterFields]="['rol.descripcion','tipodocumento.descripcion','numerodocumento','nombres','email','telefono','celular','direccion','activo','nombreFacultad','nombrePrograma']"
+                                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+                                [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true"
+                                styleClass="p-datatable-gridlines" [paginator]="true"
+                                [globalFilterFields]="['id','email','rol.descripcion']"
                 responsiveLayout="scroll">
 				<ng-template pTemplate="caption">
 
@@ -62,85 +58,48 @@ import { Usuario } from '../../interfaces/usuario';
             </p-iconfield>
         </div>
                     </ng-template>
-				<ng-template pTemplate="header">
-					<tr>
-						<th style="width: 4rem" pSortableColumn="rol.descripcion">ROL <p-sortIcon field="rol.descripcion"></p-sortIcon></th>
-						<th pSortableColumn="tipodocumento.descripcion">TIPO DOC. <p-sortIcon
-								field="tipodocumento.descripcion"></p-sortIcon></th>
-						<th style="width: 4rem" pSortableColumn="numerodocumento">NUM. DOC. <p-sortIcon
-								field="numerodocumento"></p-sortIcon></th>
-						<th pSortableColumn="nombres" style="min-width:200px">Nombres<p-sortIcon
-								field="nombres"></p-sortIcon></th>
-						<th pSortableColumn="email" style="min-width:200px">Email<p-sortIcon field="email"></p-sortIcon>
-						</th>
+                                <ng-template pTemplate="header">
+                                        <tr>
+                                                <th style="width: 4rem" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+                                                <th pSortableColumn="email" style="min-width:200px">Correo<p-sortIcon field="email"></p-sortIcon></th>
+                                                <th pSortableColumn="rol.descripcion" style="min-width:200px">Rol<p-sortIcon field="rol.descripcion"></p-sortIcon></th>
+                                                <th style="min-width:95px;">Opciones</th>
 
-						<th pSortableColumn="telefono" style="min-width:100px">Telefono<p-sortIcon
-								field="telefono"></p-sortIcon></th>
-						<th pSortableColumn="celular" style="min-width:100px">Celular<p-sortIcon
-								field="celular"></p-sortIcon></th>
-						<th pSortableColumn="direccion" style="min-width:200px">Direccion<p-sortIcon
-								field="direccion"></p-sortIcon></th>
-						<th style="width: 4rem" pSortableColumn="activo">Estado <p-sortIcon field="activo"></p-sortIcon>
-						</th>
-						<th style="min-width:95px;">Opciones</th>
+                                        </tr>
+                                </ng-template>
+                                <ng-template pTemplate="body" let-objeto>
+                                        <tr>
+                                                <td>
+                                                        {{objeto.id}}
+                                                </td>
+                                                <td>
+                                                        {{objeto.email}}
+                                                </td>
+                                                <td>
+                                                        {{ objeto.rol?.descripcion || (objeto.roles.length > 0 ? objeto.roles[0].descripcion : 'Sin rol') }}
+                                                </td>
+                                                <td class="text-center">
+                                                        <div style="position: relative;">
+                                                                <button pButton type="button" icon="pi pi-ellipsis-v"
+                                                                        class="p-button-rounded p-button-text p-button-plain"
+                                                                        (click)="showMenu($event, objeto)"></button>
+                                                                <p-menu #menu [popup]="true" [model]="items" appendTo="body"></p-menu>
+                                                        </div>
 
-					</tr>
-				</ng-template>
-				<ng-template pTemplate="body" let-objeto>
-					<tr>
-						<td>
-							{{ objeto.rol?.descripcion || (objeto.roles.length > 0 ? objeto.roles[0].descripcion : 'Sin rol') }}
-						</td>
-						<td>
-							{{objeto.tipodocumento.descripcion}}
-						</td>
-						<td>
-							{{objeto.numDocumento}}
-						</td>
-						<td>
-							{{objeto.nombreUsuario}}
-						</td>
-						<td>
-							{{objeto.email}}
-						</td>
-						<td>
-							{{objeto.telefono}}
-						</td>
-						<td>
-							{{objeto.telefono}}
-						</td>
-						<td>
-							{{objeto.direccion}}
-						</td>
-						<td>
-							@if(objeto.idEstado == "ACTIVO"){
-							<span class="customer-badge status-qualified">ACTIVO</span>
-							}@else{
-							<span class="customer-badge status-unqualified">DESACTIVADO</span>
-							}
-						</td>
-						<td class="text-center">
-							<div style="position: relative;">
-								<button pButton type="button" icon="pi pi-ellipsis-v"
-									class="p-button-rounded p-button-text p-button-plain"
-									(click)="showMenu($event, objeto)"></button>
-								<p-menu #menu [popup]="true" [model]="items" appendTo="body"></p-menu>
-							</div>
-
-						</td>
-					</tr>
-				</ng-template>
-				<ng-template pTemplate="emptymessage">
-					<tr>
-						<td colspan="11">No se encontraron registros.</td>
-					</tr>
-				</ng-template>
-				<ng-template pTemplate="loadingbody">
-					<tr>
-						<td colspan="11">Cargando datos. Espere por favor.</td>
-					</tr>
-				</ng-template>
-			</p-table>
+                                                </td>
+                                        </tr>
+                                </ng-template>
+                                <ng-template pTemplate="emptymessage">
+                                        <tr>
+                                                <td colspan="4">No se encontraron registros.</td>
+                                        </tr>
+                                </ng-template>
+                                <ng-template pTemplate="loadingbody">
+                                        <tr>
+                                                <td colspan="4">Cargando datos. Espere por favor.</td>
+                                        </tr>
+                                </ng-template>
+                        </p-table>
 </div>
 </div>
 </div>
@@ -214,18 +173,8 @@ import { Usuario } from '../../interfaces/usuario';
 
                 <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
                     <div class="flex flex-col gap-2 w-full">
-                        <label for="fechaNacimiento">Fecha de nacimiento</label>
-                        <p-datepicker
-                          formControlName="fechaNacimiento"
-                          [showIcon]="true"
-                          [appendTo]="'body'"
-                          [style]="{'width': '100%'}">
-                        </p-datepicker>
-                        <app-input-validation [form]="form" modelo="fechaNacimiento" ver="fechaNacimiento"></app-input-validation>
-                    </div>
-                    <div class="flex flex-col gap-2 w-full">
                         <label for="password">Contraseña</label>
-                        <input type="text" pInputText id="password" formControlName="password"/>
+                        <p-password id="password" formControlName="password" [toggleMask]="true" [feedback]="false" inputStyleClass="w-full"></p-password>
                         <app-input-validation [form]="form" modelo="password" ver="password"></app-input-validation>
                     </div>
                 </div>
@@ -251,7 +200,6 @@ import { Usuario } from '../../interfaces/usuario';
     <ng-template pTemplate="content">
     <p-select appendTo="body" [(ngModel)]="objetoRol" [options]="dataRolesU"
         optionLabel="descripcion" placeholder="Seleccionar" class="col-12 md:col-10 text-left lg:text-left mr-2"/>
-        <p-select [(ngModel)]="sedeFiltro" [options]="dataSedesFiltro" optionLabel="descripcion" placeholder="Seleccionar" class="mr-2"/>
 
         <button type="button" pButton pRipple icon="pi pi-plus" [disabled]="!objetoRol" (click)="agregarRol()" class="p-button-success mr-2 mb-2"  pTooltip="Agregar modulo" tooltipPosition="bottom" styleClass="p-button-sm"></button>
 
@@ -259,7 +207,7 @@ import { Usuario } from '../../interfaces/usuario';
                 [showCurrentPageReport]="true"
                 currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
                 [rowsPerPageOptions]="[10, 25, 50]" [loading]="loadingAgregarRol" [rowHover]="true" styleClass="p-datatable-gridlines" [paginator]="true"
-                [globalFilterFields]="['id','descripcion','activo']" responsiveLayout="scroll">
+                [globalFilterFields]="['idUsuario','email','descripcion']" responsiveLayout="scroll">
 
 
 				<ng-template pTemplate="caption">
@@ -272,42 +220,46 @@ import { Usuario } from '../../interfaces/usuario';
             </p-iconfield>
         </div>
 				</ng-template>
-				<ng-template pTemplate="header">
-					<tr>
-						<th style="width: 4rem" pSortableColumn="id" >ID <p-sortIcon field="id"></p-sortIcon></th>
-						<th pSortableColumn="descripcion" style="min-width:200px">Descripcion<p-sortIcon field="descripcion"></p-sortIcon></th>
-						<th style="width: 14rem" >Opciones</th>
+                                <ng-template pTemplate="header">
+                                        <tr>
+                                                <th style="width: 4rem" pSortableColumn="idUsuario" >ID <p-sortIcon field="idUsuario"></p-sortIcon></th>
+                                                <th pSortableColumn="email" style="min-width:200px">Correo<p-sortIcon field="email"></p-sortIcon></th>
+                                                <th pSortableColumn="descripcion" style="min-width:200px">Rol<p-sortIcon field="descripcion"></p-sortIcon></th>
+                                                <th style="width: 14rem" >Opciones</th>
 
-					</tr>
-				</ng-template>
-				<ng-template pTemplate="body" let-objeto>
-					<tr>
-						<td>
-							{{objeto.id}}
-						</td>
-						<td>
-							{{objeto.descripcion}}
-						</td>
-						<td class="text-center">
-							<button pButton pRipple icon="pi pi-trash"
-							class="p-button-rounded p-button-danger"
-							(click)="quitarRol(objeto)"></button>
+                                        </tr>
+                                </ng-template>
+                                <ng-template pTemplate="body" let-objeto>
+                                        <tr>
+                                                <td>
+                                                        {{objeto.idUsuario}}
+                                                </td>
+                                                <td>
+                                                        {{objeto.email}}
+                                                </td>
+                                                <td>
+                                                        {{objeto.descripcion}}
+                                                </td>
+                                                <td class="text-center">
+                                                        <button pButton pRipple icon="pi pi-trash"
+                                                        class="p-button-rounded p-button-danger"
+                                                        (click)="quitarRol(objeto)"></button>
 
 
-						</td>
-					</tr>
-				</ng-template>
-				<ng-template pTemplate="emptymessage">
-					<tr>
-						<td colspan="8">No se encontraron registros.</td>
-					</tr>
-				</ng-template>
-				<ng-template pTemplate="loadingbody">
-					<tr>
-						<td colspan="8">Cargando datos. Espere por favor.</td>
-					</tr>
-				</ng-template>
-    		</p-table>
+                                                </td>
+                                        </tr>
+                                </ng-template>
+                                <ng-template pTemplate="emptymessage">
+                                        <tr>
+                                                <td colspan="4">No se encontraron registros.</td>
+                                        </tr>
+                                </ng-template>
+                                <ng-template pTemplate="loadingbody">
+                                        <tr>
+                                                <td colspan="4">Cargando datos. Espere por favor.</td>
+                                        </tr>
+                                </ng-template>
+                </p-table>
     </ng-template>
 
     <ng-template pTemplate="footer">
@@ -331,13 +283,11 @@ export class UsuarioLista implements OnInit {
     objetoDialog!: boolean;
     objetoDialogPermisos!: boolean;
     rolFiltro: ClaseGeneral = new ClaseGeneral();
-    sedeFiltro: ClaseGeneral = new ClaseGeneral();
     dataRoles: ClaseGeneral[] = [];
     dataRolesU: ClaseGeneral[] = [];
     dataRolesUsuario: ClaseGeneral[] = [];
     dataRolesFiltro: ClaseGeneral[] = [];
     dataSedes: ClaseGeneral[] = [];
-    dataSedesFiltro: ClaseGeneral[] = [];
     dataTipoDocumento!: ClaseGeneral[];
     items: MenuItem[] | undefined;
     selectedItem: Usuario = new Usuario();
@@ -397,11 +347,10 @@ export class UsuarioLista implements OnInit {
     async ListaRoles() {
         try {
             const result: any = await this.genericoService.roles_get('roles/lista-roles').toPromise();
-            if (result.status === "0") {
-                this.dataRoles = result.data;
-                this.dataRolesFiltro = this.dataRoles;
-                this.rolFiltro = this.dataRolesFiltro[0];
-            }
+            const roles = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [];
+            this.dataRoles = roles;
+            this.dataRolesFiltro = roles;
+            this.rolFiltro = this.dataRolesFiltro[0] ?? new ClaseGeneral();
         } catch (error) {
             console.log(error);
             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrió un error. No se pudo cargar roles' });
@@ -410,18 +359,15 @@ export class UsuarioLista implements OnInit {
     }
     async ListaSede() {
         try {
-            const result: any = await this.genericoService.sedes_get('sede/lista-activo').toPromise();
-            if (result.status === "0") {
-                this.dataSedes.push({ id: 0, descripcion: 'TODAS LAS SEDES', activo: true, estado: 1 });
-                this.dataSedes.push(...result.data);
-                this.dataSedesFiltro = this.dataSedes;
-                this.sedeFiltro = this.dataSedesFiltro[0];
-            }
+            const result: any = await this.genericoService.sedes_get('api/equipos/sedes').toPromise();
+            const sedes = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [];
+            this.dataSedes = sedes;
         } catch (error) {
             console.log(error);
             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrió un error. No se pudo cargar Sede' });
         }
     }
+
 
     async tipodocumentos() {
 
@@ -449,7 +395,6 @@ export class UsuarioLista implements OnInit {
             sede: [dataObjeto.sede],
             apellidoPaterno: [dataObjeto.apellidoPaterno, [Validators.required, Validators.maxLength(100), Validators.minLength(5), Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-\\s]+$')]],
             apellidoMaterno: [dataObjeto.apellidoMaterno, [Validators.required, Validators.maxLength(100), Validators.minLength(5), Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-\\s]+$')]],
-            fechaNacimiento: [dataObjeto.fechaNacimiento],
             password: [dataObjeto.password],
             tipodocumento: [dataObjeto.tipodocumento, [Validators.required]],
             numDocumento: [dataObjeto.numDocumento, [Validators.required, Validators.maxLength(20), Validators.pattern('^[0-9]+$')]],
@@ -462,22 +407,25 @@ export class UsuarioLista implements OnInit {
     }
     async listaUsuarios() {
         this.loading = true;
-        this.usuarioService.api_usuarios_lista('listaPorRol/' + this.rolFiltro.idRol)
+        const rolId = this.rolFiltro.idRol ?? this.rolFiltro.id;
+        const url = `listaPorRol/${rolId}`;
+        this.usuarioService
+            .api_usuarios_lista(url)
             .subscribe(
                 (result: any) => {
                     this.loading = false;
-                    if (result.status == "0") {
-                        this.data = result.data;
-                    }
-                    this.loading = false;
-                }
-                , (error: HttpErrorResponse) => {
+                    const registros = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [];
+                    const filtroRol = rolId && rolId !== 0 ? (obj: any) => {
+                        const r = obj.rol?.idRol ?? (obj.roles?.length ? obj.roles[0].idRol : obj.idRol);
+                        return r === rolId;
+                    } : () => true;
+                    this.data = registros.filter((obj: any) => filtroRol(obj));
+                },
+                (_error: HttpErrorResponse) => {
                     this.loading = false;
                 }
             );
-
     }
-
 
     cambiarEstadoRegistro(objeto: Usuario) {
         const nuevoEstado = objeto.idEstado === "ACTIVO" ? "DESACTIVADO" : "ACTIVO";
@@ -526,14 +474,17 @@ export class UsuarioLista implements OnInit {
         );
 
       const usuarioPatch = {
-         id: this.objeto.idUsuario, // Corregido para mapear el ID real
+         id: this.objeto.idUsuario ?? this.objeto.id, // Corregido para mapear el ID real
          rol: this.objeto.rol
              ? new ClaseGeneral({ id: this.objeto.rol.idRol, descripcion: this.objeto.rol.descripcion })
              : new ClaseGeneral(),
          sede: this.objeto.sede,
          tipodocumento: documentoSeleccionado,
-         numerodocumento: this.objeto.numDocumento,
-         nombres: this.objeto.nombreUsuario,
+         numDocumento: this.objeto.numDocumento,
+         nombreUsuario: this.objeto.nombreUsuario,
+         apellidoPaterno: this.objeto.apellidoPaterno,
+         apellidoMaterno: this.objeto.apellidoMaterno,
+         password: '',
          email: this.objeto.email,
          telefono: this.objeto.telefono?.toString(),
          celular: this.objeto.celular?.toString(),
@@ -579,15 +530,16 @@ export class UsuarioLista implements OnInit {
 
 
     async permisosRegistro(objeto: Usuario) {
-        this.loadingAgregarRol=true;
-        this.rolAsignados(objeto.idUsuario);
-        let objt = {
-            id: objeto.idUsuario,
+        this.loadingAgregarRol = true;
+        const id = objeto.idUsuario ?? objeto.id; // Usa el ID disponible
+        this.objetoUsuario = {
+            id,
+            email: objeto.email,
             descripcion: objeto.nombres
-        }
-        this.objetoUsuario = objt;
-        this.objetoRol=new ClaseGeneral();
+        };
+        this.objetoRol = new ClaseGeneral();
         this.objetoDialogPermisos = true;
+        this.rolAsignados(id);
     }
 
     rolAsignados(idusuario: any) {
@@ -599,7 +551,11 @@ export class UsuarioLista implements OnInit {
                 (result: any) => {
                     this.loadingAgregarRol = false;
                     if (result.status == "0") {
-                        this.dataRolesUsuario = result.data;
+                        this.dataRolesUsuario = result.data.map((r: any) => ({
+                            ...r,
+                            idUsuario: idusuario,
+                            email: this.objetoUsuario.email
+                        }));
                     }
                 }
                 , (error: HttpErrorResponse) => {
@@ -646,20 +602,22 @@ export class UsuarioLista implements OnInit {
         let rol = this.form.get('rol')?.value;
         let sede = this.form.get('sede')?.value;
         const usuarioLogeado = localStorage.getItem('upsjb_reserva') || 'desconocido';
+        const password = formValues.password ? formValues.password : this.objeto.password;
 
         console.log("ver"+rol.idRol);
+        const id = Number(this.form.get('id')?.value) || 0;
         const data = {
-            idUsuario: this.form.get('id')?.value,
+            id,
+            idUsuario: id,
             nombreUsuario: formValues.nombreUsuario,
             apellidoPaterno: formValues.apellidoPaterno,
             apellidoMaterno: formValues.apellidoMaterno,
-            fechaNacimiento: formValues.fechaNacimiento,
             email: formValues.email,
             emailPersonal: formValues.emailPersonal,
-            password: formValues.password,
+            password,
             horaTrabajo: formValues.horaTrabajo,
-            idSede: formValues.idSede,
-            idTipoDocumento: formValues.tipodocumento,
+            idSede: sede?.id,
+            idTipoDocumento: tipodocumento?.idTipoDocumento,
             numDocumento: formValues.numDocumento,
             telefono: formValues.telefono,
             direccion: formValues.direccion,
@@ -667,8 +625,7 @@ export class UsuarioLista implements OnInit {
             usuarioCreacion: usuarioLogeado
         };
 
-       if (!data.idUsuario || data.idUsuario === 0) {
-               // Registro nuevo
+       if (!id) {
                this.usuarioService.conf_event_post(data,'admin/register')
                    .subscribe(result => {
                        if (result.p_status == 0) {

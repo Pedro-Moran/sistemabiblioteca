@@ -2,13 +2,14 @@ import { Component } from '@angular/core';
 import { ChartModule } from 'primeng/chart';
 import { debounceTime, Subscription } from 'rxjs';
 import { LayoutService } from '../../../../layout/service/layout.service';
+import { DashboardService } from '../../../services/dashboard.service';
 
 @Component({
     standalone: true,
     selector: 'app-revenue-stream-widget',
     imports: [ChartModule],
     template: `<div class="card !mb-8">
-        <div class="font-semibold text-xl mb-4">Revenue Stream</div>
+        <div class="font-semibold text-xl mb-4">Flujo de ingresos</div>
         <p-chart type="bar" [data]="chartData" [options]="chartOptions" class="h-80" />
     </div>`
 })
@@ -19,90 +20,78 @@ export class RevenueStreamWidget {
 
     subscription!: Subscription;
 
-    constructor(public layoutService: LayoutService) {
+    constructor(public layoutService: LayoutService, private dashboardService: DashboardService) {
         this.subscription = this.layoutService.configUpdate$.pipe(debounceTime(25)).subscribe(() => {
-            this.initChart();
+            this.cargarDatos();
         });
     }
 
     ngOnInit() {
-        this.initChart();
+        this.cargarDatos();
     }
 
-    initChart() {
+    private cargarDatos() {
         const documentStyle = getComputedStyle(document.documentElement);
         const textColor = documentStyle.getPropertyValue('--text-color');
         const borderColor = documentStyle.getPropertyValue('--surface-border');
         const textMutedColor = documentStyle.getPropertyValue('--text-color-secondary');
 
-        this.chartData = {
-            labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-            datasets: [
-                {
-                    type: 'bar',
-                    label: 'Subscriptions',
-                    backgroundColor: documentStyle.getPropertyValue('--p-primary-400'),
-                    data: [4000, 10000, 15000, 4000],
-                    barThickness: 32
-                },
-                {
-                    type: 'bar',
-                    label: 'Advertising',
-                    backgroundColor: documentStyle.getPropertyValue('--p-primary-300'),
-                    data: [2100, 8400, 2400, 7500],
-                    barThickness: 32
-                },
-                {
-                    type: 'bar',
-                    label: 'Affiliate',
-                    backgroundColor: documentStyle.getPropertyValue('--p-primary-200'),
-                    data: [4100, 5200, 3400, 7400],
-                    borderRadius: {
-                        topLeft: 8,
-                        topRight: 8,
-                        bottomLeft: 0,
-                        bottomRight: 0
+        this.dashboardService.ingresos().subscribe((res) => {
+            this.chartData = {
+                labels: res.labels,
+                datasets: [
+                    {
+                        type: 'bar',
+                        label: 'Biblioteca',
+                        backgroundColor: documentStyle.getPropertyValue('--p-primary-400'),
+                        data: res.biblioteca,
+                        barThickness: 32
                     },
-                    borderSkipped: false,
-                    barThickness: 32
-                }
-            ]
-        };
+                    {
+                        type: 'bar',
+                        label: 'Cómputo',
+                        backgroundColor: documentStyle.getPropertyValue('--p-primary-300'),
+                        data: res.computo,
+                        barThickness: 32
+                    }
+                ]
+            };
 
-        this.chartOptions = {
-            maintainAspectRatio: false,
-            aspectRatio: 0.8,
-            plugins: {
-                legend: {
-                    labels: {
-                        color: textColor
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    stacked: true,
-                    ticks: {
-                        color: textMutedColor
-                    },
-                    grid: {
-                        color: 'transparent',
-                        borderColor: 'transparent'
+            this.chartOptions = {
+                maintainAspectRatio: false,
+                aspectRatio: 0.8,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: textColor
+                        }
                     }
                 },
-                y: {
-                    stacked: true,
-                    ticks: {
-                        color: textMutedColor
+                scales: {
+                    x: {
+                        stacked: true,
+                        ticks: {
+                            color: textMutedColor
+                        },
+                        grid: {
+                            color: 'transparent',
+                            borderColor: 'transparent'
+                        }
                     },
-                    grid: {
-                        color: borderColor,
-                        borderColor: 'transparent',
-                        drawTicks: false
+                    y: {
+                        stacked: true,
+                        ticks: {
+                            color: textMutedColor
+                        },
+                        grid: {
+                            color: borderColor,
+                            borderColor: 'transparent',
+                            drawTicks: false
+                        }
                     }
                 }
-            }
-        };
+            };
+        });
     }
 
     ngOnDestroy() {

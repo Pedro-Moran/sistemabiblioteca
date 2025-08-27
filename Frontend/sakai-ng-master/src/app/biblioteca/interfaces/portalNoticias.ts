@@ -16,6 +16,7 @@ export class PortalNoticia {
       autor?:     string;
       descripcion?: string;
       imagen?:     string;
+      imagenUrl?:  string;
       enlace?:    string;
       estadoId?:  number;
       estadoDescripcion?: string;

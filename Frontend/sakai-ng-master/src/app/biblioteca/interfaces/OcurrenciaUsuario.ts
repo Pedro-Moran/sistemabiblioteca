@@ -1,5 +1,6 @@
 export interface OcurrenciaUsuario {
-  login?: string;     // o “codigoUsuario” si prefieres
-  email?: string;
-  tipo?: number;
+  /** Código de usuario (login) */
+  codigoUsuario: string;
+  /** Tipo de usuario */
+  tipoUsuario: number;
 }

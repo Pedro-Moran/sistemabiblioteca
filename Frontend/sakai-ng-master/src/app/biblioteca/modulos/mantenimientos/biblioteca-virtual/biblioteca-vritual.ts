@@ -81,23 +81,28 @@ import { Estado } from '../../../interfaces/biblioteca-virtual/estado';
 
 
 
-                        <p-table #dt1 [value]="data" dataKey="id" selectionMode="single" [(selection)]="selectedEquipo" [rows]="10"
+                        <p-table #dt1 [value]="data" dataKey="idEquipo" selectionMode="multiple" [(selection)]="selectedRows" [rows]="10"
                         [showCurrentPageReport]="true"
                         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
                         [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true" styleClass="p-datatable-gridlines" [paginator]="true"
-                        [globalFilterFields]="['id','sede.descripcion','nombreEquipo','numeroEquipo','ip','estado.descripcion']" responsiveLayout="scroll">
+                        [globalFilterFields]="['idEquipo','sede.descripcion','nombreEquipo','numeroEquipo','ip','estado.descripcion']" responsiveLayout="scroll">
                         <ng-template pTemplate="caption">
 
                        <div class="flex items-center justify-between">
                <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt1)" />
 
-               <p-iconfield>
-                   <input pInputText type="text" placeholder="Filtrar" #filter (input)="onGlobalFilter(dt1, $event)"/>
-               </p-iconfield>
+               <div class="flex items-center gap-2">
+                   <p-iconfield>
+                       <input pInputText type="text" placeholder="Filtrar" #filter (input)="onGlobalFilter(dt1, $event)"/>
+                   </p-iconfield>
+                   <button pButton type="button" class="p-button-danger" label="Eliminar seleccionados" icon="pi pi-trash"
+                           (click)="deleteSelected()" [disabled]="!selectedRows.length"></button>
+               </div>
            </div>
                        </ng-template>
                             <ng-template pTemplate="header">
                                 <tr>
+                                <th style="width:3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
                                 <th pSortableColumn="sede.descripcion" style="width: 8rem">Sede<p-sortIcon field="sede.descripcion"></p-sortIcon></th>
                                     <th pSortableColumn="nombreEquipo"  style="min-width:200px">Nombre de equipo<p-sortIcon field="nombreEquipo"></p-sortIcon></th>
                                     <th pSortableColumn="numeroEquipo"  style="min-width:200px">N&uacute;mero equipo<p-sortIcon field="numeroEquipo"></p-sortIcon></th>
@@ -108,7 +113,8 @@ import { Estado } from '../../../interfaces/biblioteca-virtual/estado';
                                 </tr>
                             </ng-template>
                             <ng-template pTemplate="body" let-objeto>
-                                <tr>
+                                <tr [pSelectableRow]="objeto">
+                                    <td><p-tableCheckbox [value]="objeto"></p-tableCheckbox></td>
                                     <td>
                                        {{ objeto.sede?.descripcion || '—' }}
 
@@ -126,7 +132,6 @@ import { Estado } from '../../../interfaces/biblioteca-virtual/estado';
                                     <td [ngClass]="objeto.estado.idEstado === 1 ? 'text-primary' : 'text-green-500'">
                                         {{ objeto.estado.descripcion }}
                                         </td>
-                                    <td class="text-center">
                                     <td class="text-center">
                                         <div style="position: relative;">
                                             <button pButton type="button" icon="pi pi-ellipsis-v"
@@ -216,7 +221,7 @@ export class BibliotecaVirtual implements OnInit {
 
       @ViewChild('modalEquipo') modalEquipo!: FormEquipo;
       @ViewChild('dt1') dt!: Table;
-      selectedEquipo!: Equipo;
+      selectedRows: Equipo[] = [];
       displayChangeState: boolean = false;
       discapacidadFiltro: boolean = false;
 
@@ -455,6 +460,38 @@ private mapToEquipo(obj: any): Equipo {
       }
     });
   }
+
+  deleteSelected() {
+    if (!this.selectedRows.length) {
+      return;
+    }
+    this.confirmationService.confirm({
+      message: '¿Estás seguro(a) de eliminar los seleccionados?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'SI',
+      rejectLabel: 'NO',
+      accept: () => {
+        const ids = this.selectedRows
+          .map(item => item.id ?? item.idEquipo)
+          .filter((id): id is number => id !== undefined);
+        this.loading = true;
+        this.bibliotecaVirtualService.eliminarEquipos(ids).subscribe({
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Satisfactorio', detail: 'Registros eliminados.' });
+            this.selectedRows = [];
+            this.filtrarPorSede();
+            this.loading = false;
+          },
+          error: () => {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo realizar el proceso.' });
+            this.loading = false;
+          }
+        });
+      }
+    });
+  }
+
   guardar() {
     this.loading = true;
     const data = { id: this.form.get('id')?.value, descripcion: this.form.get('descripcion')?.value, usuarioid: this.user.idusuario, activo: true, accion: 'registrar' };

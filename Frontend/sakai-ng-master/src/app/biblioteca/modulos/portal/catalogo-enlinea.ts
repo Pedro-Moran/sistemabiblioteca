@@ -5,9 +5,13 @@ import { TemplateModule } from '../../template.module';
 import { ClaseGeneral } from '../../interfaces/clase-general';
 import { Sedes } from '../../interfaces/sedes';
 import { Table, TableRowCollapseEvent, TableRowExpandEvent } from 'primeng/table';
-import { HttpErrorResponse } from '@angular/common/http';
 import { MaterialBibliograficoService } from '../../services/material-bibliografico.service';
 import { ModalDetalleMaterial } from './detalle-material';
+import { GenericoService } from '../../services/generico.service';
+import { AuthService } from '../../services/auth.service';
+import { forkJoin, Observable } from 'rxjs';
+import { environment } from '../../../../environments/environment';
+import { map } from 'rxjs/operators';
 
 @Component({
     selector: 'app-catalogo-enlinea',
@@ -17,7 +21,7 @@ import { ModalDetalleMaterial } from './detalle-material';
         <ng-template #start>
         </ng-template>
         <ng-template #end>
-        <p-overlaybadge [value]="5">
+        <p-overlaybadge [value]="reservas.length">
     <button
         pButton
         type="button"
@@ -38,7 +42,7 @@ import { ModalDetalleMaterial } from './detalle-material';
         <div>
             <span class="font-medium text-surface-900 dark:text-surface-0 block mb-2">Mis reservas</span>
             <p-table
-    [value]="data"
+    [value]="reservas"
     showGridlines
     [tableStyle]="{ 'min-width': '50rem' }">
         <ng-template #header>
@@ -55,18 +59,18 @@ import { ModalDetalleMaterial } from './detalle-material';
         <ng-template #body let-objeto>
             <tr>
                 <td>
-                <img [src]="objeto.material.url" [alt]="objeto.material.titulo" width="50" class="shadow-lg" />
+                <img [src]="getImageUrl(objeto)" [alt]="objeto.material?.titulo || objeto.titulo" width="50" class="shadow-lg" />
                 </td>
                 <td>{{objeto.codigo}}</td>
                 <td>{{ objeto.numeroIngreso }}</td>
-                <td> {{objeto.material.titulo}}</td>
+                <td> {{ objeto.material?.titulo || objeto.titulo }}</td>
                 <td>
-                    {{objeto.material.autorPrincipal}}<br/>
-                    <span>{{objeto.material.autorSecundario}}</span>
+                    {{ objeto.material?.autorPrincipal || objeto.autorPersonal }}<br/>
+                    <span>{{ objeto.material?.autorSecundario || objeto.autorSecundario }}</span>
 
                 </td>
                 <td>
-                    {{objeto.material?.anioPublicacion}}
+                    {{ objeto.material?.anioPublicacion || objeto.anioPublicacion }}
                 </td>
 
 
@@ -86,7 +90,7 @@ import { ModalDetalleMaterial } from './detalle-material';
         icon="pi pi-check"
         class="p-button-info"
         [disabled]="loading"
-        (click)="confirmarReserva()"
+        (click)="openConfirmDialog()"
         pTooltip="Confirmar"
         tooltipPosition="bottom">
     </button>
@@ -147,7 +151,7 @@ import { ModalDetalleMaterial } from './detalle-material';
                         [expandedRowKeys]="expandedRows" (onRowExpand)="onRowExpand($event)" (onRowCollapse)="onRowCollapse($event)"
                         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
                         [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true" styleClass="p-datatable-gridlines" [paginator]="true"
-                        [globalFilterFields]="['id','codigo','material.titulo','material.autorPrincipal','material.autorSecundario','material.anioPublicacion','coleccion.descripcion']" responsiveLayout="scroll">
+                        [globalFilterFields]="['id','codigo','titulo','autorPersonal','autorSecundario','anioPublicacion','coleccion.descripcion']" responsiveLayout="scroll">
                         <ng-template pTemplate="caption">
 
                        <div class="flex items-center justify-between">
@@ -163,9 +167,9 @@ import { ModalDetalleMaterial } from './detalle-material';
                                 <th style="width: 5rem"></th>
                                 <th  >Imagen</th>
                                 <th pSortableColumn="codigo" style="width: 4rem">Codigo<p-sortIcon field="codigo"></p-sortIcon></th>
-                                <th pSortableColumn="material.titulo" style="min-width:200px">Titulo<p-sortIcon field="material.titulo"></p-sortIcon></th>
-                                    <th pSortableColumn="material.autorPrincipal" style="min-width:200px">Autor<p-sortIcon field="material.autorPrincipal"></p-sortIcon></th>
-                                    <th pSortableColumn="material.anioPublicacion" style="width: 8rem">Año<p-sortIcon field="material.anioPublicacion"></p-sortIcon></th>
+                                <th pSortableColumn="titulo" style="min-width:200px">Titulo<p-sortIcon field="titulo"></p-sortIcon></th>
+                                    <th pSortableColumn="autorPersonal" style="min-width:200px">Autor<p-sortIcon field="autorPersonal"></p-sortIcon></th>
+                                    <th pSortableColumn="anioPublicacion" style="width: 8rem">Año<p-sortIcon field="anioPublicacion"></p-sortIcon></th>
                                     <th pSortableColumn="coleccion.descripcion" style="width: 8rem">Coleccion<p-sortIcon field="coleccion.descripcion"></p-sortIcon></th>
                                     <th style="width: 4rem" ></th>
 
@@ -177,24 +181,24 @@ import { ModalDetalleMaterial } from './detalle-material';
                 <p-button type="button" pRipple [pRowToggler]="objeto" [text]="true" [rounded]="true" [plain]="true" [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" />
             </td>
                                 <td>
-                                <img [src]="objeto.material.url" [alt]="objeto.material.titulo" width="50" class="shadow-lg" />
+                                <img [src]="getImageUrl(objeto)" [alt]="objeto.material?.titulo || objeto.titulo" width="50" class="shadow-lg" />
                                     </td>
                                 <td>{{objeto.codigo}}
                                     </td>
                                     <td>
-                                        {{objeto.material.titulo}}
+                                        {{ objeto.material?.titulo || objeto.titulo }}
 
                                     </td>
                                     <td>
-                                        {{objeto.material.autorPrincipal}}<br/>
-                                        <span>{{objeto.material.autorSecundario}}</span>
+                                        {{ objeto.material?.autorPrincipal || objeto.autorPersonal }}<br/>
+                                        <span>{{ objeto.material?.autorSecundario || objeto.autorSecundario }}</span>
 
                                     </td>
                                     <td>
-                                        {{objeto.material?.anioPublicacion}}
+                                        {{ objeto.material?.anioPublicacion || objeto.anioPublicacion }}
                                     </td>
                                     <td>
-                                        {{objeto.coleccion.descripcion}}
+                                       {{ objeto.coleccion?.descripcion }}
                                     </td>
                                     <td class="text-center">
                                     <p-button icon="pi pi-search" rounded outlined (click)="verDetalle(objeto)"pTooltip="Ver detalle" tooltipPosition="bottom"/>
@@ -206,7 +210,7 @@ import { ModalDetalleMaterial } from './detalle-material';
                             <tr>
                             <td colspan="8">
                             <p-table
-    [value]="detalle"
+    [value]="detallesPorBiblioteca[product.id]"
     showGridlines
     [tableStyle]="{ 'min-width': '50rem' }">
         <ng-template #header>
@@ -220,11 +224,11 @@ import { ModalDetalleMaterial } from './detalle-material';
         </ng-template>
         <ng-template #body let-objetoDetalle>
             <tr>
-                <td>{{ objetoDetalle.sede.descripcion }}</td>
-                <td>{{ objetoDetalle.tipoMaterial.descripcion }}</td>
+                <td>{{ objetoDetalle.sede?.descripcion }}</td>
+                <td>{{ objetoDetalle.tipoMaterial?.descripcion }}</td>
                 <td>{{ objetoDetalle.numeroIngreso }}</td>
-                <td [ngClass]="objetoDetalle.estado.id === 1 ? 'text-green-500' : 'text-primary'">
-                {{ objetoDetalle.estado.descripcion }}
+                <td [ngClass]="(objetoDetalle.estado?.id ?? objetoDetalle.idEstado) === 2 ? 'text-green-500' : 'text-primary'">
+                {{ estadoDescripcion(objetoDetalle.idEstado, objetoDetalle.estado) }}
                 </td>
 
                 <td>
@@ -232,7 +236,7 @@ import { ModalDetalleMaterial } from './detalle-material';
                   pButton
                   type="button"
                   class="p-button-rounded p-button-danger"
-                  icon="pi pi-plus"(click)="reservar(objetoDetalle)" pTooltip="Reservar" tooltipPosition="bottom">
+                  icon="pi pi-plus" (click)="reservar(product, objetoDetalle)" pTooltip="Reservar" tooltipPosition="bottom">
               </button>
                 </td>
             </tr>
@@ -258,6 +262,79 @@ import { ModalDetalleMaterial } from './detalle-material';
                             </p-tabpanels>
         </p-tabs>
     </div>
+<p-dialog header="Tipo de préstamo" [(visible)]="displayDialog" modal="true" appendTo="body" [closable]="false"
+  [style]="{ width: '800px'}">
+
+  <ng-template pTemplate="content">
+    <div class="flex flex-col gap-4">
+
+      <div *ngFor="let op of tiposPrestamo" class="p-field-radiobutton">
+        <p-radioButton name="tipoPr" [value]="op.value" [(ngModel)]="selectedTipo" inputId="tipo-{{op.value}}">
+        </p-radioButton>
+        <label for="tipo-{{op.value}}">{{op.label}}</label>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div class="flex flex-col">
+          <label>Fecha de inicio</label>
+          <p-calendar name="fechaInicioDate" [minDate]="minDate" [(ngModel)]="prestamo.fechaInicioDate" dateFormat="yy-mm-dd"
+            [showTime]="false" (ngModelChange)="onDateRangeChange()">
+          </p-calendar>
+        </div>
+
+        <div class="flex flex-col">
+          <label>Hora de inicio</label>
+          <p-calendar name="fechaInicioTime" [(ngModel)]="prestamo.fechaInicioTime" timeOnly="true" hourFormat="24"
+            [minDate]="minHora" [maxDate]="maxHora" (ngModelChange)="onDateRangeChange()">
+          </p-calendar>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mt-4">
+        <div class="flex flex-col">
+          <label>Fecha de devolución</label>
+          <p-calendar name="fechaFinDate" [minDate]="minDate" [(ngModel)]="prestamo.fechaFinDate" dateFormat="yy-mm-dd" [showTime]="false"
+            (ngModelChange)="onDateRangeChange()">
+          </p-calendar>
+        </div>
+
+        <div class="flex flex-col">
+          <label>Hora de devolución</label>
+          <p-calendar name="fechaFinTime" [(ngModel)]="prestamo.fechaFinTime" timeOnly="true" hourFormat="24"
+            [minDate]="minHora" [maxDate]="maxHora" (ngModelChange)="onDateRangeChange()">
+          </p-calendar>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Confirmar"
+        (click)="confirmarReserva()"
+        [disabled]="!selectedTipo"
+        class="p-button-success mr-2"></button>
+    <button pButton label="Cancelar" (click)="closeDialog()" class="p-button-secondary"></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog header="Términos y Condiciones" [(visible)]="showTerms" modal="true" appendTo="body" [closable]="false"
+  [style]="{ width: '600px'}">
+  <ng-template pTemplate="content">
+    <div style="max-height:300px; overflow:auto">
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <p-checkbox binary="true" name="acceptedTerms" [(ngModel)]="acceptedTerms" inputId="tcCheck">
+    </p-checkbox>
+    <label for="tcCheck" class="ml-2">Acepto los términos</label>
+    <button pButton label="Continuar" (click)="showTerms=false" [disabled]="!acceptedTerms"
+      class="p-button-success ml-4"></button>
+      <button pButton label="Cancelar" class="p-button-secondary ml-4" (click)="showTerms=false; acceptedTerms=false;"></button>
+  </ng-template>
+</p-dialog>
 
 <app-modal-detalle-material #modalDetalle></app-modal-detalle-material>
 <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
@@ -279,7 +356,8 @@ export class CatalogoEnLineaComponent {
     @ViewChild('filter') filter!: ElementRef;
     data: any[] = [];
     expandedRows = {};
-    detalle: any[] = [];
+    detallesPorBiblioteca: { [id: number]: any[] } = {};
+    reservas: any[] = [];
     members = [
         { name: 'Amy Elsner', image: 'amyelsner.png', email: 'amy@email.com', role: 'Owner' },
         { name: 'Bernardo Dominic', image: 'bernardodominic.png', email: 'bernardo@email.com', role: 'Editor' },
@@ -287,33 +365,160 @@ export class CatalogoEnLineaComponent {
     ];
     @ViewChild('modalDetalle') modalDetalle!: ModalDetalleMaterial;
 
-    constructor(private materialBibliograficoService: MaterialBibliograficoService, private confirmationService: ConfirmationService, private messageService: MessageService) { }
+    layout: 'list' | 'grid' = 'grid';
+    options = ['list', 'grid'];
+
+    tiposPrestamo = [
+        { label: 'En sala',          value: 'EN_SALA' },
+        { label: 'A domicilio',      value: 'PRESTAMO_A_DOMICILIO' },
+        { label: 'Sala y domicilio', value: 'SALA_Y_DOMICILIO' },
+    ];
+
+    showTerms: boolean = false;
+    acceptedTerms: boolean = false;
+    displayDialog = false;
+    selectedItem: any;
+    selectedTipo: string | undefined;
+    minDate: Date = new Date();
+    minHora: Date | null = null;
+    maxHora: Date | null = null;
+    prestamo: {
+        fechaInicioDate?: Date | null;
+        fechaInicioTime?: Date | null;
+        fechaFinDate?: Date | null;
+        fechaFinTime?: Date | null;
+    } = {
+        fechaInicioDate: null,
+        fechaInicioTime: null,
+        fechaFinDate: null,
+        fechaFinTime: null,
+    };
+
+    user: any;
+
+    private parseTime(t: string) {
+        const [h, m] = t.split(':').map(n => parseInt(n, 10));
+        return { h, m };
+    }
+
+    private parseTimeAtDate(time: string, base: Date) {
+        const { h, m } = this.parseTime(time);
+        const d = new Date(base);
+        d.setHours(h, m, 0, 0);
+        return d;
+    }
+
+    /** Devuelve la URL de la imagen si existe en distintas formas */
+    getImageUrl(obj: any): string | undefined {
+        if (obj.material?.url) {
+            const p = obj.material.url as string;
+            return p.startsWith('http') ? p : `${environment.filesUrl}${p}`;
+        }
+        if (obj.rutaImagen) {
+            const base = obj.rutaImagen.startsWith('http')
+                ? obj.rutaImagen
+                : `${environment.filesUrl}${obj.rutaImagen.startsWith('/') ? '' : '/'}${obj.rutaImagen}`;
+
+            if (obj.nombreImagen) {
+                if (base.endsWith(obj.nombreImagen)) {
+                    return base;
+                }
+                const sep = base.endsWith('/') ? '' : '/';
+                return base + sep + obj.nombreImagen;
+            }
+            return base;
+        }
+        return undefined;
+    }
+
+    private isDisponibleAhora(det: any): boolean {
+        if (!det.horaInicio || !det.horaFin) {
+            return true;
+        }
+        const now = new Date();
+        const start = this.parseTimeAtDate(det.horaInicio, now);
+        const end = this.parseTimeAtDate(det.horaFin, now);
+        if (end <= start) {
+            return now >= start || now <= end;
+        }
+        return now >= start && now <= end;
+    }
+
+    constructor(
+        private materialBibliograficoService: MaterialBibliograficoService,
+        private genericoService: GenericoService,
+        private confirmationService: ConfirmationService,
+        private messageService: MessageService,
+        private authService: AuthService
+    ) { }
 
     async ngOnInit() {
-
+         this.user = this.authService.getUser();
         this.listar();
-        this.detalle = [
-            {
-                "sede": { "id": 1, "descripcion": "Sede A", "activo": true },
-                "tipoMaterial": { "id": 1, "descripcion": "Original", "activo": true },
-                "numeroIngreso": "39819",
-                "estado": { "id": 1, "descripcion": "Disponible", "activo": true }
-            }
-        ]
+        this.detallesPorBiblioteca = {};
     }
     listar() {
-        this.materialBibliograficoService.api_libros_lista('lista')
-            .subscribe(
-                (result: any) => {
-                    this.loading = false;
-                    if (result.status == "0") {
-                        this.data = result.data;
+        // Recupera solo las cabeceras disponibles
+        this.materialBibliograficoService
+            .api_libros_lista('api/biblioteca/disponibles')
+            .subscribe({
+                next: (result: any) => {
+                    if (result.status !== '0') {
+                        this.loading = false;
+                        return;
                     }
-                }
-                , (error: HttpErrorResponse) => {
+
+                    const cabeceras = result.data.filter(
+                        (b: any) =>
+                            (b.estadoId === 2 || b.estado?.descripcion === 'DISPONIBLE') &&
+                            this.isDisponibleAhora(b)
+                    );
+
+                    if (cabeceras.length === 0) {
+                        this.data = [];
+                        this.loading = false;
+                        return;
+                    }
+
+                    const requests: Observable<{ cab: any; detalles: any[] }>[] = cabeceras.map((b: any) =>
+                        this.materialBibliograficoService
+                            .listarDetallesPorBiblioteca(b.id, false)
+                            .pipe(
+                                map((det: any[]) => ({
+                                    cab: b,
+                                    detalles: det.filter(
+                                        d =>
+                                            (d.idEstado === 2 || d.estado?.descripcion === 'DISPONIBLE') &&
+                                            this.isDisponibleAhora(d)
+                                    )
+                                }))
+                            )
+                    );
+
+                    forkJoin(requests).subscribe({
+                        next: (resp: { cab: any; detalles: any[] }[]) => {
+                            this.data = [];
+                            this.detallesPorBiblioteca = {};
+
+                            resp.forEach((r: { cab: any; detalles: any[] }) => {
+                                if (r.detalles.length > 0) {
+                                    this.data.push(r.cab);
+                                    this.detallesPorBiblioteca[r.cab.id] = r.detalles;
+                                }
+                            });
+
+                            this.loading = false;
+                        },
+                        error: () => {
+                            this.loading = false;
+                            this.messageService.add({ severity: 'error', detail: 'Error al cargar detalles' });
+                        }
+                    });
+                },
+                error: () => {
                     this.loading = false;
                 }
-            );
+            });
     }
     limpiar() { }
     onGlobalFilter(table: Table, event: Event) {
@@ -328,27 +533,206 @@ export class CatalogoEnLineaComponent {
         this.modalDetalle.openModal();
     }
     onRowExpand(event: TableRowExpandEvent) {
+        const row = event.data;
+        if (!row || !row.id) {
+            return;
+        }
+        if (this.detallesPorBiblioteca[row.id]) {
+            return;
+        }
+        this.materialBibliograficoService
+            .listarDetallesPorBiblioteca(row.id, false)
+            .subscribe({
+                next: (lista: any[]) => {
+                    this.detallesPorBiblioteca[row.id] = lista.filter(
+                        d =>
+                            (d.idEstado === 2 || d.estado?.descripcion === 'DISPONIBLE') &&
+                            this.isDisponibleAhora(d)
+                    );
+                },
+                error: () => {
+                    this.detallesPorBiblioteca[row.id] = [];
+                    this.messageService.add({ severity: 'error', detail: 'Error al cargar detalles' });
+                }
+            });
     }
 
     onRowCollapse(event: TableRowCollapseEvent) {
+        const row = event.data;
+        if (row && row.id && this.detallesPorBiblioteca[row.id]) {
+            delete this.detallesPorBiblioteca[row.id];
+        }
     }
-    reservar(objetoDetalle: any) {
-        this.confirmationService.confirm({
-            message: '¿Estás seguro(a) de que quieres reservar?',
-            header: 'Confirmar',
-            icon: 'pi pi-exclamation-triangle',
-            acceptLabel: 'SI',
-            rejectLabel: 'NO',
-            accept: () => {
-                this.loading = true;
-                //registrar nueva especiadad
-                this.messageService.add({ severity: 'success', summary: 'Satisfactorio', detail: 'Material agregado.' });
-                this.loading = false;
-            }
-        });
+    cancelar(objeto: any) {
+        this.reservas = this.reservas.filter(r => r !== objeto);
+        this.messageService.add({ severity: 'info', detail: 'Reserva cancelada.' });
     }
-    cancelar(objetoDetalle: any){
+    reservar(padre: any, objetoDetalle: any) {
+        const reserva = { ...objetoDetalle, ...padre };
+        if (!this.reservas.includes(reserva)) {
+            this.reservas.push(reserva);
+            this.messageService.add({ severity: 'success', detail: 'Añadido a reservas.' });
+        }
+    }
 
+    onDateRangeChange() {
+        if (
+            this.prestamo.fechaInicioDate &&
+            this.prestamo.fechaFinDate &&
+            this.prestamo.fechaInicioTime &&
+            this.prestamo.fechaFinTime
+        ) {
+            this.acceptedTerms = false;
+        }
     }
-    confirmarReserva(){}
+
+    closeDialog() {
+        this.displayDialog = false;
+        this.minHora = null;
+        this.maxHora = null;
+    }
+
+    openConfirmDialog() {
+        if (this.reservas.length === 0) {
+            this.messageService.add({ severity: 'info', detail: 'No hay reservas seleccionadas.' });
+            return;
+        }
+        this.selectedItem = this.reservas[0];
+        this.selectedTipo = undefined;
+        const now = new Date();
+        if (this.selectedItem.horaInicio && this.selectedItem.horaFin) {
+            this.minHora = this.parseTimeAtDate(this.selectedItem.horaInicio, now);
+            this.maxHora = this.parseTimeAtDate(this.selectedItem.horaFin, now);
+            if (this.maxHora <= this.minHora) {
+                this.maxHora.setDate(this.maxHora.getDate() + 1);
+            }
+        } else {
+            this.minHora = null;
+            this.maxHora = null;
+        }
+        const startBase = this.minHora && now > this.minHora ? now : (this.minHora ?? now);
+        this.prestamo = {
+            fechaInicioDate: new Date(startBase),
+            fechaInicioTime: new Date(startBase),
+            fechaFinDate: new Date(startBase),
+            fechaFinTime: new Date(startBase),
+        };
+        this.displayDialog = true;
+    }
+
+    private formatLocalDateTime(d: Date): string {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const Y = d.getFullYear();
+        const M = pad(d.getMonth() + 1);
+        const D = pad(d.getDate());
+        const h = pad(d.getHours());
+        const m = pad(d.getMinutes());
+        const s = pad(d.getSeconds());
+        return `${Y}-${M}-${D}T${h}:${m}:${s}`;
+    }
+
+    confirmarReserva() {
+        if (!this.selectedTipo) {
+            this.messageService.add({ severity: 'warn', detail: 'Por favor selecciona un tipo de préstamo.' });
+            return;
+        }
+
+        if (
+            !this.prestamo.fechaInicioDate ||
+            !this.prestamo.fechaInicioTime ||
+            !this.prestamo.fechaFinDate ||
+            !this.prestamo.fechaFinTime
+        ) {
+            this.messageService.add({ severity: 'warn', detail: 'Por favor selecciona fecha y hora de inicio y de devolución' });
+            return;
+        }
+
+        if (!this.acceptedTerms) {
+            this.showTerms = true;
+            return;
+        }
+
+        const inicioDate = this.prestamo.fechaInicioDate;
+        const inicioTime = this.prestamo.fechaInicioTime;
+        const dtInicio = new Date(
+            inicioDate.getFullYear(),
+            inicioDate.getMonth(),
+            inicioDate.getDate(),
+            inicioTime.getHours(),
+            inicioTime.getMinutes()
+        );
+
+        const finDate = this.prestamo.fechaFinDate;
+        const finTime = this.prestamo.fechaFinTime;
+        const dtFin = new Date(
+            finDate.getFullYear(),
+            finDate.getMonth(),
+            finDate.getDate(),
+            finTime.getHours(),
+            finTime.getMinutes()
+        );
+
+        for (const item of this.reservas) {
+            if (item.horaInicio && item.horaFin) {
+                const inicioPermitido = this.parseTimeAtDate(item.horaInicio, dtInicio);
+                const finPermitido = this.parseTimeAtDate(item.horaFin, dtInicio);
+                if (finPermitido <= inicioPermitido) {
+                    if (dtFin < inicioPermitido) {
+                        finPermitido.setDate(finPermitido.getDate() + 1);
+                    } else {
+                        inicioPermitido.setDate(inicioPermitido.getDate() - 1);
+                    }
+                }
+                if (dtInicio < inicioPermitido || dtFin > finPermitido) {
+                    this.messageService.add({ severity: 'warn', detail: 'El horario seleccionado está fuera del rango permitido.' });
+                    return;
+                }
+            }
+
+            if (item.maxHoras) {
+                const diff = (dtFin.getTime() - dtInicio.getTime()) / 3600000;
+                if (diff > item.maxHoras) {
+                    this.messageService.add({ severity: 'warn', detail: `Máximo ${item.maxHoras} horas de préstamo.` });
+                    return;
+                }
+            }
+        }
+
+        const requests = this.reservas.map(it => {
+            const payload = {
+                idDetalleBiblioteca: it.idDetalleBiblioteca ?? it.id,
+                idEstado: 3,
+                idUsuario: this.user?.sub ?? this.user?.idusuario ?? 0
+            };
+            return this.genericoService.conf_event_put(payload, 'api/biblioteca/detalles/estado');
+        });
+
+        if (requests.length > 0) {
+            forkJoin(requests).subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'success', detail: 'Solicitud enviada.' });
+                    this.reservas = [];
+                    this.listar();
+                    this.closeDialog();
+                },
+                error: () => {
+                    this.messageService.add({ severity: 'error', detail: 'Error al actualizar estado.' });
+                }
+            });
+        }
+}
+
+
+    /** Devuelve la descripción textual del estado según su id */
+    estadoDescripcion(id?: number, estado?: any): string {
+        if (estado && estado.descripcion) {
+            return estado.descripcion;
+        }
+        switch (id) {
+            case 2: return 'DISPONIBLE';
+            case 3: return 'RESERVADO';
+            case 1: return 'CREADO';
+            default: return '';
+        }
+    }
 }

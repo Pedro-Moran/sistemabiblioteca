@@ -13,11 +13,16 @@ export class UsuarioService {
     this.apiUrl = environment.apiUrl;
   }
 
+  private authHeaders() {
+    const token = this.authService.getToken();
+    return new HttpHeaders().set('Authorization', `Bearer ${token}`);
+  }
+
   conf_event_get(url: string):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>(`${environment.apiUrl}/${url}`);
+    return this.http.get<any[]>(
+      `${this.apiUrl}/${url}`,
+      { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
+    );
   }
   conf_event_post(request: any,modulo: any):Observable<any>{
     return this.http.post<any>(`${this.apiUrl}/${modulo}`
@@ -40,15 +45,14 @@ export class UsuarioService {
     );
   }
   api_usuarios_lista(url: string):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any>(`${environment.apiUrl}/${url}`);
+    return this.http.get<any>(
+      `${this.apiUrl}/${url}`,
+      { headers: new HttpHeaders().append('Authorization', `Bearer ${this.authService.getToken()}`) }
+    );
   }
-  api_roles_lista(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/roles.json');
+  api_roles_lista(modulo: any): Observable<any> {
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+      { headers: this.authHeaders() }
+    );
   }
 }

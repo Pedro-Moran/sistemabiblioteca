@@ -16,6 +16,9 @@ export class Equipo {
     horaInicio?: string;
     horaFin?: string;
     maxHoras?: string;
+    tieneOcurrencia?: boolean;
+    /** Indica si debe resaltarse el registro temporalmente */
+    highlight?: boolean;
     constructor(init?: Partial<Equipo>) {
         this.id = 0;
         this.estado=null;

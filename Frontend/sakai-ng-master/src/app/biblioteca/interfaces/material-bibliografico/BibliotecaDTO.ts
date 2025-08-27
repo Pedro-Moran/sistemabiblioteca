@@ -1,3 +1,9 @@
+import { Pais } from './pais';
+import { Ciudad } from './ciudad';
+import { Especialidad } from './especialidad';
+import { Sedes } from '../sedes';
+import { TipoAdquisicion } from './tipo-adquisicion'
+
 export interface BibliotecaDTO {
   /** Equivale a id (Long) */
   id: number;
@@ -184,6 +190,13 @@ export interface BibliotecaDTO {
 
   /** Equivale a fechaModificacion (LocalDateTime → string o Date) */
   fechaModificacion?: string | null;
+
+  pais?: Pais | null;
+  ciudad?: Ciudad | null;
+  especialidad?: Especialidad | null;
+  sede?: Sedes | null;
+  tipoAdquisicion?: TipoAdquisicion | null;
+
 
   /** Lista de detalles (mapeará a tu DetalleBibliotecaDTO) */
   detalles?: DetalleBibliotecaDTO[];

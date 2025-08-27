@@ -3,45 +3,44 @@ import { RippleModule } from 'primeng/ripple';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { CommonModule } from '@angular/common';
-import { ProductService, Product } from '../../../../pages/service/product.service';
+import { DashboardService } from '../../../services/dashboard.service';
 
 @Component({
     standalone: true,
     selector: 'app-recent-sales-widget',
     imports: [CommonModule, TableModule, ButtonModule, RippleModule],
     template: `<div class="card !mb-8">
-        <div class="font-semibold text-xl mb-4">Recent Sales</div>
-        <p-table [value]="products" [paginator]="true" [rows]="5" responsiveLayout="scroll">
+        <div class="font-semibold text-xl mb-4">Ventas recientes</div>
+        <p-table [value]="productos" [paginator]="true" [rows]="5" responsiveLayout="scroll">
             <ng-template #header>
                 <tr>
-                    <th>Image</th>
-                    <th pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
-                    <th pSortableColumn="price">Price <p-sortIcon field="price"></p-sortIcon></th>
-                    <th>View</th>
+                    <th>Imagen</th>
+                    <th pSortableColumn="nombre">Nombre <p-sortIcon field="nombre"></p-sortIcon></th>
+                    <th pSortableColumn="precio">Precio <p-sortIcon field="precio"></p-sortIcon></th>
+                    <th>Ver</th>
                 </tr>
             </ng-template>
-            <ng-template #body let-product>
+            <ng-template #body let-producto>
                 <tr>
                     <td style="width: 15%; min-width: 5rem;">
-                        <img src="https://primefaces.org/cdn/primevue/images/product/{{ product.image }}" class="shadow-lg" alt="{{ product.name }}" width="50" />
+                        <img [src]="producto.imagen" class="shadow-lg" [alt]="producto.nombre" width="50" />
                     </td>
-                    <td style="width: 35%; min-width: 7rem;">{{ product.name }}</td>
-                    <td style="width: 35%; min-width: 8rem;">{{ product.price | currency: 'USD' }}</td>
+                    <td style="width: 35%; min-width: 7rem;">{{ producto.nombre }}</td>
+                    <td style="width: 35%; min-width: 8rem;">{{ producto.precio | currency: 'USD' }}</td>
                     <td style="width: 15%;">
                         <button pButton pRipple type="button" icon="pi pi-search" class="p-button p-component p-button-text p-button-icon-only"></button>
                     </td>
                 </tr>
             </ng-template>
         </p-table>
-    </div>`,
-    providers: [ProductService]
+    </div>`
 })
 export class RecentSalesWidget {
-    products!: Product[];
+    productos: any[] = [];
 
-    constructor(private productService: ProductService) {}
+    constructor(private dashboardService: DashboardService) {}
 
     ngOnInit() {
-        this.productService.getProductsSmall().then((data) => (this.products = data));
+        this.dashboardService.recientes().subscribe((res) => (this.productos = res));
     }
 }

@@ -13,10 +13,15 @@ import { ModalNuevoOcurencia } from './modal-nuevo-ocurrencia';
 import { ModalDetalleOcurencia } from './modal-detalle-ocurrencia';
 import { OcurrenciaDTO } from '../../interfaces/ocurrenciaDTO';
 import { MaterialBibliograficoService } from '../../services/material-bibliografico.service';
+import { OcurrenciaEventService } from '../../services/ocurrencia-event.service';
 
 @Component({
     selector: 'app-ocurrencias-laboratorio',
     standalone: true,
+    styles: [
+      `.highlight-row { animation: fadeHighlight 2s ease-in-out forwards; }
+       @keyframes fadeHighlight { from { background-color: #ffe08a; } to { background-color: transparent; } }`
+    ],
     template: ` <div class="card">
         <h5>{{titulo}}</h5>
         <p-toolbar styleClass="mb-6">
@@ -62,6 +67,7 @@ import { MaterialBibliograficoService } from '../../services/material-bibliograf
                             <p-tabpanels>
                                 <p-tabpanel value="0">
                                 <p-table #dt1 [value]="data" dataKey="id" [rows]="10"
+                                [first]="firstIndex"
                         [showCurrentPageReport]="true"
                         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
                         [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true" styleClass="p-datatable-gridlines" [paginator]="true"
@@ -89,10 +95,10 @@ import { MaterialBibliograficoService } from '../../services/material-bibliograf
                                 </tr>
                             </ng-template>
                             <ng-template pTemplate="body" let-objeto>
-                                <tr>
+                                <tr [ngClass]="{ 'highlight-row': objeto.highlight }">
                                     <td>
                                     <div class="flex flex-wrap justify-center gap-2">
-                                <p-button outlined icon="pi pi-pencil" pTooltip="Actualizar" tooltipPosition="bottom" (click)="editar(objeto)"/>
+                                <p-button outlined icon="pi pi-pencil" pTooltip="Actualizar" tooltipPosition="bottom" (click)="editar(objeto)" [disabled]="objeto.regulariza === 1"/>
                                                            </div>
                                     </td>
                                 <td>{{objeto.id}}
@@ -117,7 +123,7 @@ import { MaterialBibliograficoService } from '../../services/material-bibliograf
                                     <td>
                                         <div class="flex flex-wrap justify-center gap-2">
                                             <p-button outlined icon="pi pi-align-justify" pTooltip="Ver detalle" tooltipPosition="bottom" (click)="verDetalle(objeto)"/>
-                                            <p-button outlined icon="pi pi-dollar" pTooltip="Registrar costo" tooltipPosition="bottom" (click)="costear(objeto)"/>
+                                            <p-button outlined icon="pi pi-dollar" pTooltip="Registrar costo" tooltipPosition="bottom" (click)="costear(objeto)" [disabled]="objeto.regulariza === 1"/>
                                         </div>
                                     </td>
                                 </tr>
@@ -164,19 +170,26 @@ export class OcurrenciasLaboratorio {
     @ViewChild('filter') filter!: ElementRef;
     @ViewChild('modalNuevoOcurrencia') modalNuevoOcurrencia!: ModalNuevoOcurencia;
     @ViewChild('modalDetalleOcurrencia') modalDetalleOcurrencia!: ModalDetalleOcurencia;
+    @ViewChild('dt1') table!: Table;
+    destinoId: number | null = null;
+    /** Posición inicial para el paginador */
+    firstIndex: number = 0;
 
     constructor(private ocurrenciasService: OcurrenciasService, private genericoService: GenericoService, private fb: FormBuilder,
     private router: Router, private authService: AuthService, private confirmationService: ConfirmationService, private messageService: MessageService,
-    private materialBsvc:MaterialBibliograficoService ) { }
+    private materialBsvc:MaterialBibliograficoService,
+    private ocurrenciaEvents: OcurrenciaEventService ) { }
     async ngOnInit() {
+        this.destinoId = this.ocurrenciaEvents.consumeDestino();
         this.buscar();
     }
   buscar() {
     this.loading = true;
     this.materialBsvc.api_ocurrencias_laboratorio().subscribe({
       next: (lista) => {
-        this.data = lista;
+        this.data = lista.filter(o => o.esBiblioteca === false);
         this.loading = false;
+        this.aplicarResaltado();
       },
       error: (err: HttpErrorResponse) => {
         this.loading = false;
@@ -202,13 +215,40 @@ export class OcurrenciasLaboratorio {
         this.modalDetalleOcurrencia.openModal(obj.id!, false);
       }
         editar(obj: OcurrenciaDTO) {
+          if (obj.regulariza === 1) {
+            return;
+          }
           this.modalNuevoOcurrencia.openForEdit(obj);
         }
       nuevoRegistro(){
 //         this.modalNuevoOcurrencia.openModal();
       }
-      costear(obj: OcurrenciaDTO) {
-        // abrimos el modal en modo “costear”
-        this.modalDetalleOcurrencia.openModal(obj.id!, true);
-      }
+  costear(obj: OcurrenciaDTO) {
+    if (obj.regulariza === 1) {
+      return;
+    }
+    this.modalDetalleOcurrencia.openModal(obj.id!, true);
+  }
+
+  /** Resalta temporalmente la fila relacionada con `destinoId` */
+  private aplicarResaltado(): void {
+    if (!this.destinoId || !this.table) {
+      return;
+    }
+    const index = this.data.findIndex(d =>
+      d.idEquipo === this.destinoId ||
+      d.equipoNumero === this.destinoId ||
+      d.idDetallePrestamo === this.destinoId ||
+      d.id === this.destinoId
+    );
+    if (index >= 0) {
+      const pageSize = this.table.rows || 10;
+      const page = Math.floor(index / pageSize);
+      this.firstIndex = page * pageSize;
+      const fila = this.data[index];
+      fila.highlight = true;
+      setTimeout(() => fila.highlight = false, 2000);
+    }
+    this.destinoId = null;
+  }
 }

@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders,HttpParams  } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
@@ -6,16 +6,23 @@ import { environment } from '../../../environments/environment';
 import { Notificacion } from '../interfaces/notificacion';
 import { DetallePrestamo } from '../interfaces/detalle-prestamo';
 import { map } from 'rxjs/operators';
+import { UsuarioPrestamosDTO } from '../interfaces/reportes/usuario-prestamos';
+import { EquipoUsoTiempoDTO } from '../interfaces/reportes/equipo-uso-tiempo';
+import { UsuarioPrestamosEquipoDTO } from '../interfaces/reportes/usuario-prestamos-equipo';
+import { VisitanteBibliotecaVirtualDTO } from '../interfaces/reportes/visitante-biblioteca-virtual';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PrestamosService {
-  private apiUrl:string;
-  constructor(private http:HttpClient, private authService:AuthService) {
-    this.apiUrl = environment.apiUrl;
-  }
-  api_prestamos_material_bibliografico(modulo: any):Observable<any>{
+    private apiUrl: string;
+    constructor(
+        private http: HttpClient,
+        private authService: AuthService
+    ) {
+        this.apiUrl = environment.apiUrl;
+    }
+    api_prestamos_material_bibliografico(modulo: any): Observable<any> {
     /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
     ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
     );*/
@@ -42,8 +49,8 @@ export class PrestamosService {
 //           { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
 //         );
 //     }
-procesarPrestamo(id: number, aprobar: boolean): Observable<any> {
-    return this.http.post(`${this.apiUrl}/api/prestamos/procesar`, { id, aprobar });
+    procesarPrestamo(id: number, aprobar: boolean): Observable<any> {
+        return this.http.post(`${this.apiUrl}/api/prestamos/procesar`, { id, aprobar });
   }
 
 
@@ -73,11 +80,19 @@ procesarPrestamo(id: number, aprobar: boolean): Observable<any> {
 
   getMisPrestamos() {
       return this.http.get<{status:string,data:any[]}>(
-        '/auth/api/prestamos/mis-prestamos'
+         `${this.apiUrl}/api/prestamos/mis-prestamos`
       );
     }
   getNotificacionesNoLeidas(): Observable<Notificacion[]> {
-      return this.http.get<Notificacion[]>(`${this.apiUrl}/api/prestamos/no-leidas`);
+        return this.http.get<Notificacion[]>(`${this.apiUrl}/api/prestamos/no-leidas`, {
+            headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`)
+        });
+    }
+
+    getNotificaciones(): Observable<Notificacion[]> {
+        return this.http.get<Notificacion[]>(`${this.apiUrl}/api/prestamos/notificaciones`, {
+            headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`)
+        });
     }
   listar(
     sede?: number,
@@ -114,4 +129,36 @@ procesarPrestamo(id: number, aprobar: boolean): Observable<any> {
       return this.http.get<any>(`${this.apiUrl}/api/equipos/estados`);
       }
 
+  reporteEstudiantesAtendidos(): Observable<UsuarioPrestamosDTO[]> {
+      return this.http
+        .get<{status:string, data: UsuarioPrestamosDTO[]}>(
+          `${this.apiUrl}/api/prestamos/reporte/estudiantes-atendidos`
+        )
+        .pipe(map(r => r.data ?? []));
+  }
+    /** Obtiene los usuarios atendidos de biblioteca virtual */
+    reporteUsuariosAtendidosBiblioteca(): Observable<UsuarioPrestamosEquipoDTO[]> {
+        return this.http.get<{ status: string; data: UsuarioPrestamosEquipoDTO[] }>(`${this.apiUrl}/api/prestamos/reporte/usuarios-atendidos-biblioteca`).pipe(map((r) => r.data ?? []));
+    }
+
+    reporteUsoTiempoBiblioteca(fechaInicio?: string, fechaFin?: string): Observable<EquipoUsoTiempoDTO[]> {
+        let params = new HttpParams();
+        if (fechaInicio) params = params.set('fechaInicio', fechaInicio);
+        if (fechaFin) params = params.set('fechaFin', fechaFin);
+
+        return this.http
+            .get<{ status: number; data: EquipoUsoTiempoDTO[] }>(`${this.apiUrl}/api/prestamos/reporte/uso-tiempo-biblioteca`, {
+                headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`),
+                params
+            })
+            .pipe(map((resp) => resp.data ?? []));
+    }
+    /** Obtiene los visitantes de biblioteca virtual */
+    reporteVisitantesBibliotecaVirtual(): Observable<VisitanteBibliotecaVirtualDTO[]> {
+        return this.http
+            .get<{ status: string; data: VisitanteBibliotecaVirtualDTO[] }>(
+                `${this.apiUrl}/api/prestamos/reporte/visitantes-biblioteca-virtual`
+            )
+            .pipe(map((resp) => resp.data ?? []));
+    }
 }

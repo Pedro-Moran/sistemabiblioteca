@@ -12,7 +12,7 @@ import { TemplateModule } from '../../../template.module';
     selector: 'app-modal-regularizar',
     standalone: true,
     template: ` <p-dialog [(visible)]="display" [style]="{width: '80vw'}"  header="Regularizar" [modal]="true" [closable]="true" styleClass="p-fluid">
-    <ng-template pTemplate="content">            
+    <ng-template pTemplate="content">
     <p-tabs value="0">
                             <p-tablist>
                                 <p-tab value="0">Datos de Usuario</p-tab>
@@ -21,7 +21,7 @@ import { TemplateModule } from '../../../template.module';
                             <p-tabpanels>
                                 <p-tabpanel value="0">
                                 <form [formGroup]="form">
-    
+
     <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
                       <div class="flex flex-col gap-2 w-full">
                       <label for="tipoUsuario">Tipo de usuario</label>
@@ -42,18 +42,18 @@ import { TemplateModule } from '../../../template.module';
                       <label for="especialidad">Buscar</label>
                       <div class="flex items-center gap-x-2">
                       <input pInputText id="palabra-clave" type="text" formControlName="palabraBuscar" class="w-full" />
-                      <button 
-      pButton 
-      type="button" 
-      class="p-button-rounded bg-red-500 text-white" 
-      icon="pi pi-search" 
-      (click)="buscar()" 
-      [disabled]="form.get('palabraBuscar')?.invalid"   
+                      <button
+      pButton
+      type="button"
+      class="p-button-rounded bg-red-500 text-white"
+      icon="pi pi-search"
+      (click)="buscar()"
+      [disabled]="form.get('palabraBuscar')?.invalid"
       pTooltip="Buscar">
     </button>
                       </div>
-                      
-                                
+
+
 </div>
     </div>
     <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
@@ -79,7 +79,7 @@ import { TemplateModule } from '../../../template.module';
 <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
                       <div class="flex flex-col gap-2 w-full">
                       <label for="usuario">Fecha de prestamo</label>
-                      <p-datepicker 
+                      <p-datepicker
       appendTo="body"
       formControlName="fechaPrestamo"
       [ngClass]="'w-full'"
@@ -98,7 +98,7 @@ import { TemplateModule } from '../../../template.module';
 
 <div class="flex flex-col gap-2 w-full">
                       <label for="fechaDevolucion">Fecha de devoluci&oacute;n</label>
-                      <p-datepicker 
+                      <p-datepicker
       appendTo="body"
       formControlName="fechaDevolucion"
       [ngClass]="'w-full'"
@@ -120,7 +120,7 @@ import { TemplateModule } from '../../../template.module';
                                 </p-tabpanel>
                                 <p-tabpanel value="1">
                                 <form [formGroup]="formOtroUsuario">
-    
+
     <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
                       <div class="flex flex-col gap-2 w-full">
                       <label for="tipoUsuario">Tipo de usuario</label>
@@ -135,18 +135,18 @@ import { TemplateModule } from '../../../template.module';
                       <label for="nummeroDocumento">Numero Documento</label>
                       <div class="flex items-center gap-x-2">
                       <input pInputText id="nummeroDocumento" type="text" formControlName="nummeroDocumento" class="w-full" />
-                      <button 
-      pButton 
-      type="button" 
-      class="p-button-rounded bg-red-500 text-white" 
-      icon="pi pi-search" 
-      (click)="buscar()" 
-      [disabled]="formOtroUsuario.get('nummeroDocumento')?.invalid"  
+                      <button
+      pButton
+      type="button"
+      class="p-button-rounded bg-red-500 text-white"
+      icon="pi pi-search"
+      (click)="buscar()"
+      [disabled]="formOtroUsuario.get('nummeroDocumento')?.invalid"
       pTooltip="Buscar">
     </button>
                       </div>
-                      
-                                
+
+
 </div>
     </div>
     <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
@@ -172,7 +172,7 @@ import { TemplateModule } from '../../../template.module';
 <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
                       <div class="flex flex-col gap-2 w-full">
                       <label for="usuario">Fecha de prestamo</label>
-                      <p-datepicker 
+                      <p-datepicker
       appendTo="body"
       formControlName="fechaPrestamo"
       [ngClass]="'w-full'"
@@ -190,17 +190,17 @@ import { TemplateModule } from '../../../template.module';
 </div>
 </div>
 <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
-   
+
     <div class="flex items-center space-x-3 py-2">
                             <p-checkbox id="checkDevolver" name="option" value="1" formControlName="devolver"/>
                             <label for="checkDevolver" class="ml-2">¿Desea devolver?</label>
                         </div>
-</div> 
-<div class="flex flex-col md:flex-row gap-x-4 gap-y-2" *ngIf="formOtroUsuario.get('devolver')?.value.length>0">
+</div>
+<div class="flex flex-col md:flex-row gap-x-4 gap-y-2" *ngIf="formOtroUsuario.get('devolver')?.value">
 
 <div class="flex flex-col gap-2 w-full">
                       <label for="fechaDevolucion">Fecha de devoluci&oacute;n</label>
-                      <p-datepicker 
+                      <p-datepicker
       appendTo="body"
       formControlName="fechaDevolucion"
       [ngClass]="'w-full'"
@@ -227,7 +227,7 @@ import { TemplateModule } from '../../../template.module';
                     <button pButton pRipple type="button" icon="pi pi-check" [disabled]="form.invalid || loading" label="Guardar" class="p-button-success"></button>
                 </ng-template>
   </p-dialog>
- 
+
   <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
             <p-toast></p-toast>`,
     imports: [TemplateModule, InputValidation],
@@ -266,7 +266,7 @@ export class ModalRegularizarComponent implements OnInit {
             usuarioRecepcion: ['', [Validators.required]]
         });
         this.formOtroUsuario = this.fb.group({
-            
+
             tipoUsuario: ['', [Validators.required]],
             tipoDocumento: ['', [Validators.required]],
             nummeroDocumento: ['', [Validators.required]],
@@ -284,7 +284,7 @@ export class ModalRegularizarComponent implements OnInit {
 
         await this.listarTiposDocumento();
     }
-    
+
   async listarTiposDocumento() {
     this.loading = true;
     this.tipoDocumentoLista = [];
@@ -293,7 +293,7 @@ export class ModalRegularizarComponent implements OnInit {
         (result: any) => {
           this.loading = false;
           if (result.status == "0") {
-            this.tipoDocumentoLista = result.data; 
+            this.tipoDocumentoLista = result.data;
             this.formOtroUsuario.get('tipoDocumento')?.setValue(this.tipoDocumentoLista[0]);
           }
         }

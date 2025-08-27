@@ -18,9 +18,9 @@ import { TemplateModule } from '../../template.module';
                         <p-select [(ngModel)]="sedeFiltro" [options]="dataSedesFiltro" optionLabel="descripcion" placeholder="Seleccionar" />
 
                         </div>
-    
-    
-    
+
+
+
         <div class="grid grid-cols-12 gap-8">
             <app-stats-widget class="contents" />
             <div class="col-span-12 xl:col-span-6">
@@ -41,15 +41,15 @@ export class Dashboard {
     dataSedesFiltro: Sedes[] = [];
     sedeFiltro: Sedes = new Sedes();
     constructor(private genericoService: GenericoService, private confirmationService: ConfirmationService, private messageService: MessageService) { }
-      
+
     async ngOnInit() {
         await this.ListaSede();
     }
   async ListaSede() {
     try {
-      const result: any = await this.genericoService.sedes_get('conf/tipo-lista').toPromise();
+      const result: any = await this.genericoService.sedes_get('sede/lista-activo').toPromise();
       if (result.status === "0") {
-        
+
         this.dataSedesFiltro = result.data;
         this.sedeFiltro = this.dataSedesFiltro[0];
       }

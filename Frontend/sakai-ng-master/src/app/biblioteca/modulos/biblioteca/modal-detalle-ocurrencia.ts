@@ -8,7 +8,7 @@ import { MaterialBibliograficoService } from '../../services/material-bibliograf
     selector: 'app-modal-detalle-ocurrencia',
     standalone: true,
     template: ` <p-dialog [(visible)]="display" [style]="{width: '75%'}"  header="Detalle de ocurrencia" [modal]="true" [closable]="true" styleClass="p-fluid">
-     <ng-template pTemplate="content">  
+     <ng-template pTemplate="content">
         <form [formGroup]="form">
         <div class="grid grid-cols-7 gap-4">
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-1 lg:col-span-1">
@@ -17,7 +17,7 @@ import { MaterialBibliograficoService } from '../../services/material-bibliograf
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-2 lg:col-span-2">
                     <label for="fechaOcurrencia">Fecha Ocurrencia</label>
-                    <p-datepicker 
+                    <p-datepicker
       appendTo="body"
       [ngClass]="'w-full'"
       [style]="{ width: '100%' }"
@@ -33,7 +33,7 @@ import { MaterialBibliograficoService } from '../../services/material-bibliograf
                     <label for="involucrado">Involucrado</label>
                     <input pInputText id="involucrado" type="text" />
                     </div>
-                
+
                 <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-2 lg:col-span-2">
                     <label for="codigoBibliografico">Cód bibliografico</label>
                     <input pInputText id="codigoBibliografico" type="text" />
@@ -66,14 +66,14 @@ import { MaterialBibliograficoService } from '../../services/material-bibliograf
                     <label for="costo">Costo</label>
                     S/. <input pInputText id="costo" type="text" />
                     </div>
-                
-                
+
+
                 </div>
                 <div class="flex justify-center mt-4">
                 <p-button label="OCURRENCIA PENDIENTE DE COSTO" severity="danger" text />
-    
+
 </div>
-        </form>   
+        </form>
      </ng-template>
   </p-dialog>
   `,
@@ -93,7 +93,7 @@ constructor(private fb: FormBuilder,private genericoService: GenericoService, pr
             this.objeto={};
             this.display = true;
         }
-    
+
         closeModal() {
             this.display = false;
         }

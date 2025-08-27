@@ -156,11 +156,6 @@ export class AppMenu {
                         routerLink: ['/main/reportes/material-bibliografico-resumen'],role: ['ROLE_REPORTE_MATERIAL_BIBLIOGRAFICO_RESUMEN']
                     },
                     {
-                        label: 'Material bibliográfico existente por sede/filial',
-                        icon: 'pi pi-fw pi-chart-bar',
-                        routerLink: ['/main/reportes/material-bibliografico-existente'],role: ['ROLE_REPORTE_MATERIAL_BIBLIOGRAFICO_EXISTENTE']
-                    },
-                    {
                         label: 'Inventario material bibliografico',
                         icon: 'pi pi-fw pi-chart-bar',
                         routerLink: ['/main/reportes/inventario-material-bibliografico'],role: ['ROLE_REPORTE_INVENTARIO_MATERIAL_BIBLIOGRAFICO']
@@ -193,19 +188,6 @@ export class AppMenu {
                         label: 'Autorizacion - Regularización',
                         icon: 'pi pi-fw pi-thumbtack',
                         routerLink: ['/main/biblioteca/autorizacion-regularizacion'],role: ['ROLE_BIBLIOTECA_AUTORIZACION_REGULARIZACION']
-                    }
-                ]
-            },
-            {
-                label: 'Laboratorio de Ciencias',
-                icon: 'pi pi-fw pi-briefcase',
-                role: ['ADMIN', 'EJECUTIVO'],
-                items: [
-
-                    {
-                        label: 'Ocurrencias',
-                        icon: 'pi pi-fw pi-thumbtack',
-                        routerLink: ['/main/laboratorio/ocurrencias'],role: ['ROLE_LABORATORIO_OCURRENCIAS']
                     }
                 ]
             },
@@ -246,7 +228,7 @@ export class AppMenu {
                         routerLink: ['/main/portal/catalogo-enlinea'],role: ['ROLE_PORTAL_CATALOGO_ENLINEA']
                     },
                     {
-                        label: 'Biblioteca virtual',
+                        label: 'Equipos de computo',
                         icon: 'pi pi-fw pi-desktop',
                         routerLink: ['/main/portal/biblioteca-virtual'],role: ['ROLE_PORTAL_BIBLIOTECA_VIRTUAL']
                     }

@@ -1,18 +1,25 @@
 import { HttpClient, HttpHeaders, HttpParams  } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
 import { BibliotecaDTO } from '../../biblioteca/interfaces/material-bibliografico/biblioteca.model';
 import { Ciudad } from '../../biblioteca/interfaces/material-bibliografico/ciudad';
 import { OcurrenciaDTO } from '../interfaces/ocurrenciaDTO';
-import { map } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
 import { DetallePrestamo } from '../interfaces/detalle-prestamo';
 import { Usuario } from '../interfaces/usuario';
 import { Equipo } from '../interfaces/biblioteca-virtual/equipo';
 import { OcurrenciaUsuario } from '../interfaces/OcurrenciaUsuario';
 import { OcurrenciaMaterialDTO } from '../interfaces/OcurrenciaMaterialDTO';
-import { DetalleBibliotecaDTO } from '../interfaces/material-bibliografico/DetalleBibliotecaDTO';
+import { DetalleBibliotecaDTO } from '../interfaces/material-bibliografico/biblioteca.model';
+import { EjemplarPrestadoDTO } from '../interfaces/reportes/ejemplar-prestado';
+import { EjemplarNoPrestadoDTO } from '../interfaces/reportes/ejemplar-no-prestado';
+import { Tesis } from '../../biblioteca/interfaces/material-bibliografico/tesis';
+import { Libro } from '../../biblioteca/interfaces/material-bibliografico/libro';
+import { Revista } from '../../biblioteca/interfaces/material-bibliografico/revista';
+import { Otro } from '../../biblioteca/interfaces/material-bibliografico/otro';
+import { Detalle } from '../../biblioteca/interfaces/material-bibliografico/detalle';
 @Injectable({
   providedIn: 'root'
 })
@@ -31,12 +38,11 @@ export class MaterialBibliograficoService {
         }
     );
   }
-  api_libros_lista(modulo: any):Observable<any>{
-    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );
-    /*return this.http.get<any[]>('assets/demo/biblioteca/material-bibliografico/libros.json');*/
-  }
+api_libros_lista(modulo: any): Observable<any> {
+  return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+    { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
+  );
+}
   filtros(modulo: any):Observable<any>{
     /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
     ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
@@ -159,11 +165,27 @@ export class MaterialBibliograficoService {
   }
 
   eliminarMaterial(id: number): Observable<any> {
-      const url = `${this.apiUrl}/api/material-bibliografico/delete/${id}`;
-      return this.http.delete<any>(url, {
-        headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`)
-      });
-    }
+    const url = `${this.apiUrl}/api/material-bibliografico/delete/${id}`;
+    return this.http.delete<any>(url, {
+      headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`)
+    });
+  }
+
+  deleteBulk(ids: number[]): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/api/material-bibliografico/delete-bulk`,
+      ids,
+      { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
+    );
+  }
+
+  deleteBulkBiblioteca(ids: number[]): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/api/biblioteca/delete-bulk`,
+      ids,
+      { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
+    );
+  }
 
 registrarEspecialidad(especialidad: any): Observable<any> {
     const url = `${this.apiUrl}/registrar/especialidad`;
@@ -178,11 +200,21 @@ registrarEspecialidad(especialidad: any): Observable<any> {
       get(id: number): Observable<BibliotecaDTO> {
         return this.http.get<any>(`${this.apiUrl}/${id}`).pipe(map(r => r.data));
       }
-      create(dto: BibliotecaDTO): Observable<any> {
-        return this.http.post<any>(`${this.apiUrl}/api/biblioteca/register`, dto);
+      create(dto: BibliotecaDTO, file?: File): Observable<any> {
+        const formData = new FormData();
+        formData.append('dto', new Blob([JSON.stringify(dto)], { type: 'application/json' }));
+        if (file) {
+          formData.append('portada', file, file.name);
+        }
+        return this.http.post<any>(`${this.apiUrl}/api/biblioteca/register`, formData);
       }
-      update(id: number, dto: BibliotecaDTO): Observable<any> {
-        return this.http.put<any>(`${this.apiUrl}/api/biblioteca/update/${id}`, dto);
+      update(id: number, dto: BibliotecaDTO, file?: File): Observable<any> {
+        const formData = new FormData();
+        formData.append('dto', new Blob([JSON.stringify(dto)], { type: 'application/json' }));
+        if (file) {
+          formData.append('portada', file, file.name);
+        }
+        return this.http.put<any>(`${this.apiUrl}/api/biblioteca/update/${id}`, formData);
       }
       delete(id: number): Observable<any> {
         return this.http.delete<any>(`${this.apiUrl}/api/biblioteca/delete/${id}`);
@@ -208,6 +240,217 @@ registrarEspecialidad(especialidad: any): Observable<any> {
         );
     }
 
+    /** Obtiene todos los registros de biblioteca en estado disponible */
+  listarDisponibles(): Observable<BibliotecaDTO[]> {
+      return this.http
+        .get<{ status: number; data: BibliotecaDTO[] }>(
+          `${this.apiUrl}/api/biblioteca/disponibles`
+        )
+        .pipe(
+          map(resp => resp?.data ?? []),
+          catchError(() => of([]))
+        );
+  }
+
+  /** Lista los registros disponibles filtrando por tipo de material */
+  listarDisponiblesPorTipoMaterial(tipo: number): Observable<BibliotecaDTO[]> {
+    return this.http
+      .get<{ status: number; data: BibliotecaDTO[] }>(
+        `${this.apiUrl}/api/biblioteca/disponibles-by-tipo`,
+        { params: { tipoMaterial: tipo } }
+      )
+      .pipe(
+        map(resp => resp?.data ?? []),
+        catchError(() => of([]))
+      );
+  }
+
+    /**
+     * Lista los materiales de tipo Tesis.
+     * Se filtra por el identificador del tipo de material correspondiente a las
+     * tesis (actualmente 3).
+     */
+    listarTesis(sedeId?: number): Observable<Tesis[]> {
+      return this.catalogo(undefined, sedeId, 3, 'disponibles')
+        .pipe(
+          map(lista => lista.map(b => new Tesis({
+            id: b.id ?? 0,
+            codigo: b.codigoLocalizacion ?? '',
+            titulo: b.titulo ?? '',
+            autorPrincipal: b.autorPersonal ?? '',
+            pais: (b as any).pais ?? (b.paisId ? { descripcion: b.paisId } as any : null),
+            ciudad: (b as any).ciudad ?? (b.ciudadCodigo ? { descripcion: b.ciudadCodigo } as any : null),
+            numeroPaginas: b.numeroPaginas ?? null,
+            cantidad: b.existencias ?? 0,
+            anioPublicacion: b.anioPublicacion ?? null,
+            anio: b.anioPublicacion?.toString() ?? '',
+            especialidad: (b as any).especialidad ?? (b.idEspecialidad ? { idEspecialidad: b.idEspecialidad, descripcion: String(b.idEspecialidad) } as any : null),
+            formatoDigital: b.fladigitalizado ?? false,
+            urlPublicacion: b.linkPublicacion ?? '',
+            descriptores: b.descriptor ?? '',
+            notasTesis: b.notaContenido ?? '',
+            notasGeneral: b.notaGeneral ?? '',
+            detalle: (b as any).detalles?.map((d: any) => this.mapDetalle(d)) ?? []
+        })))
+      );
+    }
+
+    /**
+     * Lista los materiales disponibles filtrando por el tipo de material.
+     * Si no se especifica un tipo, devuelve todos los registros disponibles.
+     */
+    listarPorTipoMaterial(tipo?: number, sedeId?: number): Observable<BibliotecaDTO[]> {
+      return this.catalogo(undefined, sedeId, tipo, 'disponibles');
+    }
+
+    /**
+     * Lista los materiales cuya cabecera no está en proceso (aprobados).
+     * Utiliza el endpoint de búsqueda general con el parámetro `soloEnProceso=false`.
+     */
+    listarAprobadosPorTipoMaterial(tipo?: number, sedeId?: number): Observable<BibliotecaDTO[]> {
+      let params = new HttpParams().set('soloEnProceso', 'false');
+      if (tipo != null) params = params.set('tipoMaterial', String(tipo));
+      if (sedeId != null) params = params.set('sedeId', String(sedeId));
+      return this.http
+        .get<{ status: number; data: BibliotecaDTO[] }>(
+          `${this.apiUrl}/api/biblioteca/search`,
+          { params }
+        )
+        .pipe(map(resp => resp.data));
+    }
+
+    /** Devuelve la lista de materiales ya mapeados según el tipo especificado */
+    listarColeccionDetalle(tipo: number, sedeId?: number): Observable<(Libro|Revista|Tesis|Otro)[]> {
+      return this.listarPorTipoMaterial(tipo, sedeId).pipe(
+        map(lista => lista.map(b => {
+          switch (tipo) {
+            case 1: return this.mapToLibro(b);
+            case 2: return this.mapToRevista(b);
+            case 3: return new Tesis({
+              id: b.id ?? 0,
+              codigo: b.codigoLocalizacion ?? '',
+              titulo: b.titulo ?? '',
+              autorPrincipal: b.autorPersonal ?? '',
+              pais: (b as any).pais ?? (b.paisId ? { descripcion: b.paisId } as any : null),
+              ciudad: (b as any).ciudad ?? (b.ciudadCodigo ? { descripcion: b.ciudadCodigo } as any : null),
+              descripcionFisica: (b as any).descripcionFisica ?? null,
+              numeroPaginas: b.numeroPaginas ?? null,
+              cantidad: b.existencias ?? 0,
+              anioPublicacion: b.anioPublicacion ?? null,
+              anio: b.anioPublicacion?.toString() ?? '',
+              especialidad: (b as any).especialidad ?? (b.idEspecialidad ? { idEspecialidad: b.idEspecialidad, descripcion: String(b.idEspecialidad) } as any : null),
+              formatoDigital: b.fladigitalizado ?? false,
+              urlPublicacion: b.linkPublicacion ?? '',
+              descriptores: b.descriptor ?? '',
+              notasTesis: b.notaContenido ?? '',
+              notasGeneral: b.notaGeneral ?? '',
+              portada: b.nombreImagen ? true : false,
+              detalle: (b as any).detalles?.map((d: any) => this.mapDetalle(d)) ?? []
+            });
+            default: return this.mapToOtro(b);
+          }
+        }))
+      );
+    }
+
+    private mapToLibro(b: BibliotecaDTO): Libro {
+      return new Libro({
+        id: b.id ?? 0,
+        codigo: b.codigoLocalizacion ?? '',
+        titulo: b.titulo ?? '',
+        autorPrincipal: b.autorPersonal ?? '',
+        autorSecundario: b.autorSecundario ?? '',
+        autorInstitucional: b.autorInstitucional ?? '',
+        coordinador: b.coordinador ?? '',
+        director: b.director ?? '',
+        editorialPublicacion: b.editorialPublicacion ?? '',
+        pais: (b as any).pais ?? null,
+        ciudad: (b as any).ciudad ?? null,
+        numeroPaginas: b.numeroPaginas ?? null,
+        edicion: b.edicion ?? null,
+        reimpresion: b.reimpresion ?? null,
+        anioPublicacion: b.anioPublicacion ?? null,
+        serie: b.serie ?? '',
+        isbn: b.isbn ?? null,
+        idioma: (b as any).idioma ?? null,
+        numeroDeIngreso: b.numeroDeIngreso ?? null,
+        rutaImagen: b.rutaImagen ?? undefined,
+        nombreImagen: b.nombreImagen ?? undefined,
+        especialidad: (b as any).especialidad ?? null,
+        formatoDigital: b.fladigitalizado ?? false,
+        urlPublicacion: b.linkPublicacion ?? '',
+        descriptores: b.descriptor ?? '',
+        notasContenido: b.notaContenido ?? '',
+        notasGeneral: b.notaGeneral ?? '',
+        editorial: (b as any).editorial ?? null,
+        detalle: (b as any).detalles?.map((d: any) => new Detalle(d)) ?? []
+      });
+    }
+
+    private mapToRevista(b: BibliotecaDTO): Revista {
+      return new Revista({
+        id: b.id ?? 0,
+        codigo: b.codigoLocalizacion ?? '',
+        director: b.director ?? '',
+        institucion: b.autorInstitucional ?? '',
+        especialidad: (b as any).especialidad ?? null,
+        titulo: b.titulo ?? '',
+        tituloAnterior: b.tituloAnterior ?? '',
+        editorialPublicacion: b.editorialPublicacion ?? '',
+        periodicidad: (b as any).periodicidad ?? null,
+        pais: (b as any).pais ?? null,
+        ciudad: (b as any).ciudad ?? null,
+        descripcionFisica: (b as any).descripcionFisica ?? null,
+        cantidad: b.existencias ?? 0,
+        anioPublicacion: b.anioPublicacion ?? null,
+        anio: b.anioPublicacion?.toString() ?? '',
+        isbn: b.isbn ?? null,
+        formatoDigital: b.fladigitalizado ?? false,
+        urlPublicacion: b.linkPublicacion ?? '',
+        descriptores: b.descriptor ?? '',
+        portada: b.nombreImagen ? true : false,
+        detalle: (b as any).detalles?.map((d: any) => new Detalle(d)) ?? []
+      });
+    }
+
+  private mapToOtro(b: BibliotecaDTO): Otro {
+    return new Otro({
+      id: b.id ?? 0,
+        tituloArticulo: b.titulo ?? '',
+        tituloRevista: b.editorialPublicacion ?? '',
+        autorPrincipal: b.autorPersonal ?? '',
+        descripcionRevista: b.tituloAnterior ?? '',
+        descripcionFisica: (b as any).descripcionFisica ?? null,
+        cantidad: b.existencias ?? 0,
+        formatoDigital: b.fladigitalizado ?? false,
+        urlPublicacion: b.linkPublicacion ?? '',
+        descriptores: b.descriptor ?? '',
+        notasGeneral: b.notaGeneral ?? '',
+        portada: b.nombreImagen ? true : false,
+      detalle: (b as any).detalles?.map((d: any) => new Detalle(d)) ?? []
+    });
+  }
+
+  /**
+   * Crea un objeto Detalle asegurando que existan subobjetos
+   * para sede y tipo de adquisición a partir de los códigos
+   * recibidos desde el backend.
+   */
+  private mapDetalle(d: any): Detalle {
+    const det = new Detalle(d);
+    if (!det.sede && det.codigoSede != null) {
+      det.sede = { id: Number(det.codigoSede), descripcion: String(det.codigoSede), activo: true } as any;
+    }
+    if (!det.tipoAdquisicion && det.tipoAdquisicionId != null) {
+      const id = typeof det.tipoAdquisicionId === 'number' ? det.tipoAdquisicionId : (det.tipoAdquisicionId as any).id;
+      det.tipoAdquisicion = { id, descripcion: String(id), activo: true } as any;
+    }
+    if (d.estadoDescripcion && !det.estadoDescripcion) {
+      det.estadoDescripcion = d.estadoDescripcion;
+    }
+    return det;
+  }
+
 catalogo(
     valor?: string,
     sedeId?: number,
@@ -221,11 +464,21 @@ catalogo(
     if (opcion)         params = params.set('opcion', opcion);
 
     return this.http
-      .get<{ status: number; data: BibliotecaDTO[] }>(
-        `${this.apiUrl}/api/biblioteca/catalogo`,
-        { params }
-      )
-      .pipe(map(resp => resp.data));
+      .get<any>(`${this.apiUrl}/api/biblioteca/catalogo`, { params })
+      .pipe(
+        map(resp => {
+          if (Array.isArray(resp?.data)) {
+            return resp.data;
+          }
+          if (Array.isArray(resp?.data?.disponibles)) {
+            return resp.data.disponibles;
+          }
+          if (Array.isArray(resp?.disponibles)) {
+            return resp.disponibles;
+          }
+          return [];
+        })
+      );
   }
     private get headers(): HttpHeaders {
       return new HttpHeaders().set(
@@ -244,10 +497,19 @@ crearOcurrencia(dto: OcurrenciaDTO): Observable<OcurrenciaDTO> {
 
   api_ocurrencias_laboratorio(): Observable<OcurrenciaDTO[]> {
     return this.http.get<OcurrenciaDTO[]>(
-      `${this.apiUrl}/api/ocurrencias-biblio`,
+      `${this.apiUrl}/api/ocurrencias-biblio/equipos`,
       { headers: this.headers }
     );
   }
+
+  /** Ocurrencias ligadas a material bibliográfico */
+  api_ocurrencias_biblioteca(): Observable<OcurrenciaDTO[]> {
+    return this.http.get<OcurrenciaDTO[]>(
+      `${this.apiUrl}/api/ocurrencias-biblio/materiales`,
+      { headers: this.headers }
+    );
+  }
+
 
   getOcurrenciaById(id: number): Observable<OcurrenciaDTO> {
     return this.http.get<OcurrenciaDTO>(
@@ -260,6 +522,13 @@ crearOcurrencia(dto: OcurrenciaDTO): Observable<OcurrenciaDTO> {
     return this.http
       .get<{status:string, data: DetallePrestamo}>(`${this.apiUrl}/api/prestamos/${id}`, { headers: this.headers })
       .pipe(map(resp => resp.data));
+  }
+
+  getDetalleBiblioteca(id: number): Observable<DetalleBibliotecaDTO> {
+    return this.http.get<DetalleBibliotecaDTO>(
+      `${this.apiUrl}/api/biblioteca/detalles/${id}`,
+      { headers: this.headers }
+    );
   }
 
     /** Lista usuarios; si pasas `search` filtra por código o email */
@@ -298,7 +567,7 @@ crearOcurrencia(dto: OcurrenciaDTO): Observable<OcurrenciaDTO> {
       );
     }
 
-    addMaterial(idOcurrencia: number, material: {idEquipo:number,cantidad:number}) {
+    addMaterial(idOcurrencia: number, material: {idEquipo:number,cantidad:number,esBiblioteca?:boolean}) {
       return this.http.post(
         `${this.apiUrl}/api/ocurrencias-biblio/${idOcurrencia}/materiales`,
         material,
@@ -316,7 +585,8 @@ listarUsuariosOcurrencia(id: number): Observable<OcurrenciaUsuario[]> {
 
   listarMaterialesOcurrencia(idOcurrencia: number): Observable<OcurrenciaMaterialDTO[]> {
     return this.http.get<OcurrenciaMaterialDTO[]>(
-      `${this.apiUrl}/api/ocurrencias-biblio/${idOcurrencia}/materiales`
+      `${this.apiUrl}/api/ocurrencias-biblio/${idOcurrencia}/materiales`,
+      { headers: this.headers }
     );
   }
 
@@ -326,7 +596,8 @@ listarUsuariosOcurrencia(id: number): Observable<OcurrenciaUsuario[]> {
   ): Observable<void> {
     return this.http.post<void>(
       `${this.apiUrl}/api/ocurrencias-biblio/${idOcurrencia}/costos`,
-      payload
+      payload,
+      { headers: this.headers }
     );
   }
 
@@ -341,16 +612,22 @@ listarUsuariosOcurrencia(id: number): Observable<OcurrenciaUsuario[]> {
         .pipe(map(resp => resp.data));
     }
 
-  listarDetallesPorBiblioteca(bibliotecaId: number): Observable<DetalleBibliotecaDTO[]> {
+  listarDetallesPorBiblioteca(
+    bibliotecaId: number,
+    soloEnProceso: boolean = false
+  ): Observable<DetalleBibliotecaDTO[]> {
     const headers = new HttpHeaders().set(
       'Authorization',
       `Bearer ${this.authService.getToken()}`
+    );
+    const params = new HttpParams().set(
+      'soloEnProceso', String(soloEnProceso)
     );
 
     return this.http
       .get<{ status: number; data: DetalleBibliotecaDTO[] }>(
         `${this.apiUrl}/api/biblioteca/${bibliotecaId}/detalles`,
-        { headers }
+        { headers, params }
       )
       .pipe(map(resp => resp.data));
   }
@@ -369,7 +646,7 @@ listarUsuariosOcurrencia(id: number): Observable<OcurrenciaUsuario[]> {
       .pipe(map(resp => resp.data));
   }
 
-    listarTodosDetallesReservados(): Observable<DetalleBibliotecaDTO[]> {
+  listarTodosDetallesReservados(): Observable<DetalleBibliotecaDTO[]> {
       const headers = new HttpHeaders().set(
         'Authorization',
         `Bearer ${this.authService.getToken()}`
@@ -381,7 +658,21 @@ listarUsuariosOcurrencia(id: number): Observable<OcurrenciaUsuario[]> {
           { headers }
         )
         .pipe(map(resp => resp.data));
-    }
+  }
+
+  /** Lista los ejemplares prestados (pendientes de devolución) */
+  listarDetallesPrestados(): Observable<DetalleBibliotecaDTO[]> {
+    const headers = new HttpHeaders().set(
+      'Authorization',
+      `Bearer ${this.authService.getToken()}`
+    );
+    return this.http
+      .get<{ status: number; data: DetalleBibliotecaDTO[] }>(
+        `${this.apiUrl}/api/biblioteca/prestados`,
+        { headers }
+      )
+      .pipe(map(resp => resp.data));
+  }
   /**
    * Llama al endpoint para marcar un detalle como “prestado”.
    * Equivale a DELETE /auth/api/prestamos/prestar con body { id }.
@@ -391,12 +682,15 @@ listarUsuariosOcurrencia(id: number): Observable<OcurrenciaUsuario[]> {
       'Authorization',
       `Bearer ${this.authService.getToken()}`
     );
-    return this.http.delete<any>(
-      `${this.apiUrl}/api/prestamos/prestar`,
-      {
-        body: { id: idDetalle },
-        headers
-      }
+    const payload = {
+      idDetalleBiblioteca: idDetalle,
+      idEstado: 4,
+      idUsuario: this.authService.getUser()?.sub ?? 0
+    };
+    return this.http.put<any>(
+      `${this.apiUrl}/api/biblioteca/detalles/estado`,
+      payload,
+      { headers }
     );
   }
 
@@ -409,14 +703,39 @@ listarUsuariosOcurrencia(id: number): Observable<OcurrenciaUsuario[]> {
       'Authorization',
       `Bearer ${this.authService.getToken()}`
     );
-    return this.http.delete<any>(
-      `${this.apiUrl}/api/prestamos/cancelar`,
-      {
-        body: { id: idDetalle },
-        headers
-      }
+    const payload = {
+      idDetalleBiblioteca: idDetalle,
+      idEstado: 2,
+      idUsuario: this.authService.getUser()?.sub ?? 0
+    };
+    return this.http.put<any>(
+      `${this.apiUrl}/api/biblioteca/detalles/estado`,
+      payload,
+      { headers }
     );
   }
+  /**
+   * Registra la devolución de un ejemplar, cambiándolo a DISPONIBLE.
+   */
+  devolverDetalle(idDetalle: number): Observable<any> {
+    const headers = new HttpHeaders().set(
+      'Authorization',
+      `Bearer ${this.authService.getToken()}`
+    );
+    return this.http.post<any>(
+      `${this.apiUrl}/api/biblioteca/detalles/devolver`,
+      { idDetalleBiblioteca: idDetalle },
+      { headers }
+    );
+  }
+  reporteEjemplarMasPrestado(): Observable<EjemplarPrestadoDTO[]> {
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`);
+    return this.http.get<{ status: number; data: EjemplarPrestadoDTO[] }>(`${this.apiUrl}/api/biblioteca/reporte/ejemplar-mas-prestado`, { headers }).pipe(map(resp => resp.data));
+  }
 
+  reporteEjemplarNoPrestado(): Observable<EjemplarNoPrestadoDTO[]> {
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`);
+    return this.http.get<{ status: number; data: EjemplarNoPrestadoDTO[] }>(`${this.apiUrl}/api/biblioteca/reporte/ejemplar-no-prestados`, { headers }).pipe(map(resp => resp.data));
+  }
 
 }

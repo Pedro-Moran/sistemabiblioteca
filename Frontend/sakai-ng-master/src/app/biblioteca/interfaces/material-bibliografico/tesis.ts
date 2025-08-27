@@ -1,4 +1,5 @@
 import { Especialidad } from "./especialidad";
+import { Detalle } from "./detalle";
 
 export class Tesis {
     id: number;
@@ -7,8 +8,9 @@ export class Tesis {
     autorPrincipal:string;
     pais:any;
     ciudad:any;
-    
+
     descripcionFisica:any;
+    numeroPaginas:any;
     cantidad:number;
     anioPublicacion:any;
     anio:string;
@@ -19,26 +21,28 @@ export class Tesis {
     notasTesis:string;
     notasGeneral:string;
     portada:boolean;
+    detalle: Detalle[];
     constructor(init?: Partial<Tesis>) {
         this.id = 0;
         this.codigo='';
         this.titulo='';
-        this.autorPrincipal='';   
-        this.pais=null;      
-        this.ciudad=null;   
-        this.descripcionFisica=null;       
+        this.autorPrincipal='';
+        this.pais=null;
+        this.ciudad=null;
+        this.descripcionFisica=null;
+        this.numeroPaginas=null;
         this.cantidad=0;
-        this.anioPublicacion=null;       
+        this.anioPublicacion=null;
         this.anio='';
-        this.especialidad=null;      
+        this.especialidad=null;
         this.formatoDigital=false;
         this.urlPublicacion='';
         this.descriptores='';
         this.notasTesis='';
         this.notasGeneral='';
         this.portada=false;
+        this.detalle=[];
         // Inicialización opcional si se pasa un objeto
         Object.assign(this, init);
     }
   }
-  

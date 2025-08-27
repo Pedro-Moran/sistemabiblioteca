@@ -14,4 +14,5 @@ export interface OcurrenciaMaterial {
 
   // Opción: subTotal = costo * cantidad
   subTotal?:     number;
+  esBiblioteca?: boolean;
 }

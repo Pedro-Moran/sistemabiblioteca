@@ -10,6 +10,7 @@ import { Table } from 'primeng/table';
 import { OcurrenciasService } from '../../services/ocurrencias.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ModalImpresion } from './modal-impresion';
+import { ModalVistaPdf } from './modal-vista-pdf';
 
 @Component({
     selector: 'app-impresion-constancia',
@@ -20,37 +21,37 @@ import { ModalImpresion } from './modal-impresion';
     <div class="flex flex-col w-full gap-4">
                 <!-- Primera fila: Sede (2 col), Programa (2 col) y Escuela (3 col) -->
                 <div class="grid grid-cols-7 gap-4">
-                
+
                     <div class="flex flex-col gap-2 col-span-4">
                     <label for="usuario" class="block text-sm font-medium">Buscar estudiante</label>
                                 <input [(ngModel)]="usuario"pInputText id="usuario" type="text" placeholder="Buscar"/>
-                       
+
                     </div>
                     <div class="flex items-end">
-            <button 
-                pButton 
-                type="button" 
-                class="p-button-rounded p-button-danger" 
+            <button
+                pButton
+                type="button"
+                class="p-button-rounded p-button-danger"
                 icon="pi pi-search"(click)="buscar()" [disabled]="loading"  pTooltip="Ver reporte" tooltipPosition="bottom">
             </button>
         </div>
                     </div>
-                    
-                   
-               
+
+
+
             </div>
-       
+
     </p-toolbar>
     <p-table #dt1 [value]="data" dataKey="id" [rows]="10"
                         [showCurrentPageReport]="true"
                         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-                        [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true" styleClass="p-datatable-gridlines" [paginator]="true" 
+                        [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true" styleClass="p-datatable-gridlines" [paginator]="true"
                         [globalFilterFields]="['id','codigo','estudiante','nombres']" responsiveLayout="scroll">
                         <ng-template pTemplate="caption">
-                       
+
                        <div class="flex items-center justify-between">
                <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt1)" />
-               
+
                <p-iconfield>
                    <input pInputText type="text" placeholder="Filtrar" #filter (input)="onGlobalFilter(dt1, $event)"/>
                </p-iconfield>
@@ -66,27 +67,27 @@ import { ModalImpresion } from './modal-impresion';
                                 </tr>
                             </ng-template>
                             <ng-template pTemplate="body" let-objeto>
-                                <tr> 
+                                <tr>
                                 <td>{{objeto.codigo}}
                                     </td>
                                     <td>
                                         {{objeto.estudiante}}
-                                       
-                                    </td>	
+
+                                    </td>
                                     <td>
                                         {{objeto.especialidad}}
-                                       
-                                    </td>	
+
+                                    </td>
                                     <td>
                                         {{objeto.sede}}
-                                       
-                                    </td>	
+
+                                    </td>
                                     <td>
                                         <div class="flex flex-wrap justify-center gap-2">
-                                            <p-button outlined icon="pi pi-inbox" pTooltip="Imprimir" tooltipPosition="bottom" (click)="imprimir()"/>
-                                            <p-button outlined icon="pi pi-search" pTooltip="Ver información" tooltipPosition="bottom" (click)="verDetalle()"/>
+                                            <p-button outlined icon="pi pi-inbox" [severity]="objeto.pendiente ? 'secondary' : 'help'" pTooltip="Imprimir" tooltipPosition="bottom" (click)="imprimir(objeto)"/>
+                                            <p-button outlined icon="pi pi-search" pTooltip="Ver información" tooltipPosition="bottom" (click)="verDetalle(objeto)"/>
                                         </div>
-                                    </td> 
+                                    </td>
                                 </tr>
                             </ng-template>
                             <ng-template pTemplate="emptymessage">
@@ -101,12 +102,13 @@ import { ModalImpresion } from './modal-impresion';
                             </ng-template>
                         </p-table>
     </div>
-    
+
 <app-modal-impresion #modalImpresion></app-modal-impresion>
-    
+<app-modal-vista-pdf #modalVista></app-modal-vista-pdf>
+
 <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
             <p-toast></p-toast>`,
-        imports: [TemplateModule,ModalImpresion],
+        imports: [TemplateModule,ModalImpresion,ModalVistaPdf],
         providers: [MessageService, ConfirmationService]
 })
 export class InpresionConstancia {
@@ -124,6 +126,7 @@ export class InpresionConstancia {
     titulo: string = "Impresión de constancias";
     @ViewChild('filter') filter!: ElementRef;
     @ViewChild('modalImpresion') modalImpresion!: ModalImpresion;
+    @ViewChild('modalVista') modalVista!: ModalVistaPdf;
 
     constructor(private ocurrenciasService: OcurrenciasService, private genericoService: GenericoService, private fb: FormBuilder,
     private router: Router, private authService: AuthService, private confirmationService: ConfirmationService, private messageService: MessageService) { }
@@ -131,7 +134,8 @@ export class InpresionConstancia {
         this.buscar();
     }
     buscar(){
-        this.ocurrenciasService.api_constancias('')
+        this.loading = true;
+        this.ocurrenciasService.api_constancias(this.usuario)
               .subscribe(
                 (result: any) => {
                   this.loading = false;
@@ -144,11 +148,11 @@ export class InpresionConstancia {
                 }
               );
     }
-    
+
       onGlobalFilter(table: Table, event: Event) {
         table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
       }
-    
+
       clear(table: Table) {
         table.clear();
         this.filter.nativeElement.value = '';
@@ -168,10 +172,13 @@ export class InpresionConstancia {
             }
         });
       }
-      verDetalle(){
-
+      verDetalle(obj:any){
+        this.ocurrenciasService.api_constancias_preview(obj.codigo)
+          .subscribe(blob => {
+            this.modalVista.openModal(blob);
+          });
       }
-      imprimir(){
-        this.modalImpresion.openModal();
+      imprimir(obj:any){
+        this.modalImpresion.openModal(obj);
       }
 }

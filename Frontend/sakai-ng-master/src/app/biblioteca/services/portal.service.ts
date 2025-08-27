@@ -36,11 +36,10 @@ export class PortalService {
     const token = this.authService.getToken();
     return new HttpHeaders().set('Authorization', `Bearer ${token}`);
   }
-  conf_event_get(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/data.json');
+  conf_event_get(modulo: any): Observable<any> {
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+      { headers: this.authHeaders() }
+    );
   }
   conf_event_post(request: any,modulo: any):Observable<any>{
     return this.http.post<any>(`${this.apiUrl}/${modulo}`
@@ -62,42 +61,38 @@ export class PortalService {
         }
     );
   }
-  api_libros_electronicos_lista(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/librosElectronicos.json');
+  api_libros_electronicos_lista(modulo: any): Observable<any> {
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+      { headers: this.authHeaders() }
+    );
   }
 
-  tipo_get(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/tipoRecursosElectronicos.json');
+  tipo_get(modulo: any): Observable<any> {
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+      { headers: this.authHeaders() }
+    );
   }
-  api_horarios_lista(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/portalHorarios.json');
+  api_horarios_lista(modulo: any): Observable<any> {
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+      { headers: this.authHeaders() }
+    );
   }
-  api_catalogo_enlinea(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/portalCatalogo.json');
+  api_catalogo_enlinea(modulo: any): Observable<any> {
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+      { headers: this.authHeaders() }
+    );
   }
-  api_recursos_electronicos(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/portalRecursosElectronicos.json');
+  api_recursos_electronicos(modulo: any): Observable<any> {
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+      { headers: this.authHeaders() }
+    );
   }
-  api_noticias(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/portalNoticias.json');
+  api_noticias(busqueda?: string): Observable<ListDTO<PortalNoticia[]>> {
+    const params = busqueda ? `?q=${encodeURIComponent(busqueda)}` : '';
+    return this.http.get<ListDTO<PortalNoticia[]>>(
+      `${this.apiUrl}/api/noticias/listar${params}`,
+      { headers: this.authHeaders() }
+    );
   }
 
     // Listar, con parámetros opcionales ?start=yyyy-MM-dd&end=yyyy-MM-dd
@@ -191,17 +186,28 @@ listarHorarios(): Observable<{ p_status: number; message: string; data: PortalHo
 
     listarRecursosDigitales(): Observable<ResponseDTO<RecursoDigitalDTO[]>> {
         return this.http.get<ResponseDTO<RecursoDigitalDTO[]>>(
-          `${this.apiUrl}/api/recursos-digitales/listar`,
-          { headers: this.authHeaders() }
+          `${this.apiUrl}/api/recursos-digitales/listar`
         );
       }
 
   listarTipoRecursos(): Observable<ResponseDTO<TipoRecurso[]>> {
       return this.http.get<ResponseDTO<TipoRecurso[]>>(
-        `${this.apiUrl}/api/tipos-recursos-digitales/listar`,
-        { headers: this.authHeaders() }
+        `${this.apiUrl}/api/tipos-recursos-digitales/listar`
       );
     }
+
+  listarRecursosDigitalesPorTipo(id: number): Observable<ResponseDTO<RecursoDigitalDTO[]>> {
+      return this.http.get<ResponseDTO<RecursoDigitalDTO[]>>(
+        `${this.apiUrl}/api/recursos-digitales/listar/tipo/${id}`
+      );
+    }
+
+  obtenerEnlaceRecurso(id: number): Observable<ResponseDTO<string>> {
+      return this.http.get<ResponseDTO<string>>(
+        `${this.apiUrl}/api/recursos-digitales/enlace/${id}`,
+        { headers: this.authHeaders() }
+      );
+  }
 saveRecursoDigital(formData: FormData): Observable<ResponseDTO<void>> {
   return this.http.post<ResponseDTO<void>>(
     `${this.apiUrl}/api/recursos-digitales/registrar`,
@@ -230,7 +236,15 @@ saveRecursoDigital(formData: FormData): Observable<ResponseDTO<void>> {
 
     deleteRecursoDigital(id: number): Observable<ResponseDTO<void>> {
       return this.http.delete<ResponseDTO<void>>(
-        `${this.apiUrl}/auth/api/recursos-digitales/eliminar/${id}`,
+        `${this.apiUrl}/api/recursos-digitales/eliminar/${id}`,
+        { headers: this.authHeaders() }
+      );
+    }
+
+    deleteBulkRecursos(ids: number[]): Observable<ResponseDTO<void>> {
+      return this.http.post<ResponseDTO<void>>(
+        `${this.apiUrl}/api/recursos-digitales/delete-bulk`,
+        ids,
         { headers: this.authHeaders() }
       );
     }
@@ -239,11 +253,11 @@ saveRecursoDigital(formData: FormData): Observable<ResponseDTO<void>> {
         return this.http.get<NosotrosDTO>(`${this.apiUrl}/api/nosotros`, { headers: this.authHeaders() });
       }
 
-  saveNosotros(dto: NosotrosDTO): Observable<void> {
+  saveNosotros(formData: FormData): Observable<void> {
     return this.http.post<void>(
       `${this.apiUrl}/api/nosotros`,
-      dto,                                           // <-- cuerpo JSON
-      { headers: this.authHeaders().set('Content-Type','application/json') }
+      formData,
+      { headers: this.authHeaders() }
     );
   }
   }

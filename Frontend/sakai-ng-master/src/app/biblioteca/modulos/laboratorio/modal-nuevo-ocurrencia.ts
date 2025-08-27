@@ -11,7 +11,7 @@ import { ModalMaterial } from './modal-material';
     selector: 'app-modal-nuevo-ocurrencia',
     standalone: true,
     template: ` <p-dialog [(visible)]="display" [style]="{width: '75%'}"  header="Mantenimiento de materiales en deuda" [modal]="true" [closable]="true" styleClass="p-fluid">
-     <ng-template pTemplate="content">  
+     <ng-template pTemplate="content">
         <form [formGroup]="form">
         <div class="grid grid-cols-7 gap-4">
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-2 lg:col-span-1">
@@ -20,7 +20,7 @@ import { ModalMaterial } from './modal-material';
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-2 lg:col-span-2">
                     <label for="fecha">Fecha</label>
-                    <p-datepicker 
+                    <p-datepicker
       appendTo="body"
       [ngClass]="'w-full'"
       [style]="{ width: '100%' }"
@@ -31,65 +31,65 @@ import { ModalMaterial } from './modal-material';
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-3 lg:col-span-2">
                     <label for="semestre">Semestre</label>
                     <p-select appendTo="body" [options]="semestreLista" optionLabel="descripcion" placeholder="Seleccionar" />
-        
+
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-2 lg:col-span-2">
                     <label for="sede">Local/Filial</label>
                     <p-select appendTo="body" [options]="sedeLista" optionLabel="descripcion" placeholder="Seleccionar" />
-        
+
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-2 lg:col-span-2">
                     <label for="ambiente">Ambiente</label>
                     <p-select appendTo="body" [options]="ambienteLista" optionLabel="descripcion" placeholder="Seleccionar" />
-        
+
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-3 lg:col-span-2">
                     <label for="especialidad">Especialidad</label>
                     <p-select appendTo="body" [options]="especialidadLista" optionLabel="descripcion" placeholder="Seleccionar" />
-        
+
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-2 lg:col-span-3">
                     <label for="programa">Programa</label>
                     <p-select appendTo="body" [options]="programaLista" optionLabel="descripcion" placeholder="Seleccionar" />
-        
+
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-2 lg:col-span-2">
                     <label for="ciclo">Ciclo</label>
                     <p-select appendTo="body" [options]="cicloLista" optionLabel="descripcion" placeholder="Seleccionar" />
-        
+
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-3 lg:col-span-2">
                     <label for="docente">Docente</label>
                     <p-select appendTo="body" [options]="docenteLista" optionLabel="descripcion" placeholder="Seleccionar" />
-        
+
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-2 lg:col-span-3">
                     <label for="curso">Curso</label>
                     <p-select appendTo="body" [options]="cursoLista" optionLabel="descripcion" placeholder="Seleccionar" />
-        
+
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-2 lg:col-span-2">
                     <label for="turno">Turno</label>
                     <p-select appendTo="body" [options]="turnoLista" optionLabel="descripcion" placeholder="Seleccionar" />
-        
+
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-3 lg:col-span-5">
                     <label for="personal">Personal</label>
                     <input pInputText id="personal" type="text" />
-        
+
                     </div>
                     <div class="flex flex-col gap-2 col-span-7">
                     <label for="auditoria">Auditoria</label>
                     <textarea pTextarea id="auditoria" rows="4" ></textarea>
-        
+
                     </div>
-                
-                
+
+
                 </div>
 <div class="grid grid-cols-7 gap-4 mt-4 flex justify-end">
-    <button pButton pRipple type="button" icon="pi pi-times" (click)="closeModal()" 
+    <button pButton pRipple type="button" icon="pi pi-times" (click)="closeModal()"
         [disabled]="loading || guardado" label="Cancelar" class="p-button-outlined p-button-danger"></button>
-    <button pButton pRipple type="button" icon="pi pi-check" (click)="guardar()" 
+    <button pButton pRipple type="button" icon="pi pi-check" (click)="guardar()"
         [disabled]="form.invalid || loading || guardado" label="Guardar" class="p-button-success"></button>
 </div>
 @if(guardado){
@@ -98,7 +98,7 @@ import { ModalMaterial } from './modal-material';
     <span class="col-span-4 font-bold">ESTUDIANTES INVOLUCRADOS</span>
     <div class="col-span-3 flex justify-end">
         <button pButton type="button" label="Agregar" icon="pi pi-plus" class="p-button-success"
-            [disabled]="loading" (click)="agregarInvolucrados()" 
+            [disabled]="loading" (click)="agregarInvolucrados()"
             pTooltip="Agregar" tooltipPosition="bottom"></button>
     </div>
 </div>
@@ -119,7 +119,7 @@ import { ModalMaterial } from './modal-material';
                 <td>{{ objeto.codigo }}</td>
                 <td>{{ objeto.estudiante }}</td>
                 <td>
-                <p-button icon="pi pi-trash" rounded outlined (click)="eliminarInvolucrado(objeto)"pTooltip="Eliminar" tooltipPosition="bottom"/>   
+                <p-button icon="pi pi-trash" rounded outlined (click)="eliminarInvolucrado(objeto)"pTooltip="Eliminar" tooltipPosition="bottom"/>
                 </td>
             </tr>
         </ng-template>
@@ -129,7 +129,7 @@ import { ModalMaterial } from './modal-material';
     <span class="col-span-4 font-bold">MATERIALES INVOLUCRADOS</span>
     <div class="col-span-3 flex justify-end">
         <button pButton type="button" label="Agregar" icon="pi pi-plus" class="p-button-success"
-            [disabled]="loading" (click)="agregarMaterial()" 
+            [disabled]="loading" (click)="agregarMaterial()"
             pTooltip="Agregar" tooltipPosition="bottom"></button>
     </div>
 </div>
@@ -152,24 +152,24 @@ import { ModalMaterial } from './modal-material';
                 <td>{{ objeto.material }}</td>
                 <td>{{ objeto.cantidad }}</td>
                 <td>
-                <p-button icon="pi pi-trash" rounded outlined (click)="eliminarInvolucrado(objeto)"pTooltip="Eliminar" tooltipPosition="bottom"/>   
+                <p-button icon="pi pi-trash" rounded outlined (click)="eliminarInvolucrado(objeto)"pTooltip="Eliminar" tooltipPosition="bottom"/>
                 </td>
             </tr>
         </ng-template>
 </p-table>
     </div>
-    
+
 }
-        </form>   
+        </form>
 
      </ng-template>
-                
+
   </p-dialog>
 
   <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
             <p-toast></p-toast>
 
-            
+
 <app-modal-material #modalMaterial></app-modal-material>
 <app-modal-involucrado #modalInvolucrado></app-modal-involucrado>
   `,
@@ -210,7 +210,7 @@ constructor(private fb: FormBuilder,private genericoService: GenericoService, pr
             this.objeto={};
             this.display = true;
         }
-    
+
         closeModal() {
             this.display = false;
         }
@@ -233,7 +233,7 @@ constructor(private fb: FormBuilder,private genericoService: GenericoService, pr
         agregarInvolucrados(){
             this.modalInvolucrado.openModal();
         }
-        agregarMaterial(){            
+        agregarMaterial(){
             this.modalMaterial.openModal();
         }
         eliminarInvolucrado(objeto:any){}

@@ -9,7 +9,7 @@ import { MenuModule } from 'primeng/menu';
     imports: [CommonModule, ButtonModule, MenuModule],
     template: ` <div class="card">
         <div class="flex justify-between items-center mb-6">
-            <div class="font-semibold text-xl">Best Selling Products</div>
+            <div class="font-semibold text-xl">Productos más vendidos</div>
             <div>
                 <button pButton type="button" icon="pi pi-ellipsis-v" class="p-button-rounded p-button-text p-button-plain" (click)="menu.toggle($event)"></button>
                 <p-menu #menu [popup]="true" [model]="items"></p-menu>
@@ -95,7 +95,7 @@ export class BestSellingWidget {
     menu = null;
 
     items = [
-        { label: 'Add New', icon: 'pi pi-fw pi-plus' },
-        { label: 'Remove', icon: 'pi pi-fw pi-trash' }
+        { label: 'Agregar', icon: 'pi pi-fw pi-plus' },
+        { label: 'Eliminar', icon: 'pi pi-fw pi-trash' }
     ];
 }

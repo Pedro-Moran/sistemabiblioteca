@@ -34,7 +34,7 @@ import { TipoRecurso } from '../../interfaces/tipo-recurso';
         </ng-template>
     </p-toolbar>
 
-                    <p-table #dt1 [value]="data" dataKey="id" [rows]="10"
+                    <p-table #dt1 [value]="data" dataKey="id" selectionMode="multiple" [(selection)]="selectedRows" [rows]="10"
                     [showCurrentPageReport]="true"
                     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
                     [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true" styleClass="p-datatable-gridlines" [paginator]="true"
@@ -44,15 +44,19 @@ import { TipoRecurso } from '../../interfaces/tipo-recurso';
                    <div class="flex items-center justify-between">
            <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt1)" />
 
-           <p-iconfield>
-               <input pInputText type="text" placeholder="Filtrar" #filter (input)="onGlobalFilter(dt1, $event)"/>
-           </p-iconfield>
+           <div class="flex items-center gap-2">
+               <p-iconfield>
+                   <input pInputText type="text" placeholder="Filtrar" #filter (input)="onGlobalFilter(dt1, $event)"/>
+               </p-iconfield>
+               <button pButton type="button" class="p-button-danger" label="Eliminar seleccionados" icon="pi pi-trash"
+                       (click)="deleteSelected()" [disabled]="!selectedRows.length"></button>
+           </div>
        </div>
                    </ng-template>
                         <ng-template pTemplate="header">
                             <tr>
-
-                            <th  >Imagen</th>
+                            <th style="width:3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+                            <th>Imagen</th>
                             <th pSortableColumn="tipo.descripcion" style="min-width:200px">Tipo<p-sortIcon field="tipo.descripcion"></p-sortIcon></th>
                                 <th pSortableColumn="titulo" style="min-width:200px">Titulo<p-sortIcon field="titulo"></p-sortIcon></th>
                                 <th pSortableColumn="activo" style="width: 4rem">Estado<p-sortIcon field="activo"></p-sortIcon></th>
@@ -61,7 +65,8 @@ import { TipoRecurso } from '../../interfaces/tipo-recurso';
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="body" let-objeto>
-                            <tr>
+                            <tr [pSelectableRow]="objeto">
+                                <td><p-tableCheckbox [value]="objeto"></p-tableCheckbox></td>
                                 <td>
                                 <img [src]="objeto.imagenUrl" [alt]="objeto.titulo" width="50" class="shadow-lg" />
                                     </td>
@@ -73,7 +78,7 @@ import { TipoRecurso } from '../../interfaces/tipo-recurso';
                                     <a [href]="objeto.enlace" target="_blank"><p class="text-gray-500 mt-2"> URL:{{ objeto.enlace }}</p></a>
                                 </td>
                                 <td>
-                                    @if(objeto.activo){
+                                    @if(objeto.estado === 1){
                                         ACTIVO
                                     }@else{
                                         DESACTIVO
@@ -209,6 +214,8 @@ export class RecursosElectronicos implements OnInit {
     dataTipo: TipoRecurso[] = [];
     objeto!: RecursoDigitalDTO;
     selectedFile: File | null = null;
+    selectedRows: RecursoDigitalDTO[] = [];
+    @ViewChild('dt1') dt!: Table;
 
     constructor(private portalService: PortalService,private fb: FormBuilder,
           private router: Router,private authService: AuthService, private confirmationService: ConfirmationService, private messageService: MessageService) { }
@@ -303,33 +310,60 @@ export class RecursosElectronicos implements OnInit {
           this.submitted = false;
       }
 
-      deleteRegistro(objeto: LibroElectronico) {
-          this.confirmationService.confirm({
-              message: '¿Estás seguro(a) de que quieres eliminar: ' +objeto.tipo?.descripcion+' - ' + objeto.titulo + '?',
-              header: 'Confirmar',
-              icon: 'pi pi-exclamation-triangle',
-              acceptLabel: 'SI',
-              rejectLabel: 'NO',
-              accept: () => {
-                this.loading=true;
-                const data = { id: objeto.id};
-                this.portalService.conf_event_delete(data,this.modulo+'/eliminar')
-                .subscribe(result => {
-                  if (result.p_status == 0) {
-                    this.objetoDialog = false;
-                    this.messageService.add({severity:'success', summary: 'Satisfactorio', detail: 'Registro eliminado.'});
+      deleteRegistro(objeto: RecursoDigitalDTO) {
+        this.confirmationService.confirm({
+          message: `¿Estás seguro(a) de que quieres eliminar: ${objeto.tipoDescripcion} - ${objeto.titulo}?`,
+          header: 'Confirmar',
+          icon: 'pi pi-exclamation-triangle',
+          acceptLabel: 'SI',
+          rejectLabel: 'NO',
+          accept: () => {
+            this.loading = true;
+            this.portalService.deleteRecursoDigital(objeto.id!)
+              .subscribe({
+                next: res => {
+                  if (res.p_status === 0) {
+                    this.messageService.add({severity: 'success', summary: 'Satisfactorio', detail: 'Registro eliminado.'});
                     this.listar();
                   } else {
-                    this.messageService.add({severity:'error', summary: 'Error', detail: 'No se puedo realizar el proceso.'});
+                    this.messageService.add({severity: 'warn', detail: res.message});
                   }
-                  this.loading=false;
+                  this.loading = false;
+                },
+                error: () => {
+                  this.messageService.add({severity:'error', summary:'Error', detail:'Ocurrió un error. Intentelo más tarde'});
+                  this.loading = false;
                 }
-                  , (error: HttpErrorResponse) => {
-                    this.messageService.add({severity:'error', summary: 'Error', detail: 'Ocurrio un error. Intentelo más tarde'});
-                    this.loading=false;
-                  });
+              });
+          }
+        });
+      }
+
+      deleteSelected() {
+        if (!this.selectedRows.length) return;
+        this.confirmationService.confirm({
+          message: '¿Estás seguro(a) de eliminar los seleccionados?',
+          header: 'Confirmar',
+          icon: 'pi pi-exclamation-triangle',
+          acceptLabel: 'SI',
+          rejectLabel: 'NO',
+          accept: () => {
+            const ids = this.selectedRows.map(item => item.id!) as number[];
+            this.loading = true;
+            this.portalService.deleteBulkRecursos(ids).subscribe({
+              next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Satisfactorio', detail: 'Registros eliminados.' });
+                this.selectedRows = [];
+                this.listar();
+                this.loading = false;
+              },
+              error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo realizar el proceso.' });
+                this.loading = false;
               }
-          });
+            });
+          }
+        });
       }
      guardar() {
        if (this.form.invalid) return;
@@ -395,7 +429,7 @@ export class RecursosElectronicos implements OnInit {
               next: (res) => {
                 this.loading = false;
                 if (res.p_status === 0) {
-                  this.data = res.data;
+                  this.data = res.data.filter(d => d.estado === 1);
                 } else {
                   this.messageService.add({ severity: 'warn', detail: res.message });
                 }
@@ -407,39 +441,37 @@ export class RecursosElectronicos implements OnInit {
             });
         }
 
-      cambiarEstadoRegistro(objeto: LibroElectronico) {
-        let estado="";
-        if(objeto.activo){
-          estado="Desactivar";
-        }else{
-          estado="Activar"
-        }
-          this.confirmationService.confirm({
-              message: '¿Estás seguro(a) de que quieres cambiar el estado: '+objeto.tipo?.descripcion+' - ' + objeto.titulo + ' a '+estado+'?',
-              header: 'Confirmar',
-              icon: 'pi pi-exclamation-triangle',
-              acceptLabel: 'SI',
-              rejectLabel: 'NO',
-              accept: () => {
-                this.loading=true;
-                const data = { id: objeto.id,activo:!objeto.activo,idusuario:this.user.idusuario};
-                this.portalService.conf_event_put(data,this.modulo+'/activo')
-                .subscribe(result => {
-                  if (result.p_status == 0) {
-                    this.objetoDialog = false;
-                    this.messageService.add({severity:'success', summary: 'Satisfactorio', detail: 'Estado de registro satisfactorio.'});
+      cambiarEstadoRegistro(objeto: RecursoDigitalDTO) {
+        const accion = objeto.estado === 1 ? 'Desactivar' : 'Activar';
+        this.confirmationService.confirm({
+          message: `¿Estás seguro(a) de que quieres ${accion}: ${objeto.tipoDescripcion} - ${objeto.titulo}?`,
+          header: 'Confirmar',
+          icon: 'pi pi-exclamation-triangle',
+          acceptLabel: 'SI',
+          rejectLabel: 'NO',
+          accept: () => {
+            const usuario = this.authService.getEmail();
+            this.loading = true;
+            const nuevoEstado = objeto.estado === 1 ? 0 : 1;
+            this.portalService
+              .toggleRecursoDigitalStatus(objeto.id!, nuevoEstado, usuario)
+              .subscribe({
+                next: (res) => {
+                  if (res.p_status === 0) {
+                    this.messageService.add({ severity: 'success', summary: 'Satisfactorio', detail: 'Estado actualizado.' });
                     this.listar();
                   } else {
-                    this.messageService.add({severity:'error', summary: 'Error', detail: 'No se puedo realizar el proceso.'});
+                    this.messageService.add({ severity: 'warn', detail: res.message });
                   }
-                  this.loading=false;
+                  this.loading = false;
+                },
+                error: () => {
+                  this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cambiar el estado.' });
+                  this.loading = false;
                 }
-                  , (error: HttpErrorResponse) => {
-                    this.messageService.add({severity:'error', summary: 'Error', detail: 'Ocurrio un error. Intentelo más tarde'});
-                    this.loading=false;
-                  });
-              }
-          });
+              });
+          }
+        });
       }
       showMenu(event: MouseEvent, selectedItem: any) {
         this.selectedItem = selectedItem;

@@ -67,7 +67,7 @@ import { Output, EventEmitter } from '@angular/core';
                         <div class="flex flex-col gap-4 w-full">
                         </div>
                       </div>
-                      <div class="flex flex-col md:flex-row gap-x-4 gap-y-2" *ngIf="formLibro.get('enSilabo')?.value?.length > 0">
+                      <div class="flex flex-col md:flex-row gap-x-4 gap-y-2" *ngIf="formLibro.get('enSilabo')?.value">
                         <div class="flex flex-col gap-2 w-full py-2">
                           <label class="font-semibold">Seleccione los ciclos:</label>
                           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-2">
@@ -87,7 +87,7 @@ import { Output, EventEmitter } from '@angular/core';
                       </div>
                       <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
                         <div class="flex flex-col gap-2 w-full"
-                          *ngIf="formLibro.get('formatoDigital')?.value != null && formLibro.get('formatoDigital')?.value.length > 0">
+                          *ngIf="formLibro.get('formatoDigital')?.value">
                           <label for="urlPublicacion">Link de Publicaci&oacute;n</label>
                           <input pInputText id="urlPublicacion" type="text" formControlName="urlPublicacion" />
                           <app-input-validation [form]="formLibro" modelo="urlPublicacion" ver="urlPublicacion"></app-input-validation>
@@ -284,7 +284,7 @@ import { Output, EventEmitter } from '@angular/core';
                               </div>
                               <app-input-validation [form]="formPortada" modelo="portada" ver="portada"></app-input-validation>
                             </div>
-                            <div class="flex flex-col gap-2 w-full" *ngIf="formPortada.get('portada')?.value.length>0">
+                            <div class="flex flex-col gap-2 w-full" *ngIf="formPortada.get('portada')?.value">
                               <label for="adjunto">Portada</label>
                               <p-fileupload #fu mode="basic" chooseLabel="Seleccionar" chooseIcon="pi pi-upload" name="adjunto"
                                 accept="image/*" maxFileSize="1000000" (onSelect)="onFileSelect($event)">
@@ -413,13 +413,24 @@ import { Output, EventEmitter } from '@angular/core';
                             ver="Tipo de Material"></app-input-validation>
                         </div>
                         <div class="flex flex-col gap-2 w-full">
-                          <label for="fechaIngreso">Fecha Ingreso</label>
-                          <p-datepicker appendTo="body" formControlName="fechaIngreso" [ngClass]="'w-full'" [style]="{ width: '100%' }"
-                            [readonlyInput]="true" dateFormat="dd/mm/yy">
-                          </p-datepicker>
+                        <label for="fechaIngreso">Fecha Ingreso</label>
+                        <p-datepicker appendTo="body" formControlName="fechaIngreso" [ngClass]="'w-full'" [style]="{ width: '100%' }"
+                          [readonlyInput]="true" dateFormat="dd/mm/yy">
+                        </p-datepicker>
 
-                          <app-input-validation [form]="formDetalle" modelo="fechaIngreso" ver="Fecha Ingreso"></app-input-validation>
-                        </div>
+                        <app-input-validation [form]="formDetalle" modelo="fechaIngreso" ver="Fecha Ingreso"></app-input-validation>
+                        <label for="horaInicio">Hora Inicio</label>
+                        <p-calendar id="horaInicio" formControlName="horaInicio" timeOnly="true" hourFormat="24" appendTo="body" class="w-full"></p-calendar>
+                        <app-input-validation [form]="formDetalle" modelo="horaInicio" ver="Hora Inicio"></app-input-validation>
+
+                        <label for="horaFin">Hora Fin</label>
+                        <p-calendar id="horaFin" formControlName="horaFin" timeOnly="true" hourFormat="24" appendTo="body" class="w-full"></p-calendar>
+                        <app-input-validation [form]="formDetalle" modelo="horaFin" ver="Hora Fin"></app-input-validation>
+
+                        <label for="maxHoras">Máx Horas</label>
+                        <input pInputText id="maxHoras" type="number" formControlName="maxHoras" />
+                        <app-input-validation [form]="formDetalle" modelo="maxHoras" ver="Máx Horas"></app-input-validation>
+                      </div>
 
                         <div class="flex flex-col gap-2 md:w-1/4">
                           <label for="Costo">Costo</label>
@@ -482,6 +493,7 @@ export class ModalLibroComponent implements OnInit {
     nuevaEspecialidad: string = '';
     items!: MenuItem[];
     uploadedFiles: any[] = [];
+    selectedFile: File | null = null;
     ciclos = [
         { label: 'I', value: 1, formControl: 'cicloI' },
         { label: 'II', value: 2, formControl: 'cicloII' },
@@ -746,6 +758,9 @@ export class ModalLibroComponent implements OnInit {
                 Validators.required
             ]
             ],
+            horaInicio: [null, [Validators.required]],
+            horaFin: [null, [Validators.required]],
+            maxHoras: [null, [Validators.required, Validators.min(1)]],
             costo: [this.objetoDetalle?.costo,
             [
                 Validators.required,
@@ -765,7 +780,7 @@ export class ModalLibroComponent implements OnInit {
 
     toggleCiclos() {
         const enSilabo = this.formLibro.get('enSilabo')?.value;
-        if (enSilabo.length == 0) {
+        if (!enSilabo) {
             this.ciclos.forEach(ciclo => {
                 this.formLibro.get(ciclo.formControl)?.setValue(false); // Desmarcar ciclos si enSilabo es false
             });
@@ -852,6 +867,20 @@ private buildDto(): BibliotecaDTO {
   const editorial = this.formEditorial.value;
   const decoded   = this.authService.getUser();
 
+  const opcion = editorial.autorOpcion?.id;
+  let autorPersonal: string | undefined;
+  let autorSecundario: string | undefined;
+  let autorInstitucional: string | undefined;
+
+  if (opcion === this.opcionesLista[0]?.id) {
+    autorPersonal = editorial.autorPrincipal ?? undefined;
+  } else if (opcion === this.opcionesLista[1]?.id) {
+    autorPersonal   = editorial.autorPrincipal ?? undefined;
+    autorSecundario = editorial.autorSecundario ?? undefined;
+  } else if (opcion === this.opcionesLista[2]?.id) {
+    autorInstitucional = editorial.autorInstitucional ?? undefined;
+  }
+
   const detalles: DetalleBibliotecaDTO[] = this.detalles.map(d => {
     return {
       // aquí coaccionamos `null` → `undefined`
@@ -862,18 +891,22 @@ private buildDto(): BibliotecaDTO {
                   ? d.tipoAdquisicionId?.id ?? null  // ‹– sólo number | null
                   : d.tipoAdquisicionId ?? null,
       tipoMaterialId     : d.tipoMaterialId!,
+      horaInicio         : this.timeToString(d.horaInicio ?? null),
+      horaFin            : this.timeToString(d.horaFin ?? null),
+      maxHoras           : d.maxHoras ?? null,
       costo              : d.costo ?? null,
       numeroFactura      : d.numeroFactura ?? null,
       fechaIngreso       : d.fechaIngreso ?? null,
+      portadaLibroImg    : d.portadaLibroImg ?? null,
       // solo añadir idEstado si es nuevo
-      idEstado           : d.idEstado ?? 1
+      idEstado           : 1
     };
   });
 
 
   return {
     /* ------ claves y datos propios de Biblioteca ------ */
-    id               : libro.id ?? null,
+    id               : libro.id > 0 ? libro.id : null,
     idEspecialidad   : libro.especialidad,
     idiomaId         : editorial.idioma,
     paisId           : editorial.pais,
@@ -883,9 +916,9 @@ private buildDto(): BibliotecaDTO {
 
     codigoLocalizacion : libro.codigo,
     titulo             : libro.titulo,
-    autorPersonal      : editorial.autorPrincipal,
-    autorSecundario    : editorial.autorSecundario,
-    autorInstitucional : editorial.autorInstitucional,
+    autorPersonal      : autorPersonal,
+    autorSecundario    : autorSecundario,
+    autorInstitucional : autorInstitucional,
     coordinador        : editorial.coordinador,
     director           : editorial.director,
     editorialPublicacion: editorial.editorial,
@@ -900,8 +933,8 @@ private buildDto(): BibliotecaDTO {
     notaGeneral        : libro.notaGeneral,
     numeroPaginas      : editorial.cantidad,
 
-    flasyllabus     : !!libro.enSilabo?.length,
-    fladigitalizado : !!libro.formatoDigital?.length,
+    flasyllabus     : !!libro.enSilabo,
+    fladigitalizado : !!libro.formatoDigital,
     linkPublicacion : libro.urlPublicacion,
 
     usuarioCreacion   : decoded.sub,
@@ -922,6 +955,24 @@ private formatDateTime(d: Date | string | null): string | null {
   return dt.toISOString().split('.')[0];          // ej. “2025-05-07T00:00:00”
 }
 
+private timeToString(t: Date | string | null): string | null {
+  if (!t) { return null; }
+  if (typeof t === 'string') {
+    return t.length > 5 ? t.slice(11,16) : t;
+  }
+  const h = t.getHours().toString().padStart(2, '0');
+  const m = t.getMinutes().toString().padStart(2, '0');
+  return `${h}:${m}`; // "HH:mm" usando hora local
+}
+
+/** Convierte "HH:mm" (o "yyyy-MM-ddTHH:mm") a objeto Date para p-calendar */
+private stringToDate(hhmm: string): Date {
+  const parts = hhmm.includes('T') ? hhmm.split('T')[1].split(':') : hhmm.split(':');
+  const d = new Date();
+  d.setHours(+parts[0], +parts[1], 0, 0);
+  return d;
+}
+
 finalizar(): void {
     [this.formLibro, this.formEditorial, this.formDetalle].forEach(fg => {
       Object.entries(fg.controls).forEach(([name, ctrl]) => {
@@ -931,7 +982,7 @@ finalizar(): void {
       });
     });
 
-  if (this.formLibro.invalid || this.formEditorial.invalid || this.formDetalle.invalid) {
+  if (this.formLibro.invalid || this.formEditorial.invalid || this.detalles.length === 0) {
       this.messageService.add({severity:'warn', summary:'Campos obligatorios', detail:'Revisa los formularios'});
       return;
     }
@@ -940,18 +991,20 @@ finalizar(): void {
     this.loading = true;
 
     const req$ = dto.id
-        ? this.materialBibliograficoService.update(dto.id, dto)
-        : this.materialBibliograficoService.create(dto);
+        ? this.materialBibliograficoService.update(dto.id, dto, this.selectedFile ?? undefined)
+        : this.materialBibliograficoService.create(dto, this.selectedFile ?? undefined);
 
     req$.subscribe({
       next: ({status}) => {
         this.loading = false;
 
         if (status === 0) {
-          this.messageService.add({severity:'success', summary:'Éxito', detail:'Guardado correctamente'});
-          this.displayDetalle = false;      // cierra el wizard
+          const detail = dto.id
+            ? 'Guardado correctamente'
+            : 'Material bibliográfico pendiente de aprobación. Revise el módulo Aceptaciones MB.';
 
-          /** 🔔  Avisamos al padre para que recargue la tabla */
+          this.messageService.add({severity:'success', summary:'Éxito', detail});
+          this.displayDetalle = false;
           this.saved.emit();
         }
       },
@@ -966,7 +1019,7 @@ finalizar(): void {
     async ListaOpcionesLibro() {
         try {
             const result: any = await this.materialBibliograficoService.lista_opciones_libro('').toPromise();
-            if (result.status === "0") {
+            if (result.status == 0) {
                 this.opcionesLista = result.data;
             }
         } catch (error) {
@@ -978,7 +1031,7 @@ finalizar(): void {
     async ListaEspecialidad() {
         try {
             const result: any = await this.materialBibliograficoService.lista_especialidad('material-bibliografico/especialidad').toPromise();
-            if (result.status === "0") {
+            if (result.status == 0) {
                 console.log("dentro");
                 this.especialidadLista = result.data;
             }
@@ -1043,7 +1096,7 @@ finalizar(): void {
     async ListaDescripcionFisica() {
         try {
             const result: any = await this.materialBibliograficoService.lista_descripcion_fisica('material-bibliografico/ciudad').toPromise();
-            if (result.status === "0") {
+            if (result.status == 0) {
                 this.descripcionFisicaLista = result.data;
             }
         } catch (error) {
@@ -1055,7 +1108,7 @@ finalizar(): void {
     async ListaAnioPublicacion() {
         try {
             const result: any = await this.materialBibliograficoService.lista_anio_publicacion('material-bibliografico/ciudad').toPromise();
-            if (result.status === "0") {
+            if (result.status == 0) {
                 this.anioPublicacionLista = result.data;
             }
         } catch (error) {
@@ -1108,11 +1161,35 @@ finalizar(): void {
         }
 
     async ListaEjemplares() {
+        const idBib = this.objetoLibro?.id;
+        if (!idBib) { return; }
         try {
-            const result: any = await this.materialBibliograficoService.lista_ejemplares('material-bibliografico/ciudad').toPromise();
-            if (result.status === "0") {
-                this.detalles = result.data;
-            }
+            const data = await this.materialBibliograficoService
+                .listarDetallesPorBiblioteca(idBib, false)
+                .toPromise();
+
+            this.detalles = (data ?? []).map(d => {
+                const sedeObj  = this.sedesLista.find(s => s.id === d.codigoSede) ?? null;
+                const tipoMatObj = this.tipoMaterialLista.find(t => t.id === d.tipoMaterialId) ?? null;
+                const tipoAdqObj = this.tipoAdquisicionLista.find(t => t.id === d.tipoAdquisicionId) ?? null;
+
+                return {
+                    idDetalleBiblioteca: d.idDetalleBiblioteca,
+                    codigoSede:        d.codigoSede,
+                    tipoMaterialId:    d.tipoMaterialId,
+                    tipoAdquisicionId: d.tipoAdquisicionId,
+                    horaInicio: d.horaInicio ?? null,
+                    horaFin:    d.horaFin ?? null,
+                    maxHoras:   d.maxHoras ?? null,
+                    costo: d.costo ?? null,
+                    numeroFactura: d.numeroFactura ?? null,
+                    fechaIngreso: d.fechaIngreso ?? null,
+                    sede: sedeObj,
+                    tipoMaterial: tipoMatObj,
+                    tipoAdquisicion: tipoAdqObj,
+                    idEstado: d.idEstado
+                } as DetalleDisplay;
+            });
         } catch (error) {
             console.log(error);
             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrió un error. No se pudo cargar especialidad' });
@@ -1203,6 +1280,7 @@ finalizar(): void {
         // 3) resto de datos
         this.setData(mat, true);
         this.formLibro.patchValue({ tipoMaterialId: tipoId ?? this.tipoMaterialId });
+        await this.ListaEjemplares();
         this.display = true;
     }
 
@@ -1215,9 +1293,12 @@ finalizar(): void {
       this.formDetalle.patchValue({
         sede           : det.codigoSede,
         tipoAdquisicion: det.tipoAdquisicionId,
-        fechaIngreso   : det.fechaIngreso,
+        fechaIngreso   : det.fechaIngreso ? new Date(det.fechaIngreso) : null,
+        horaInicio     : det.horaInicio ? this.stringToDate(det.horaInicio) : null,
+        horaFin        : det.horaFin    ? this.stringToDate(det.horaFin)    : null,
+        maxHoras       : det.maxHoras ?? null,
         costo          : det.costo,
-        tipoMaterial: det.tipoMaterialId,
+        tipoMaterial   : det.tipoMaterialId,
         nroFactura     : det.numeroFactura
       });
 
@@ -1299,6 +1380,9 @@ guardarEjemplar() {
       codigoSede        : sedeId,
       tipoAdquisicionId : tipoAdqId,
       tipoMaterialId    : tipoMaterialId,    // ← añade esta línea
+      horaInicio        : this.timeToString(this.formDetalle.value.horaInicio ?? null),
+      horaFin           : this.timeToString(this.formDetalle.value.horaFin ?? null),
+      maxHoras          : this.formDetalle.value.maxHoras,
       costo             : this.formDetalle.value.costo,
       numeroFactura     : this.formDetalle.value.nroFactura,
       fechaIngreso      : this.formatDateTime(this.formDetalle.value.fechaIngreso),
@@ -1333,6 +1417,7 @@ idToTipo(id: number|null) {
             onFileSelect(event: any) {
                 const file = event.files[0]; // Obtiene el primer archivo seleccionado
                 if (file) {
+                    this.selectedFile = file;
                     this.formPortada.patchValue({ adjunto: file });
                 }
                 this.messageService.add({ severity: 'info', summary: 'Success', detail: 'Se adjunto archivo' });
@@ -1350,7 +1435,7 @@ public setData(material: BibliotecaDTO, omitPaisCiudad = false): void {
   -------------------------------------------------------*/
   this.formLibro.patchValue({
     id:            clone.id,
-    codigo:        clone.id,
+    codigo:        clone.codigoLocalizacion,
     titulo:        clone.titulo,
     descripcion:   clone.descriptor,
     notasContenido:clone.notaContenido,
@@ -1385,6 +1470,13 @@ public setData(material: BibliotecaDTO, omitPaisCiudad = false): void {
     isbn:               clone.isbn
   };
 
+  const opcionId = clone.autorInstitucional
+                     ? this.opcionesLista[2]?.id
+                     : (clone.autorSecundario
+                        ? this.opcionesLista[1]?.id
+                        : this.opcionesLista[0]?.id);
+  patchEditorial.autorOpcion = this.opcionesLista.find(o => o.id === opcionId) ?? null;
+
   if (!omitPaisCiudad) {
     patchEditorial.pais   = clone.paisId;
     patchEditorial.ciudad = clone.ciudadCodigo;   // ← nombre correcto
@@ -1401,11 +1493,15 @@ public setData(material: BibliotecaDTO, omitPaisCiudad = false): void {
   if (d0) {
     /* pre-cargamos el primer registro en el form (opcional) */
     this.formDetalle.patchValue({
-      codigoSede           : d0.codigoSede,          // ojo ⇦ ahora es “codigoSede”
-      tipoAdquisicion: d0.tipoAdquisicionId,   // idem
-      fechaIngreso   : d0.fechaIngreso,
-      costo          : d0.costo,
-      nroFactura     : d0.numeroFactura
+      codigoSede      : d0.codigoSede,
+      tipoAdquisicion : d0.tipoAdquisicionId,
+      fechaIngreso    : d0.fechaIngreso ? new Date(d0.fechaIngreso) : null,
+      horaInicio      : d0.horaInicio ? this.stringToDate(d0.horaInicio) : null,
+      horaFin         : d0.horaFin    ? this.stringToDate(d0.horaFin)    : null,
+      maxHoras        : d0.maxHoras ?? null,
+      costo           : d0.costo,
+      tipoMaterial    : d0.tipoMaterialId,
+      nroFactura      : d0.numeroFactura
     });
 
     /* ⇓ convertimos TODO el array a DetalleInput[] */
@@ -1414,19 +1510,22 @@ this.detalles = (clone.detalles ?? []).map((d: DetalleBibliotecaDTO) => {
   const tipoAdqObj      = this.tipoAdquisicionLista.find(t => t.id === d.tipoAdquisicionId) ?? null;
   const tipoMaterialObj = this.tipoMaterialLista.find(t => t.idTipoMaterial === d.tipoMaterialId) ?? null;
 
-  return {
-    idDetalleBiblioteca : d.idDetalleBiblioteca,
-    codigoSede          : d.codigoSede,
-    tipoAdquisicionId   : d.tipoAdquisicionId,
-    tipoMaterialId      : d.tipoMaterialId,
-    costo               : d.costo,
-    numeroFactura       : d.numeroFactura,
-    fechaIngreso        : d.fechaIngreso,
-    sede                : sedeObj,
-    tipoAdquisicion     : tipoAdqObj,
-    tipoMaterial        : tipoMaterialObj,
-    idEstado           : d.idEstado
-  } as DetalleDisplay;
+    return {
+        idDetalleBiblioteca : d.idDetalleBiblioteca,
+        codigoSede          : d.codigoSede,
+        tipoAdquisicionId   : d.tipoAdquisicionId,
+        tipoMaterialId      : d.tipoMaterialId,
+        horaInicio          : d.horaInicio ?? null,
+        horaFin             : d.horaFin ?? null,
+        maxHoras            : d.maxHoras ?? null,
+        costo               : d.costo,
+        numeroFactura       : d.numeroFactura,
+        fechaIngreso        : d.fechaIngreso,
+        sede                : sedeObj,
+        tipoAdquisicion     : tipoAdqObj,
+        tipoMaterial        : tipoMaterialObj,
+        idEstado           : d.idEstado
+      } as DetalleDisplay;
 });
   } else {
     this.detalles = [];

@@ -1,22 +1,18 @@
 import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ClaseGeneral } from '../../interfaces/clase-general';
 import { TemplateModule } from '../../template.module';
-import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
+import { MessageService, MenuItem } from 'primeng/api';
 import { GenericoService } from '../../services/generico.service';
-import { ReservasService } from '../../services/reservas.service';
-import { FormBuilder } from '@angular/forms';
-import { UsuarioService } from '../../services/usuarios.service';
 import { Table } from 'primeng/table';
 import { Menu } from 'primeng/menu';
-import { HttpErrorResponse } from '@angular/common/http';
-import { PortalService } from '../../services/portal.service';
-import { Material } from '../../interfaces/material-bibliografico/material';
 import { TipoRecurso } from '../../interfaces/tipo-recurso';
 import { MaterialBibliograficoService } from '../../services/material-bibliografico.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PortalDetalleEjemplar } from '../portal-landing/components/portal-detalle-ejemplar';
 import { PortalDisponibleEjemplar } from '../portal-landing/components/portal-disponible-ejemplar';
 import { BibliotecaDTO } from '../../interfaces/material-bibliografico/biblioteca.model';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { environment } from '../../../../environments/environment';
 
 @Component({
     selector: 'catalogo-lista',
@@ -94,9 +90,12 @@ import { BibliotecaDTO } from '../../interfaces/material-bibliografico/bibliotec
 
     </ng-template>
     </p-toolbar>
-            <p-table #dt1 [value]="data" dataKey="id" [rows]="10" [showCurrentPageReport]="true"
+    <div *ngIf="loading" class="flex justify-center py-4">
+        <p-progressSpinner></p-progressSpinner>
+    </div>
+            <p-table *ngIf="!loading" #dt1 [value]="data" dataKey="id" [rows]="10" [showCurrentPageReport]="true"
                     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-                    [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true"
+                    [rowsPerPageOptions]="[10, 25, 50]" [rowHover]="true"
                     styleClass="p-datatable-gridlines" [paginator]="true"
                     [globalFilterFields]="['codigo','titulo','editorial.autorPersonal','editorial.autorSecundario','editorial.anio']"
                     responsiveLayout="scroll">
@@ -144,8 +143,8 @@ import { BibliotecaDTO } from '../../interfaces/material-bibliografico/bibliotec
                             </td>
                             <td class="text-center">
                             <div class="flex flex-wrap justify-center gap-2">
-                                <p-button outlined icon="pi pi-search-plus" pTooltip="Más información" tooltipPosition="bottom" (click)="masInformacion()"/>
-                                <p-button icon="pi pi-map-marker" pTooltip="Disponibilidad" tooltipPosition="bottom" (click)="disponible()"/>
+                                <p-button outlined icon="pi pi-search-plus" pTooltip="Más información" tooltipPosition="bottom" (click)="masInformacion(objeto)"/>
+                                <p-button icon="pi pi-map-marker" pTooltip="Disponibilidad" tooltipPosition="bottom" (click)="disponible(objeto)"/>
                                 <!--<p-button icon="pi pi-calendar" pTooltip="Reservar" tooltipPosition="bottom" (click)="reservar()"/>-->
                             </div>
 
@@ -171,8 +170,8 @@ import { BibliotecaDTO } from '../../interfaces/material-bibliografico/bibliotec
         <portal-detalle-ejemplar [objeto]="objeto" [displayDialog]="displayDialog"/>
         <portal-disponible-ejemplar [objeto]="objeto" [displayDialog]="displayDisponibleDialog"/>
     `,
-    imports: [TemplateModule, TemplateModule, PortalDetalleEjemplar,PortalDisponibleEjemplar],
-    providers: [MessageService, ConfirmationService]
+    imports: [TemplateModule, PortalDetalleEjemplar, PortalDisponibleEjemplar, ProgressSpinnerModule],
+    providers: [MessageService]
 })
 export class CatalogoLista implements OnInit {
     modulo: string = "catalogo";
@@ -195,9 +194,14 @@ export class CatalogoLista implements OnInit {
     objeto:any;
     palabraClave: string = '';
 
-    constructor( private router: Router,private materialBibliograficoService: MaterialBibliograficoService, private portalService: PortalService, private reservasService: ReservasService, private genericoService: GenericoService,
-
-        usuariooService: UsuarioService, private fb: FormBuilder, private messageService: MessageService, private confirmationService: ConfirmationService,private cd: ChangeDetectorRef) { }
+    constructor(
+        private router: Router,
+        private route: ActivatedRoute,
+        private materialBibliograficoService: MaterialBibliograficoService,
+        private genericoService: GenericoService,
+        private messageService: MessageService,
+        private cd: ChangeDetectorRef
+    ) {}
     async ngOnInit() {
         // this.user = this.authService.getUser();
 
@@ -209,6 +213,7 @@ export class CatalogoLista implements OnInit {
         await this.listarTiposRecurso();
         await this.listaFiltros();
         await this.ListaSede();
+        this.palabraClave = this.route.snapshot.queryParamMap.get('valor') ?? '';
         await this.listar();
     }
 
@@ -229,29 +234,24 @@ export class CatalogoLista implements OnInit {
     }
 
     listaFiltros() {
-        this.loading = true;
-        this.data = [];
-        this.materialBibliograficoService.filtros(this.modulo + '/lista')
+        this.materialBibliograficoService
+            .filtros(this.modulo + '/lista')
             .subscribe(
                 (result: any) => {
-                    this.loading = false;
                     if (result.status == "0") {
                         this.filtros = result.data;
                         this.opcionFiltro = this.filtros[0];
                     }
                 }
-                , (error: HttpErrorResponse) => {
-                    this.loading = false;
-                }
             );
     }
+
     async listarTiposRecurso() {
-        this.loading = true;
         this.dataTipoRecursoFiltro = [];
-        this.genericoService.tiporecurso_get(this.modulo + '/lista')
+        this.genericoService
+            .tiporecurso_get(this.modulo + '/lista')
             .subscribe(
                 (result: any) => {
-                    this.loading = false;
                     if (result.status == "0") {
                         let recursosFiltrados = result.data.filter((recurso: { tipo: { id: any; }; }) => recurso.tipo.id === 1);
 
@@ -260,13 +260,12 @@ export class CatalogoLista implements OnInit {
                         this.tipoRecursoFiltro = this.dataTipoRecursoFiltro[0];
                     }
                 }
-                , (error: HttpErrorResponse) => {
-                    this.loading = false;
-                }
             );
     }
+
 listar() {
   this.loading = true;
+  this.data = [];
   this.materialBibliograficoService
     .catalogo(
       this.palabraClave,
@@ -274,10 +273,37 @@ listar() {
       this.tipoRecursoFiltro.id,
       this.opcionFiltro.descripcion
     )
-    .subscribe(list => {
-      this.data = list;      // ahora son BibliotecaDTO[]
-      this.loading = false;
-    }, () => this.loading = false);
+    .subscribe(
+      list => {
+        this.data = list.map(b => ({
+          ...b,
+          urlPortada: this.getImageUrl(b)
+        }));
+        this.loading = false;
+      },
+      () => (this.loading = false)
+    );
+}
+
+getImageUrl(obj: BibliotecaDTO): string | undefined {
+  if ((obj as any).material?.url) {
+    const p = (obj as any).material.url as string;
+    return p.startsWith('http') ? p : `${environment.filesUrl}${p}`;
+  }
+  if (obj.rutaImagen) {
+    const base = obj.rutaImagen.startsWith('http')
+      ? obj.rutaImagen
+      : `${environment.filesUrl}${obj.rutaImagen.startsWith('/') ? '' : '/'}${obj.rutaImagen}`;
+    if (obj.nombreImagen) {
+      if (base.endsWith(obj.nombreImagen)) {
+        return base;
+      }
+      const sep = base.endsWith('/') ? '' : '/';
+      return base + sep + obj.nombreImagen;
+    }
+    return base;
+  }
+  return undefined;
 }
 
     onGlobalFilter(table: Table, event: Event) {
@@ -297,24 +323,23 @@ listar() {
     reservar(){
         this.router.navigate(['/reservar']);
     }
-    masInformacion(){
-      this.objeto={
-          codigo:''
-      }
+    masInformacion(obj: BibliotecaDTO){
+      this.objeto = obj;
       this.displayDialog = false;
       this.cd.detectChanges();
       setTimeout(() => {
           this.displayDialog = true;
-          this.cd.detectChanges(); // Vuelve a detectar cambios para mostrar el diálogo
+          this.cd.detectChanges();
       }, 50);
 
     }
-    disponible(){
+    disponible(obj: BibliotecaDTO){
+        this.objeto = obj;
         this.displayDisponibleDialog = false;
         this.cd.detectChanges();
         setTimeout(() => {
             this.displayDisponibleDialog = true;
-            this.cd.detectChanges(); // Vuelve a detectar cambios para mostrar el diálogo
+            this.cd.detectChanges();
         }, 50);
     }
 }

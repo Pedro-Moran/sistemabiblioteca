@@ -1,4 +1,5 @@
 import { Especialidad } from "./especialidad";
+import { Detalle } from "./detalle";
 
 export class Revista {
     id: number;
@@ -12,7 +13,7 @@ export class Revista {
     periodicidad:any;
     pais:any;
     ciudad:any;
-    
+
     descripcionFisica:any;
     cantidad:number;
     anioPublicacion:any;
@@ -22,6 +23,7 @@ export class Revista {
     urlPublicacion:string;
     descriptores:string;
     portada:boolean;
+    detalle: Detalle[];
     constructor(init?: Partial<Revista>) {
         this.id = 0;
         this.codigo='';
@@ -31,20 +33,20 @@ export class Revista {
         this.titulo='';
         this.tituloAnterior='';
         this.editorialPublicacion='';
-        this.periodicidad=null;       
-        this.pais=null;      
-        this.ciudad=null;   
-        this.descripcionFisica=null;       
+        this.periodicidad=null;
+        this.pais=null;
+        this.ciudad=null;
+        this.descripcionFisica=null;
         this.cantidad=0;
-        this.anioPublicacion=null;       
+        this.anioPublicacion=null;
         this.anio='';
-        this.isbn=null;       
+        this.isbn=null;
         this.formatoDigital=false;
         this.urlPublicacion='';
         this.descriptores='';
         this.portada=false;
+        this.detalle=[];
         // Inicialización opcional si se pasa un objeto
         Object.assign(this, init);
     }
   }
-  

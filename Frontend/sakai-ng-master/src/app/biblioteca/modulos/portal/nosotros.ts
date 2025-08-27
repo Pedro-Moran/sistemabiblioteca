@@ -6,6 +6,7 @@ import { DividerModule } from 'primeng/divider';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputTextarea } from 'primeng/inputtextarea';
 import { ButtonModule } from 'primeng/button';
+import { ToastModule } from 'primeng/toast';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { PortalService, NosotrosDTO } from '../../services/portal.service';
 
@@ -19,40 +20,46 @@ import { PortalService, NosotrosDTO } from '../../services/portal.service';
     DividerModule,
     InputTextModule,
     InputTextarea,
-    ButtonModule
+    ButtonModule,
+    ToastModule
   ],
   providers: [ MessageService, ConfirmationService ],
   template: `
-    <p-card header="Editar Nosotros">
-      <form [formGroup]="form" (ngSubmit)="guardar()">
-        <div class="p-fluid p-formgrid p-grid">
-          <div class="flex flex-col gap-2 md:w-1/4">
-            <label for="eyebrow">Subtitulo</label>
-            <input id="eyebrow" pInputText formControlName="eyebrow"/>
-          </div>
-          <div class="flex flex-col gap-2 md:w-1/4">
-            <label for="title">Título</label>
-            <input id="title" pInputText formControlName="title"/>
-          </div>
-          <div class="flex flex-col gap-2 md:w-1/4">
-            <label for="imageUrl">URL de la imagen</label>
-            <input id="imageUrl" pInputText formControlName="imageUrl"/>
-          </div>
-          <div class="flex flex-col gap-2 md:w-1/4">
-            <label for="body">Texto</label>
-            <textarea id="body" pInputTextarea rows="6" formControlName="body"></textarea>
-          </div>
-          <div class="flex flex-col gap-2 md:w-1/4">
-            <button pButton type="submit" label="Guardar" icon="pi pi-check" [disabled]="form.invalid"></button>
-          </div>
+    <p-toast></p-toast>
+    <div class="grid">
+      <div class="col-12">
+        <div class="card flex flex-col gap-4 w-full">
+          <h5>Nosotros</h5>
+          <form [formGroup]="form" (ngSubmit)="guardar()" class="grid grid-cols-12 gap-4">
+            <div class="flex flex-col gap-2 col-span-12 md:col-span-6 lg:col-span-3">
+              <label for="eyebrow">Subtitulo</label>
+              <input id="eyebrow" pInputText formControlName="eyebrow" />
+            </div>
+            <div class="flex flex-col gap-2 col-span-12 md:col-span-6 lg:col-span-3">
+              <label for="title">Título</label>
+              <input id="title" pInputText formControlName="title" />
+            </div>
+            <div class="flex flex-col gap-2 col-span-12 md:col-span-6 lg:col-span-3">
+              <label for="imagen">Imagen (PNG, máx 8MB)</label>
+              <input id="imagen" type="file" accept="image/png" (change)="onFileSelected($event)" />
+            </div>
+            <div class="flex flex-col gap-2 col-span-12">
+              <label for="body">Texto</label>
+              <textarea id="body" pInputTextarea rows="6" formControlName="body" maxlength="500"></textarea>
+            </div>
+            <div class="col-span-12 flex justify-end">
+              <button pButton type="submit" label="Guardar" icon="pi pi-check" [disabled]="form.invalid"></button>
+            </div>
+          </form>
         </div>
-      </form>
-    </p-card>
+      </div>
+    </div>
   `
 })
 export class Nosotros implements OnInit {
   form!: FormGroup;
   datos!: NosotrosDTO;
+  archivo?: File;
 
   constructor(
     private fb: FormBuilder,
@@ -65,8 +72,7 @@ export class Nosotros implements OnInit {
     this.form = this.fb.group({
       eyebrow:  ['', Validators.required],
       title:    ['', Validators.required],
-      imageUrl: ['', Validators.required],
-      body:     ['', Validators.required]
+      body:     ['', [Validators.required, Validators.maxLength(500)]]
     });
 
     // 2) Cargamos los datos existentes
@@ -76,10 +82,23 @@ export class Nosotros implements OnInit {
         this.form.patchValue({
           eyebrow:  dto.eyebrow,
           title:    dto.title,
-          imageUrl: dto.imageUrl,
           body:     dto.body
         });
       });
+  }
+
+  onFileSelected(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    if (file.type !== 'image/png') {
+      this.messageService.add({severity:'warn', detail:'Solo se permite imagen PNG'});
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      this.messageService.add({severity:'warn', detail:'La imagen excede 8MB'});
+      return;
+    }
+    this.archivo = file;
   }
 
   guardar() {
@@ -89,12 +108,17 @@ export class Nosotros implements OnInit {
       ...this.datos,
       eyebrow:  this.form.value.eyebrow,
       title:    this.form.value.title,
-      imageUrl: this.form.value.imageUrl,
       body:     this.form.value.body
     };
 
+    const formData = new FormData();
+    formData.append('dto', new Blob([JSON.stringify(updated)], { type: 'application/json' }));
+    if (this.archivo) {
+      formData.append('imagen', this.archivo);
+    }
+
     this.portal
-      .saveNosotros(updated)       // <-- aquí ya no es FormData sino DTO
+      .saveNosotros(formData)
       .subscribe({
         next: () => this.messageService.add({severity:'success',detail:'¡Guardado!'}),
         error: () => this.messageService.add({severity:'error',detail:'Error al guardar'})

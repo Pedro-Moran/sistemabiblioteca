@@ -19,11 +19,11 @@ import { OcurrenciaMaterialDTO } from '../../interfaces/OcurrenciaMaterialDTO';
         <div class="grid grid-cols-7 gap-4">
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-2 lg:col-span-1">
                     <label for="codigo">Codigo</label>
-                    <input pInputText id="codigo" type="text" formControlName="id" [disabled]="guardado || actualizar" />
+                    <input pInputText id="codigo" type="text" formControlName="id" />
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-2 lg:col-span-2">
                     <label for="fecha">Fecha</label>
-                    <p-datepicker  [disabled]="guardado || actualizar"
+                    <p-datepicker
       appendTo="body"
       [ngClass]="'w-full'"
       [style]="{ width: '100%' }"
@@ -34,27 +34,27 @@ import { OcurrenciaMaterialDTO } from '../../interfaces/OcurrenciaMaterialDTO';
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-3 lg:col-span-2">
                     <label for="semestre">Semestre</label>
-                    <p-select appendTo="body"  [disabled]="guardado || actualizar" [options]="semestreLista" optionLabel="descripcion" placeholder="Seleccionar" />
+                    <p-select appendTo="body" [options]="semestreLista" optionLabel="descripcion" placeholder="Seleccionar" />
 
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-2 lg:col-span-2">
                     <label for="sede">Local/Filial</label>
-                    <p-select appendTo="body" formControlName="sedePrestamo" [disabled]="guardado || actualizar" [options]="sedesLista" optionLabel="descripcion" optionValue="id" placeholder="Seleccionar" />
+                    <p-select appendTo="body" formControlName="sedePrestamo" [options]="sedesLista" optionLabel="descripcion" optionValue="id" placeholder="Seleccionar" />
 
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-2 lg:col-span-2">
                     <label for="ambiente">Ambiente</label>
-                    <p-select appendTo="body"  [disabled]="guardado || actualizar"[options]="ambienteLista" optionLabel="descripcion" placeholder="Seleccionar" />
+                    <p-select appendTo="body" [options]="ambienteLista" optionLabel="descripcion" placeholder="Seleccionar" />
 
                     </div>
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-3 lg:col-span-5">
                     <label for="personal">Personal</label>
-                    <input pInputText id="personal" [disabled]="guardado || actualizar" type="text" formControlName="usuarioCreacion"/>
+                    <input pInputText id="personal" type="text" formControlName="usuarioCreacion"/>
 
                     </div>
                     <div class="flex flex-col gap-2 col-span-7">
                     <label for="auditoria">Auditoria</label>
-                    <textarea pTextarea id="auditoria"  [disabled]="guardado || actualizar"rows="4" formControlName="descripcion"></textarea>
+                    <textarea pTextarea id="auditoria" rows="4" formControlName="descripcion"></textarea>
                     </div>
 
                 </div>
@@ -144,13 +144,14 @@ import { OcurrenciaMaterialDTO } from '../../interfaces/OcurrenciaMaterialDTO';
 <div class="grid grid-cols-7 gap-4">
                     <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-2 lg:col-span-2">
                     <label for="costo">Costo</label>
-                    <input pInputText id="costo" type="text" [disabled]="guardado || actualizar" />
+                    <input pInputText id="costo" type="text" />
                     </div>
                     </div>
 
 
                 <div class="flex justify-center mt-4">
-                <p-button label="OCURRENCIA PENDIENTE DE COSTO" severity="danger" text />
+                <p-button *ngIf="detalle?.estadoCosto !== 1" label="OCURRENCIA PENDIENTE DE COSTO" severity="danger" text />
+                <p-button *ngIf="detalle?.estadoCosto === 1" label="COSTEADA" severity="success" text />
 
 </div>
     }@else {
@@ -274,6 +275,9 @@ constructor(private fb: FormBuilder,private genericoService: GenericoService, pr
             next: () => {
               this.messageService.add({ severity: 'success', detail: 'Costos guardados.' });
               this.guardado = true;
+              if (this.detalle) {
+                this.detalle.estadoCosto = 1;
+              }
               this.loading = false;
             },
             error: () => {
@@ -306,14 +310,35 @@ loadInvolucrados(ocurrenciaId: number) {
     this.materialBibliograficoService
       .listarMaterialesOcurrencia(ocurrenciaId)
       .subscribe((dtos: OcurrenciaMaterialDTO[]) => {
-        this.materiales = dtos.map(dto => ({
-          idMaterial:   dto.idMaterial ?? undefined,               // puede venir null
-          idEquipo:     Number(dto.codigoEquipo),                  // parseamos string → number
-          nombreEquipo: dto.nombreEquipo,
-          cantidad:     dto.cantidad,
-          costo:        dto.costo ?? 0,                            // si dto.costo = null → 0
-          subTotal:     (dto.costo ?? 0) * dto.cantidad
-        }));
+        if (dtos.length > 0) {
+          this.materiales = dtos.map(dto => ({
+            idMaterial:   dto.idMaterial ?? undefined,
+            idEquipo:     Number(dto.codigoEquipo),
+            nombreEquipo: dto.nombreEquipo,
+            cantidad:     dto.cantidad,
+            costo:        dto.costo ?? 0,
+            subTotal:     (dto.costo ?? 0) * dto.cantidad,
+            esBiblioteca: dto.esBiblioteca ?? false
+          }));
+        } else if (this.detalle?.idDetalleBiblioteca) {
+          this.materialBibliograficoService
+            .getDetalleBiblioteca(this.detalle.idDetalleBiblioteca)
+            .subscribe(det => {
+              this.materiales = [{
+                idMaterial:   undefined,
+                // `numeroIngreso` o `idDetalleBiblioteca` pueden venir indefinidos
+                // Convertimos a número para cumplir con la interfaz
+                idEquipo:     Number(det.numeroIngreso ?? det.idDetalleBiblioteca ?? 0),
+                nombreEquipo: det.biblioteca?.titulo || det.tipoMaterial?.descripcion || 'Material',
+                cantidad:     1,
+                costo:        0,
+                subTotal:     0,
+                esBiblioteca: true
+              }];
+            });
+        } else {
+          this.materiales = [];
+        }
         this.recalcularTotal();
       });
   }

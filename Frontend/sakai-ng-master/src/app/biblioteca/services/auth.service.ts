@@ -13,15 +13,20 @@ import { catchError } from 'rxjs/operators';
 import { MsalService } from '@azure/msal-angular';
 import { AuthenticationResult } from '@azure/msal-browser';
 
-
+interface ResponseDTO<T> {
+  p_status: number;
+  message: string;
+  data: T;
+}
 
 
 const httpOptions = {
   headers: new HttpHeaders({
     'Access-Control-Allow-Origin': '*',
-'Access-Control-Allow-Methods': 'GET,POST,OPTIONS,DELETE,PUT',
-'Content-Type': 'application/json'
-  })
+    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS,DELETE,PUT',
+    'Content-Type': 'application/json'
+  }),
+  withCredentials: true
 };
 
 @Injectable({
@@ -29,12 +34,17 @@ const httpOptions = {
 })
 export class AuthService {
   private TOKEN_NAME:string = 'upsjb_reserva';
+  private REFRESH_NAME:string = 'upsjb_refresh';
   private helper:JwtHelperService;/*
   private currentUserSubject: BehaviorSubject<User>;
   public currentUser: Observable<User>;*/
   private currentUserSubject: BehaviorSubject<Usuario>;
   public currentUser: Observable<Usuario>;
   public currentUsuario: Usuario | undefined;
+
+  private inactivityTimer: any;
+  private activityEvents = ['mousemove', 'keydown', 'click', 'scroll'];
+  private boundResetTimer = this.resetInactivityTimer.bind(this);
 
   private apiUrl = environment.apiUrl;
 
@@ -47,6 +57,9 @@ export class AuthService {
 
     this.currentUser = this.currentUserSubject.asObservable();
 
+    if (this.idAuthenticated()) {
+      this.scheduleAutoLogout();
+    }
 
   }
   public get currentUserValue(): Usuario {
@@ -114,6 +127,7 @@ export class AuthService {
         localStorage.setItem("role", JSON.stringify(roles));
         // Emite el usuario incluyendo los roles
         this.currentUserSubject.next({ ...user, roles });
+        this.scheduleAutoLogout();
       }
   }
   getToken(): string {
@@ -144,6 +158,27 @@ export class AuthService {
     return !this.helper.isTokenExpired(token);
   }
 
+    /**
+     * Abre en una nueva pestaña el recurso almacenado en localStorage tras iniciar sesión.
+     */
+    openPendingResource(): void {
+      const id = localStorage.getItem('redirectRecurso');
+      if (!id) return;
+      const headers = new HttpHeaders().set('Authorization', `Bearer ${this.getToken()}`);
+      this.http.get<ResponseDTO<string>>(
+        `${this.apiUrl}/api/recursos-digitales/enlace/${id}`,
+        { headers }
+      ).subscribe({
+        next: res => {
+          if (res.p_status === 0) {
+            window.open(res.data, '_blank');
+          }
+        },
+        error: () => {}
+      });
+      localStorage.removeItem('redirectRecurso');
+    }
+
 // Login con Office 365: se espera recibir el token de Microsoft (obtenido con MSAL, por ejemplo)
 // loginMicrosoft(msToken: string): Observable<LoginResponse> {
 //     return this.http.post<LoginResponse>(`${this.apiUrl}/login-microsoft`, { token: msToken });
@@ -173,7 +208,8 @@ loginMicrosoft() {
                   if (backendResponse.token) {
                     this.setAuthentication(backendResponse.token);
                     this.currentUserSubject.next(this.getUser());
-                    this.router.navigate(['/main']); // Redirige a la vista principal
+                    this.openPendingResource();
+                    this.router.navigate(['/main']);
                   }
                 },
                 error: (error) => {
@@ -206,17 +242,49 @@ loginMicrosoft() {
 
   // Login manual: envía las credenciales y espera una respuesta con mensaje y token.
   loginManual(credentials: { email: string; password: string }): Observable<any> {
-      return this.http.post<{ message: string; token: string }>(`${this.apiUrl}/login`, credentials)
+      const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+      return this.http.post<LoginResponse>(`${this.apiUrl}/login`, credentials, { headers, withCredentials: true })
         .pipe(
           tap(response => {
             if (response.token) {
-              localStorage.setItem('upsjb_reserva', response.token);
+              localStorage.setItem(this.TOKEN_NAME, response.token);
+              localStorage.setItem(this.REFRESH_NAME, response.refreshToken);
               console.log('Token almacenado en localStorage:', response.token);
               this.scheduleAutoLogout();
             }
           })
         );
     }
+
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/forgot-password`, { email })
+      .pipe(
+        catchError(err => {
+          console.error('Error en forgotPassword:', err);
+          throw err;
+        })
+      );
+  }
+
+  validateResetToken(token: string): Observable<any> {
+    return this.http.get<any>(`${environment.filesUrl}/reset-password`, { params: { token } })
+      .pipe(
+        catchError(err => {
+          console.error('Error en validateResetToken:', err);
+          throw err;
+        })
+      );
+  }
+
+  resetPassword(token: string, password: string): Observable<any> {
+    return this.http.post<any>(`${environment.filesUrl}/reset-password`, { token, password })
+      .pipe(
+        catchError(err => {
+          console.error('Error en resetPassword:', err);
+          throw err;
+        })
+      );
+  }
 
 // Registro manual: envía los datos del usuario
 register(userData: any): Observable<any> {
@@ -225,39 +293,51 @@ register(userData: any): Observable<any> {
 
 // Llama a esta función después de un login exitoso para programar el cierre de sesión automático.
 scheduleAutoLogout(): void {
-  const token = localStorage.getItem(this.TOKEN_NAME);
-  if (token) {
-    try {
-        const helper = new JwtHelperService();
-        const decoded = helper.decodeToken(token);
-      const expirationTime = decoded.exp * 1000; // Convertir de segundos a milisegundos
-      const currentTime = Date.now();
-      const timeout = expirationTime - currentTime;
+  this.activityEvents.forEach(event =>
+    document.addEventListener(event, this.boundResetTimer)
+  );
+  this.resetInactivityTimer();
+}
 
-      console.log('⏳ Tiempo restante para logout automático (ms):', timeout);
-
-      if (timeout > 0) {
-        setTimeout(() => {
-          console.log('🔒 Token expirado. Cerrando sesión automáticamente...');
-          this.logout();
-        }, timeout);
-      } else {
-        this.logout();
-      }
-    } catch (error) {
-      console.error('❌ Error al decodificar el token:', error);
-      this.logout();
-    }
+private resetInactivityTimer(): void {
+  if (this.inactivityTimer) {
+    clearTimeout(this.inactivityTimer);
   }
+    this.inactivityTimer = setTimeout(() => {
+      console.log('🔒 Sesión cerrada por inactividad.');
+      this.logout();
+    }, 3600000); // 1 hora
 }
 
 
   logout(): void {
+    this.activityEvents.forEach(event =>
+      document.removeEventListener(event, this.boundResetTimer)
+    );
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+    }
     localStorage.removeItem('currentUser');
     localStorage.removeItem(this.TOKEN_NAME);
+    localStorage.removeItem(this.REFRESH_NAME);
     // Redirige a la página de login o principal según tu flujo
-    this.router.navigate(['/login']);
+    this.router.navigate(['/']);
     return;
+  }
+
+  refreshAccessToken(): Observable<string> {
+    const refresh = localStorage.getItem(this.REFRESH_NAME);
+    if(!refresh){
+      return of('');
+    }
+    return this.http.post<LoginResponse>(`${this.apiUrl}/refresh`, {refreshToken: refresh})
+      .pipe(
+        tap(res => {
+          localStorage.setItem(this.TOKEN_NAME, res.token);
+          localStorage.setItem(this.REFRESH_NAME, res.refreshToken);
+        }),
+        map(res => res.token)
+      );
   }
 
   getEmail(): string {

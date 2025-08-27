@@ -9,15 +9,19 @@ import { environment } from '../../../environments/environment';
 })
 export class OcurrenciasService {
   private apiUrl:string;
-  constructor(private http:HttpClient, private authService:AuthService) { 
+  constructor(private http:HttpClient, private authService:AuthService) {
     this.apiUrl = environment.apiUrl;
   }
-  
-  conf_event_get(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/data.json');
+
+  private authHeaders() {
+    const token = this.authService.getToken();
+    return new HttpHeaders().set('Authorization', `Bearer ${token}`);
+  }
+
+  conf_event_get(modulo: any): Observable<any> {
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+      { headers: this.authHeaders() }
+    );
   }
   conf_event_post(request: any,modulo: any):Observable<any>{
     return this.http.post<any>(`${this.apiUrl}/${modulo}`
@@ -41,48 +45,119 @@ export class OcurrenciasService {
   }
 
   api_ocurrencias_biblioteca(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/ocurrencias/ocurrencias-biblioteca.json');
+    return this.http.get<any[]>(
+      `${this.apiUrl}/api/ocurrencias-biblio/materiales`,
+      {
+        headers: new HttpHeaders().set(
+          'Authorization',
+          `Bearer ${this.authService.getToken()}`
+        )
+      }
+    );
   }
   api_ocurrencias_laboratorio(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/ocurrencias/ocurrencias-laboratorio.json');
+    return this.http.get<any[]>(
+      `${this.apiUrl}/api/ocurrencias-biblio/equipos`,
+      {
+        headers: new HttpHeaders().set(
+          'Authorization',
+          `Bearer ${this.authService.getToken()}`
+        )
+      }
+    );
   }
-  api_autorizacion_regularizacion(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/ocurrencias/autorizacion.json');
+  api_autorizacion_regularizacion():Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/api/ocurrencias-biblio/costeadas`,
+      {
+        headers: new HttpHeaders().set(
+          'Authorization',
+          `Bearer ${this.authService.getToken()}`
+        )
+      }
+    );
   }
 
-  api_ocurrencias_prestamos_lista(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/ocurrenciasPrestamos.json');
+  api_actualizar_regulariza(id: number, valor: number): Observable<any> {
+    return this.http.put(
+      `${this.apiUrl}/api/ocurrencias-biblio/${id}/regulariza`,
+      null,
+      {
+        params: { valor },
+        headers: new HttpHeaders().set(
+          'Authorization',
+          `Bearer ${this.authService.getToken()}`
+        )
+      }
+    );
   }
-  api_prestamos_lista(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/prestamos.json');
+
+  api_ocurrencias_prestamos_lista(modulo: any): Observable<any> {
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+      { headers: this.authHeaders() }
+    );
   }
-  api_situacion_lista(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/situacionOcurrencia.json');
+  api_prestamos_lista(modulo: any): Observable<any> {
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+      { headers: this.authHeaders() }
+    );
   }
-  
-  api_constancias(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/constancias/imprimir.json');
+  api_situacion_lista(modulo: any): Observable<any> {
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+      { headers: this.authHeaders() }
+    );
+  }
+
+  api_constancias(search: string):Observable<any>{
+    return this.http.get<any[]>(
+      `${this.apiUrl}/api/constancias/search`,
+      {
+        params: { q: search },
+        headers: new HttpHeaders().set(
+          'Authorization',
+          `Bearer ${this.authService.getToken()}`
+        ),
+      }
+    );
+  }
+
+  api_constancias_preview(codigo: string): Observable<Blob> {
+    return this.http.get(
+      `${this.apiUrl}/api/constancias/preview/${codigo}`,
+      {
+        headers: new HttpHeaders().set(
+          'Authorization',
+          `Bearer ${this.authService.getToken()}`
+        ),
+        responseType: 'blob'
+      }
+    );
+  }
+
+  api_constancias_pdf(payload: any): Observable<Blob> {
+    return this.http.post(
+      `${this.apiUrl}/api/constancias/pdf`,
+      payload,
+      {
+        headers: new HttpHeaders().set(
+          'Authorization',
+          `Bearer ${this.authService.getToken()}`
+        ),
+        responseType: 'blob'
+      }
+    );
+  }
+
+  api_ocurrencias_usuario(codigo: string): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/api/ocurrencias-biblio/usuario/${codigo}`,
+      {
+        headers: new HttpHeaders().set(
+          'Authorization',
+          `Bearer ${this.authService.getToken()}`
+        )
+      }
+    );
   }
 
 }

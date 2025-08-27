@@ -13,23 +13,24 @@ import { TemplateModule } from '../../template.module';
 import { ReservasService } from '../../services/reservas.service';
 import { Reservas } from '../../interfaces/reservas';
 import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
+import { environment } from '../../../../environments/environment';
 
 @Component({
     selector: 'app-reservas',
     standalone: true,
-    template: `    
+    template: `
         <div class="">
         <div class="">
-     
+
             <div class="card flex flex-col gap-4 w-full">
                 <h5>{{titulo}}</h5>
-               
+
                 <p-toolbar styleClass="mb-6">
     <ng-template #start>
     <div class="flex flex-wrap gap-4">
                             <div class="flex flex-col grow basis-0 gap-2">
                             <p-select [(ngModel)]="situacionFiltro" [options]="dataSituacionFiltro" optionLabel="descripcion" placeholder="Seleccionar" />
-    
+
                             </div>
                             <div class="flex flex-col grow basis-0 min-w-[100px] max-w-[100px] gap-2">
                            <p-datepicker [(ngModel)]="fechaFiltroIni"
@@ -52,13 +53,13 @@ import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
                             (click)="listaReservas()" [disabled]="loading" pTooltip="Actualizar Lista"
                             tooltipPosition="bottom"></button>
                         </div>
-    
+
     </ng-template>
-    
+
     <ng-template #end >
-         <button pButton type="button" label="Nuevo" icon="pi pi-plus" class="p-button-success mr-2" [disabled]="loading" (click)="nuevoRegistro()" 
+         <button pButton type="button" label="Nuevo" icon="pi pi-plus" class="p-button-success mr-2" [disabled]="loading" (click)="nuevoRegistro()"
                         pTooltip="Nuevo registro" tooltipPosition="bottom"></button>
-                              
+
     </ng-template>
     </p-toolbar>
     <p-table #dt1 [value]="data" dataKey="id" [rows]="10" [showCurrentPageReport]="true"
@@ -68,10 +69,10 @@ import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
                     [globalFilterFields]="['recurso.tipoRecurso.tipo.descripcion','recurso.tipoRecurso.descripcion','recurso.sede.descripcion','recurso.nombre','recurso.codigo','recurso.ubicacion','situacionReserva.descripcion','fechaHoraInicio','fechaHoraFin','motivo']"
                     responsiveLayout="scroll">
                     <ng-template pTemplate="caption">
-                       
+
                         <div class="flex items-center justify-between">
                 <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt1)" />
-                
+
                 <p-iconfield>
                     <input pInputText type="text" placeholder="Filtrar" #filter (input)="onGlobalFilter(dt1, $event)"/>
                 </p-iconfield>
@@ -81,6 +82,7 @@ import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
                         <tr>
                             <th style="min-width:200px" pSortableColumn="usuario.nombres">USUARIO <p-sortIcon field="usuario.nombres"></p-sortIcon></th>
                             <th style="min-width:200px" pSortableColumn="recurso.nombre">RECURSO <p-sortIcon field="recurso.nombre"></p-sortIcon></th>
+                            <th style="width:5rem">IMAGEN</th>
                             <th style="width: 8rem" pSortableColumn="recurso.codigo"> CODIGO <p-sortIcon field="recurso.codigo"></p-sortIcon></th>
                             <th style="width: 8rem" pSortableColumn="recurso.sede.descripcion">SEDE <p-sortIcon field="recurso.sede.descripcion"></p-sortIcon></th>
                             <th style="width: 4rem" pSortableColumn="situacionReserva.descripcion">ESTADO <p-sortIcon
@@ -90,7 +92,7 @@ import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
                             <th pSortableColumn="fechaHoraFin" style="width: 4rem">FECHA FIN<p-sortIcon
                                     field="fechaHoraFin"></p-sortIcon></th>
                             <th style="width: 4rem">Opciones</th>
-    
+
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-objeto>
@@ -98,6 +100,9 @@ import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
                             <td>
                                 {{objeto.usuario.nombres}}<br/>
                                 <small>{{objeto.usuario.tipodocumento?.descripcion}}: {{objeto.usuario.numerodocumento}}</small>
+                            </td>
+                            <td>
+                                <img [src]="getImageUrl(objeto)" [alt]="objeto.recurso.nombre" width="50" class="shadow-lg" />
                             </td>
                             <td>
                                 {{objeto.recurso.nombre}}<br/>
@@ -126,7 +131,7 @@ import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
                                         (click)="showMenu($event, objeto)"></button>
                                     <p-menu #menu [popup]="true" [model]="items" appendTo="body"></p-menu>
                                 </div>
-    
+
                             </td>
                         </tr>
                     </ng-template>
@@ -144,25 +149,25 @@ import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
     </div>
     </div>
     </div>
-    
+
     <p-dialog [(visible)]="objetoDialog" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '70vw' }" [draggable]="false"
         [resizable]="false" header="Registro" [modal]="true" styleClass="p-fluid">
         <ng-template pTemplate="content">
             <form [formGroup]="form">
-            
+
                     <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
-                        
+
                             <div class="flex flex-col gap-2 w-full">
                             <label for="usuario">Usuario</label>
                             <p-autocomplete formControlName="usuario" [(ngModel)]="palabra" inputId="multiple-ac-1" multiple fluid [suggestions]="itemsUsuarios" (completeMethod)="buscar($event)" />
- 
-                            
+
+
                                 <app-input-validation
                             [form]="form"
                             modelo="usuario"
                             ver="Usuario"></app-input-validation>
                             </div>
-                        
+
                         <div class="flex flex-col gap-2 w-full">
                         <label for="recurso">Recurso</label>
                         <p-autocomplete formControlName="recurso" [(ngModel)]="palabra" inputId="multiple-ac-1" multiple fluid [suggestions]="itemsUsuarios" (completeMethod)="buscar($event)" />
@@ -170,19 +175,19 @@ import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
                                 ver="Recurso"></app-input-validation>
                         </div>
                     </div>
-                    
+
                     <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
                         <div class="flex flex-col gap-2 w-full">
                         <label for="fechaHoraInicio">Fecha y Hora Inicio</label>
-                        <p-datepicker formControlName="fechaHoraInicio" appendTo="body"             
-              [readonlyInput]="true" inputId="calendar-12h" [showTime]="true" [hourFormat]="'24'" 
+                        <p-datepicker formControlName="fechaHoraInicio" appendTo="body"
+              [readonlyInput]="true" inputId="calendar-12h" [showTime]="true" [hourFormat]="'24'"
               dateFormat="dd/mm/yy">
 </p-datepicker>
                             <app-input-validation [form]="form" modelo="fechaHoraInicio" ver="Fecha y hora inicio"></app-input-validation>
                         </div>
                         <div class="flex flex-col gap-2 w-full">
                         <label for="fechaHoraFin">Fecha y Hora Fin</label>
-                        <p-datepicker formControlName="fechaHoraFin"  appendTo="body"            
+                        <p-datepicker formControlName="fechaHoraFin"  appendTo="body"
               [readonlyInput]="true" inputId="calendar-12h" [showTime]="true"  [hourFormat]="'24'"
               dateFormat="dd/mm/yy">
 </p-datepicker>
@@ -198,7 +203,7 @@ import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
                     </div>
             </form>
         </ng-template>
-    
+
         <ng-template pTemplate="footer">
             <button pButton pRipple type="button" icon="pi pi-times" (click)="cancelar()" label="Cancelar"
                 class="p-button-outlined p-button-danger"></button>
@@ -212,7 +217,7 @@ import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
     <form [formGroup]="form">
         <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
             <!-- Usuario -->
-             
+
             <div class="p-x-3 w-full md:w-1/2">
             <p-panel header="Usuario" [toggleable]="true">
     <p class="m-0">
@@ -226,13 +231,13 @@ import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
             <!-- Recurso -->
             <div class="p-x-3 w-full md:w-1/2">
             <p-panel header="Recurso" [toggleable]="true">
-    <p class="m-0"> 
+    <p class="m-0">
         {{ objeto.recurso?.nombre }}<br />
                     <small>{{ objeto.recurso?.ubicacion }}</small><br />
                     <small>{{ objeto.recurso?.tipoRecurso?.descripcion }} ({{ objeto.recurso?.tipoRecurso?.tipo?.descripcion }})</small>
     </p>
 </p-panel>
-               
+
             </div>
         </div>
 
@@ -241,8 +246,8 @@ import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
             <div class="flex flex-col gap-2 w-full">
                 <label for="fechaHoraInicio">Fecha y Hora Inicio</label>
                 <p-datepicker formControlName="fechaHoraInicio" appendTo="body"
-                              [readonlyInput]="true" inputId="calendar-12h" 
-                              [showTime]="true" [hourFormat]="'24'" 
+                              [readonlyInput]="true" inputId="calendar-12h"
+                              [showTime]="true" [hourFormat]="'24'"
                               dateFormat="dd/mm/yy">
                 </p-datepicker>
                 <app-input-validation [form]="form" modelo="fechaHoraInicio" ver="Fecha y hora inicio"></app-input-validation>
@@ -250,7 +255,7 @@ import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
             <div class="flex flex-col gap-2 w-full">
                 <label for="fechaHoraFin">Fecha y Hora Fin</label>
                 <p-datepicker formControlName="fechaHoraFin" appendTo="body"
-                              [readonlyInput]="true" inputId="calendar-12h" 
+                              [readonlyInput]="true" inputId="calendar-12h"
                               [showTime]="true" [hourFormat]="'24'"
                               dateFormat="dd/mm/yy">
                 </p-datepicker>
@@ -267,7 +272,7 @@ import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
     </form>
 </ng-template>
 
-    
+
         <ng-template pTemplate="footer">
             <button pButton pRipple type="button" icon="pi pi-times" (click)="cancelarEditar()" label="Cancelar"
                 class="p-button-outlined p-button-danger"></button>
@@ -275,7 +280,7 @@ import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
                 label="Guardar" class="p-button-success"></button>
         </ng-template>
     </p-dialog>
-    
+
      <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
         <p-toast></p-toast>`,
     imports: [InputValidation, TemplateModule],
@@ -529,6 +534,27 @@ export class ReservasComponent implements OnInit {
                     this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrio un error. Intentelo más tarde' });
                 });
     }
+    /** Devuelve la URL de la imagen almacenada si existe */
+    getImageUrl(obj: any): string | undefined {
+        if (obj.material?.url) {
+            const p = obj.material.url as string;
+            return p.startsWith('http') ? p : `${environment.filesUrl}${p}`;
+        }
+        if (obj.rutaImagen) {
+            const base = obj.rutaImagen.startsWith('http')
+                ? obj.rutaImagen
+                : `${environment.filesUrl}${obj.rutaImagen.startsWith('/') ? '' : '/'}${obj.rutaImagen}`;
 
+            if (obj.nombreImagen) {
+                if (base.endsWith(obj.nombreImagen)) {
+                    return base;
+                }
+                const sep = base.endsWith('/') ? '' : '/';
+                return base + sep + obj.nombreImagen;
+            }
+            return base;
+        }
+        return undefined;
+    }
 
 }

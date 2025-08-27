@@ -10,6 +10,7 @@ import { AppFloatingConfigurator } from '../../../layout/component/app.floatingc
 import { CatalogoLista } from './catalogo-lista';
 import { ScrollTopModule } from 'primeng/scrolltop';
 import { BannerSeccion } from '../banner-seccion';
+import { environment } from '../../../../environments/environment';
 
 @Component({
     selector: 'app-catalogo',

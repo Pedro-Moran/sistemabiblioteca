@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, Output, EventEmitter, Input } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -68,11 +68,6 @@ import { AuthService } from '../../../services/auth.service';
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
 
 
-      <div class="flex flex-col gap-2">
-        <label for="descripcionFisica">Descripción Física</label>
-        <p-select appendTo="body" formControlName="descripcionFisica" [options]="descripcionFisicaLista" optionLabel="descripcion" placeholder="Seleccionar" />
-        <app-input-validation [form]="formOtro" modelo="descripcionFisica" ver="descripcionFisica"></app-input-validation>
-      </div>
       <div class="flex flex-col gap-2 min-w-[100px] ">
         <label for="cantidad">Cantidad</label>
         <input pInputText id="cantidad" type="text" formControlName="cantidad" />
@@ -93,7 +88,7 @@ import { AuthService } from '../../../services/auth.service';
 </div>
 </div>
 <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
-<div class="flex flex-col gap-2 w-full" *ngIf="formOtro.get('formatoDigital')?.value.length>0">
+<div class="flex flex-col gap-2 w-full" *ngIf="formOtro.get('formatoDigital')?.value">
                       <label for="urlPublicacion">Link de Publicaci&oacute;n</label>
                                 <input pInputText id="urlPublicacion" type="text" formControlName="urlPublicacion"  />
                                 <app-input-validation
@@ -167,7 +162,7 @@ import { AuthService } from '../../../services/auth.service';
                   modelo="portada"
                   ver="portada"></app-input-validation>
 </div>
-<div class="flex flex-col gap-2 w-full" *ngIf="formPortada.get('portada')?.value.length>0">
+<div class="flex flex-col gap-2 w-full" *ngIf="formPortada.get('portada')?.value">
       <label for="adjunto">Portada</label>
       <p-fileupload
         #fu
@@ -271,8 +266,6 @@ import { AuthService } from '../../../services/auth.service';
       </div>
 
 
-
-
       <div class="flex flex-col gap-2 w-full">
   <label for="fechaIngreso">Fecha Ingreso</label>
   <p-datepicker
@@ -285,6 +278,15 @@ import { AuthService } from '../../../services/auth.service';
 </p-datepicker>
 
   <app-input-validation [form]="formDetalle" modelo="fechaIngreso" ver="Fecha Ingreso"></app-input-validation>
+    <label for="horaInicio">Hora Inicio</label>
+    <p-calendar id="horaInicio" formControlName="horaInicio" timeOnly="true" hourFormat="24" appendTo="body" class="w-full"></p-calendar>
+    <app-input-validation [form]="formDetalle" modelo="horaInicio" ver="Hora Inicio"></app-input-validation>
+    <label for="horaFin">Hora Fin</label>
+    <p-calendar id="horaFin" formControlName="horaFin" timeOnly="true" hourFormat="24" appendTo="body" class="w-full"></p-calendar>
+    <app-input-validation [form]="formDetalle" modelo="horaFin" ver="Hora Fin"></app-input-validation>
+    <label for="maxHoras">Máx Horas</label>
+    <input pInputText id="maxHoras" type="number" formControlName="maxHoras" />
+    <app-input-validation [form]="formDetalle" modelo="maxHoras" ver="Máx Horas"></app-input-validation>
 </div>
 
     </div>
@@ -330,6 +332,8 @@ export class ModalOtrosComponent implements OnInit {
     nuevaEspecialidad: string = '';
     items!: MenuItem[];
     uploadedFiles: any[] = [];
+    selectedFile: File | null = null;
+    @Input() tipoMaterialId!: number | null;
     @Output() saved = new EventEmitter<void>();
     constructor(private fb: FormBuilder,
                 private genericoService: GenericoService,
@@ -348,7 +352,7 @@ export class ModalOtrosComponent implements OnInit {
         this.formOtro = this.fb.group({
 
             id: [this.objetoOtro.id],
-
+            tipoMaterialId: [null],
             tituloArticulo: [this.objetoOtro.tituloArticulo,
                 [
                     Validators.required,
@@ -377,12 +381,6 @@ export class ModalOtrosComponent implements OnInit {
                 Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\\s./()-]+$') // Permite letras, números, espacios, punto, guion, slash y paréntesis
             ]
             ],
-
-          descripcionFisica: [this.objetoOtro?.descripcionFisica,
-              [
-                  Validators.required
-              ]
-              ],
               cantidad: [this.objetoOtro?.cantidad,
               [
                   Validators.required,
@@ -426,11 +424,22 @@ export class ModalOtrosComponent implements OnInit {
                 Validators.required
             ]
             ],
+            tipoMaterial: [this.objetoDetalle?.tipoMaterial],
             fechaIngreso: [this.objetoDetalle?.fechaIngreso,
             [
                 Validators.required
             ]
-            ]
+            ],
+            horaInicio: [
+              this.objetoDetalle?.horaInicio ? this.stringToDate(this.objetoDetalle.horaInicio) : null,
+              [Validators.required]
+            ],
+            horaFin: [
+              this.objetoDetalle?.horaFin ? this.stringToDate(this.objetoDetalle.horaFin) : null,
+              [Validators.required]
+            ],
+            maxHoras: [this.objetoDetalle?.maxHoras ?? null, [Validators.required, Validators.min(1)]],
+            tipoAdquisicion: [this.objetoDetalle?.tipoAdquisicion]
         });
     }
 
@@ -447,11 +456,40 @@ export class ModalOtrosComponent implements OnInit {
         await this.ListaTipoAdquisicion();
         await this.ListaDetalle();
     }
-    openModal() {
-        this.objetoOtro=new Otro();
-        this.detalles=[];
-        this.objetoDetalle=new Detalle();
+
+    openModal(tipoId?: number | null) {
+        this.objetoOtro = new Otro();
+        this.objetoDetalle = new Detalle();
+        this.detalles = [];
+
+        this.formOtro.reset();
+        this.formDetalle.reset();
+
+        const id = tipoId ?? this.tipoMaterialId ?? null;
+        this.formOtro.patchValue({ tipoMaterialId: id });
+        this.tipoMaterialId = id;
         this.display = true;
+    }
+    editarBiblioteca(mat: BibliotecaDTO, tipoId?: number | null) {
+        const id = tipoId ?? this.tipoMaterialId ?? null;
+        this.formOtro.reset();
+        this.objetoOtro.id = mat.id ?? 0;
+        this.formOtro.patchValue({
+            id: mat.id ?? null,
+            tipoMaterialId: id,
+            tituloArticulo: mat.titulo,
+            tituloRevista: mat.editorialPublicacion,
+            autorPrincipal: mat.autorPersonal,
+            descripcionRevista: (mat as any).descripcionRevista ?? mat.descriptor ?? '',
+            cantidad: mat.numeroPaginas,
+            formatoDigital: mat.fladigitalizado,
+            urlPublicacion: mat.linkPublicacion,
+            descriptores: mat.descriptor,
+            notasGeneral: mat.notaGeneral
+        });
+        this.tipoMaterialId = id;
+        this.display = true;
+        this.ListaDetalle();
     }
 
     closeModal() {
@@ -471,16 +509,21 @@ export class ModalOtrosComponent implements OnInit {
     private buildDto(): BibliotecaDTO {
         const otro = this.formOtro.value;
         const decoded = this.authService.getUser();
+        const parentTipo = otro.tipoMaterialId ?? this.tipoMaterialId ?? null;
 
         const detalles: DetalleBibliotecaDTO[] = this.detalles.map(d => ({
             idDetalleBiblioteca: d.idDetalleBiblioteca ?? undefined,
             codigoSede: d.codigoSede ?? null,
             tipoAdquisicionId: (d.tipoAdquisicion as any)?.id ?? d.tipoAdquisicionId ?? null,
-            tipoMaterialId: (d.tipoMaterial as any)?.id ?? d.tipoMaterialId ?? null,
+            tipoMaterialId:
+              (d.tipoMaterial as any)?.id ?? d.tipoMaterialId ?? parentTipo,
+            horaInicio: this.timeToString(d.horaInicio ?? null),
+            horaFin:    this.timeToString(d.horaFin ?? null),
+            maxHoras:   d.maxHoras ?? null,
             costo: d.costo ?? null,
-            numeroFactura: d.numeroFactura ?? null,
-            fechaIngreso: d.fechaIngreso ?? null,
-            idEstado: d.idEstado ?? 1,
+           numeroFactura: d.numeroFactura ?? null,
+           fechaIngreso: d.fechaIngreso ?? null,
+           idEstado: 1,
         }));
 
         return {
@@ -488,10 +531,12 @@ export class ModalOtrosComponent implements OnInit {
             codigoLocalizacion: '',
             titulo: otro.tituloArticulo,
             autorPersonal: otro.autorPrincipal,
+            tipoMaterialId: otro.tipoMaterialId ?? this.tipoMaterialId ?? null,
             editorialPublicacion: otro.tituloRevista,
+            descripcionRevista: otro.descripcionRevista,
             descriptor: otro.descriptores,
             notaGeneral: otro.notasGeneral,
-            fladigitalizado: !!otro.formatoDigital?.length,
+            fladigitalizado: !!otro.formatoDigital,
             linkPublicacion: otro.urlPublicacion,
             numeroPaginas: otro.cantidad,
             estadoId: 1,
@@ -508,12 +553,17 @@ export class ModalOtrosComponent implements OnInit {
         }
         const dto = this.buildDto();
         this.loading = true;
-        const req$ = dto.id ? this.materialBibliograficoService.update(dto.id, dto) : this.materialBibliograficoService.create(dto);
+        const req$ = dto.id
+            ? this.materialBibliograficoService.update(dto.id, dto, this.selectedFile ?? undefined)
+            : this.materialBibliograficoService.create(dto, this.selectedFile ?? undefined);
         req$.subscribe({
             next: ({status}) => {
                 this.loading = false;
                 if (status === 0) {
-                    this.messageService.add({severity:'success', summary:'Éxito', detail:'Guardado correctamente'});
+                    const detail = dto.id
+                        ? 'Guardado correctamente'
+                        : 'Material bibliográfico pendiente de aprobación. Revise el módulo Aceptaciones MB.';
+                    this.messageService.add({severity:'success', summary:'Éxito', detail});
                     this.displayDetalle = false;
                     this.saved.emit();
                 }
@@ -529,7 +579,7 @@ export class ModalOtrosComponent implements OnInit {
     async ListaEspecialidad() {
         try {
             const result: any = await this.materialBibliograficoService.lista_especialidad('material-bibliografico/especialidad').toPromise();
-            if (result.status === "0") {
+            if (result.status == 0) {
                 this.especialidadLista = result.data;
             }
         } catch (error) {
@@ -541,7 +591,7 @@ export class ModalOtrosComponent implements OnInit {
     async ListaPais() {
         try {
             const result: any = await this.materialBibliograficoService.lista_pais('material-bibliografico/pais').toPromise();
-            if (result.status === "0") {
+            if (result.status == 0) {
                 this.paisLista = result.data;
             }
         } catch (error) {
@@ -567,7 +617,7 @@ export class ModalOtrosComponent implements OnInit {
     async ListaPeriodicidad() {
         try {
             const result: any = await this.materialBibliograficoService.lista_periodicidad('material-bibliografico/ciudad').toPromise();
-            if (result.status === "0") {
+            if (result.status == 0) {
                 this.periodicidadLista = result.data;
             }
         } catch (error) {
@@ -579,7 +629,7 @@ export class ModalOtrosComponent implements OnInit {
     async ListaDescripcionFisica() {
         try {
             const result: any = await this.materialBibliograficoService.lista_descripcion_fisica('material-bibliografico/ciudad').toPromise();
-            if (result.status === "0") {
+            if (result.status == 0) {
                 this.descripcionFisicaLista = result.data;
             }
         } catch (error) {
@@ -591,7 +641,7 @@ export class ModalOtrosComponent implements OnInit {
     async ListaAnioPublicacion() {
         try {
             const result: any = await this.materialBibliograficoService.lista_anio_publicacion('material-bibliografico/ciudad').toPromise();
-            if (result.status === "0") {
+            if (result.status == 0) {
                 this.anioPublicacionLista = result.data;
             }
         } catch (error) {
@@ -604,7 +654,7 @@ export class ModalOtrosComponent implements OnInit {
     async ListaSede() {
         try {
             const result: any = await this.genericoService.sedes_get('api/equipos/sedes').toPromise();
-            if (result.status === 0) {
+            if (result.status == 0) {
                 this.sedesLista = result.data;
             }
         } catch (error) {
@@ -656,14 +706,17 @@ export class ModalOtrosComponent implements OnInit {
                     codigoSede: sedeId,
                     tipoMaterialId: tipoMat,
                     tipoAdquisicionId: tipoAdq,
+                    horaInicio: d.horaInicio ?? null,
+                    horaFin:    d.horaFin ?? null,
+                    maxHoras:   d.maxHoras ?? null,
                     costo: d.costo ?? null,
-                    numeroFactura: d.numeroFactura ?? null,
-                    fechaIngreso: d.fechaIngreso ?? null,
-                    sede: sedeObj,
-                    tipoMaterial: tipoMatObj,
-                    tipoAdquisicion: tipoAdqObj,
-                    idEstado: d.idEstado
-                } as DetalleDisplay;
+                numeroFactura: d.numeroFactura ?? null,
+                fechaIngreso: d.fechaIngreso ?? null,
+                sede: sedeObj,
+                tipoMaterial: tipoMatObj,
+                tipoAdquisicion: tipoAdqObj,
+                idEstado: d.idEstado
+            } as DetalleDisplay;
             });
         } catch (error) {
             console.log(error);
@@ -748,6 +801,10 @@ export class ModalOtrosComponent implements OnInit {
             }
             nuevoEjemplar(){
                 this.formValidarDetalle();
+                if (this.tipoMaterialId) {
+                    const tipoObj = this.tipoMaterialLista.find(t => t.id === this.tipoMaterialId) ?? null;
+                    this.formDetalle.patchValue({ tipoMaterial: tipoObj });
+                }
                 this.displayEjemplar = true;
             }
             guardarEjemplar(){
@@ -759,7 +816,7 @@ export class ModalOtrosComponent implements OnInit {
                 rejectLabel: 'NO',
                 accept: () => {
                   const sedeVal  = this.formDetalle.value.sede;
-                  const tipoMatVal = this.formDetalle.value.tipoMaterial;
+                  const tipoMatVal = this.tipoMaterialId ?? this.formDetalle.value.tipoMaterial;
                   const tipoAdqVal = this.formDetalle.value.tipoAdquisicion;
 
                   const sedeId  = typeof sedeVal === 'object' ? sedeVal?.id : sedeVal;
@@ -772,6 +829,9 @@ export class ModalOtrosComponent implements OnInit {
                     codigoSede:        sedeId,
                     tipoMaterialId:    tipoMat ?? null,
                     tipoAdquisicionId: tipoAdq ?? null,
+                    horaInicio:        this.timeToString(this.formDetalle.value.horaInicio ?? null),
+                    horaFin:           this.timeToString(this.formDetalle.value.horaFin ?? null),
+                    maxHoras:          this.formDetalle.value.maxHoras,
                     costo:             null,
                     numeroFactura:     null,
                     fechaIngreso:      this.formatDateTime(this.formDetalle.value.fechaIngreso),
@@ -790,11 +850,28 @@ export class ModalOtrosComponent implements OnInit {
             });
 
             }
+
             private formatDateTime(d: Date | string | null): string | null {
               if (!d) { return null; }
               if (typeof d === 'string' && d.length > 10) { return d; }
               const dt = typeof d === 'string' ? new Date(d) : d;
               return dt.toISOString().split('.')[0];
+            }
+
+            private timeToString(t: Date | string | null): string | null {
+              if (!t) { return null; }
+              if (typeof t === 'string') { return t.length > 5 ? t.slice(11,16) : t; }
+              const h = t.getHours().toString().padStart(2,'0');
+              const m = t.getMinutes().toString().padStart(2,'0');
+              return `${h}:${m}`;
+            }
+
+            /** Convierte "HH:mm" o "yyyy-MM-ddTHH:mm" a Date */
+            private stringToDate(hhmm: string): Date {
+              const parts = hhmm.includes('T') ? hhmm.split('T')[1].split(':') : hhmm.split(':');
+              const d = new Date();
+              d.setHours(+parts[0], +parts[1], 0, 0);
+              return d;
             }
 
             idToSede(id: number | null) {
@@ -807,6 +884,7 @@ export class ModalOtrosComponent implements OnInit {
             onFileSelect(event: any) {
                 const file = event.files[0]; // Obtiene el primer archivo seleccionado
                 if (file) {
+                    this.selectedFile = file;
                     this.formPortada.patchValue({ adjunto: file });
                 }
                 this.messageService.add({ severity: 'info', summary: 'Success', detail: 'Se adjunto archivo' });

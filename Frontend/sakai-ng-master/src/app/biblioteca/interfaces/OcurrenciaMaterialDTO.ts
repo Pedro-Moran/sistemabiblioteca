@@ -5,4 +5,5 @@ export interface OcurrenciaMaterialDTO {
   nombreEquipo:  string;
   cantidad:      number;
   costo:         number | null;
+  esBiblioteca:  boolean | null;
 }

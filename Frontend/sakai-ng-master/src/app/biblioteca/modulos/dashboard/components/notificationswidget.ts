@@ -8,14 +8,14 @@ import { MenuModule } from 'primeng/menu';
     imports: [ButtonModule, MenuModule],
     template: `<div class="card">
         <div class="flex items-center justify-between mb-6">
-            <div class="font-semibold text-xl">Notifications</div>
+            <div class="font-semibold text-xl">Notificaciones</div>
             <div>
                 <button pButton type="button" icon="pi pi-ellipsis-v" class="p-button-rounded p-button-text p-button-plain" (click)="menu.toggle($event)"></button>
                 <p-menu #menu [popup]="true" [model]="items"></p-menu>
             </div>
         </div>
 
-        <span class="block text-muted-color font-medium mb-4">TODAY</span>
+        <span class="block text-muted-color font-medium mb-4">HOY</span>
         <ul class="p-0 mx-0 mt-0 mb-6 list-none">
             <li class="flex items-center py-2 border-b border-surface">
                 <div class="w-12 h-12 flex items-center justify-center bg-blue-100 dark:bg-blue-400/10 rounded-full mr-4 shrink-0">
@@ -34,7 +34,7 @@ import { MenuModule } from 'primeng/menu';
             </li>
         </ul>
 
-        <span class="block text-muted-color font-medium mb-4">YESTERDAY</span>
+        <span class="block text-muted-color font-medium mb-4">AYER</span>
         <ul class="p-0 m-0 list-none mb-6">
             <li class="flex items-center py-2 border-b border-surface">
                 <div class="w-12 h-12 flex items-center justify-center bg-blue-100 dark:bg-blue-400/10 rounded-full mr-4 shrink-0">
@@ -55,7 +55,7 @@ import { MenuModule } from 'primeng/menu';
                 </span>
             </li>
         </ul>
-        <span class="block text-muted-color font-medium mb-4">LAST WEEK</span>
+        <span class="block text-muted-color font-medium mb-4">LA SEMANA PASADA</span>
         <ul class="p-0 m-0 list-none">
             <li class="flex items-center py-2 border-b border-surface">
                 <div class="w-12 h-12 flex items-center justify-center bg-green-100 dark:bg-green-400/10 rounded-full mr-4 shrink-0">
@@ -74,7 +74,7 @@ import { MenuModule } from 'primeng/menu';
 })
 export class NotificationsWidget {
     items = [
-        { label: 'Add New', icon: 'pi pi-fw pi-plus' },
-        { label: 'Remove', icon: 'pi pi-fw pi-trash' }
+        { label: 'Agregar', icon: 'pi pi-fw pi-plus' },
+        { label: 'Eliminar', icon: 'pi pi-fw pi-trash' }
     ];
 }

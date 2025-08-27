@@ -118,7 +118,8 @@ import { HttpClient } from '@angular/common/http';
   <!-- TABLA -->
   <div class="table-wrapper">
     <p-table [value]="resultados" [paginator]="true" [rows]="10" [loading]="loading" scrollable="true"
-      scrollHeight="800px" [style]="{ 'overflow-x': 'auto', 'padding-bottom': '1rem'}">
+      scrollHeight="800px" [style]="{ 'overflow-x': 'auto', 'padding-bottom': '1rem'}"
+      sortField="id" [sortOrder]="-1">
       <ng-template pTemplate="header">
         <tr>
           <th>Equipo</th>

@@ -25,6 +25,7 @@ import { TooltipModule }       from 'primeng/tooltip';
 import { SelectModule } from 'primeng/select';
 import { CalendarModule } from 'primeng/calendar';
 import { CheckboxModule } from 'primeng/checkbox';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
     selector: 'app-biblioteca-virtual',
@@ -42,7 +43,8 @@ import { CheckboxModule } from 'primeng/checkbox';
             CalendarModule,
             ButtonModule,
             TagModule,
-            TooltipModule
+            TooltipModule,
+            ToastModule
       ],
     providers: [MessageService, ConfirmationService],
     template: ` <div class="card flex flex-col gap-4 w-full">
@@ -210,7 +212,7 @@ import { CheckboxModule } from 'primeng/checkbox';
         <div class="flex flex-col">
           <label>Hora de inicio</label>
           <p-calendar name="fechaInicioTime" [(ngModel)]="prestamo.fechaInicioTime" timeOnly="true" hourFormat="24"
-            appendTo="body" (ngModelChange)="onDateRangeChange()">
+            appendTo="body" [minDate]="minHora" [maxDate]="maxHora" (ngModelChange)="onDateRangeChange()">
           </p-calendar>
         </div>
       </div>
@@ -225,7 +227,7 @@ import { CheckboxModule } from 'primeng/checkbox';
         <div class="flex flex-col">
           <label>Hora de devolución</label>
           <p-calendar name="fechaFinTime" [(ngModel)]="prestamo.fechaFinTime" timeOnly="true" hourFormat="24"
-            appendTo="body" (ngModelChange)="onDateRangeChange()">
+            appendTo="body" [minDate]="minHora" [maxDate]="maxHora" (ngModelChange)="onDateRangeChange()">
           </p-calendar>
         </div>
       </div>
@@ -237,9 +239,9 @@ import { CheckboxModule } from 'primeng/checkbox';
         pButton
         label="Confirmar"
         (click)="confirmarPrestamo()"
-        [disabled]="!selectedTipo || !acceptedTerms"
+        [disabled]="!selectedTipo"
         class="p-button-success mr-2"></button>
-    <button pButton label="Cancelar" (click)="displayDialog=false" class="p-button-secondary"></button>
+    <button pButton label="Cancelar" (click)="closeDialog()" class="p-button-secondary"></button>
   </ng-template>
 </p-dialog>
 
@@ -267,7 +269,7 @@ import { CheckboxModule } from 'primeng/checkbox';
           </button>
   </ng-template>
 </p-dialog>
-
+  <p-toast></p-toast>
 
 </div>
 `
@@ -276,6 +278,31 @@ export class BibliotecaVirtualComponent {
     layout: 'list' | 'grid' = 'grid';
     options = ['list', 'grid'];
 
+    private parseTime(t: string) {
+        const [h, m] = t.split(':').map((n) => parseInt(n, 10));
+        return { h, m };
+    }
+
+    private parseTimeAtDate(time: string, base: Date) {
+        const { h, m } = this.parseTime(time);
+        const d = new Date(base);
+        d.setHours(h, m, 0, 0);
+        return d;
+    }
+
+    private isDisponibleAhora(eq: any): boolean {
+        if (!eq.horaInicio || !eq.horaFin) {
+            return true;
+        }
+        const now = new Date();
+        const start = this.parseTimeAtDate(eq.horaInicio, now);
+        const end = this.parseTimeAtDate(eq.horaFin, now);
+        if (end <= start) {
+            // horario que cruza medianoche
+            return now >= start || now <= end;
+        }
+        return now >= start && now <= end;
+    }
     titulo: string = "Biblioteca virtual";
     dataSede: Sedes[] = [];
     sedeFiltro: Sedes = new Sedes();
@@ -294,6 +321,8 @@ export class BibliotecaVirtualComponent {
     selectedItem: any;
     selectedTipo: string|undefined;
     minDate: Date = new Date();
+    minHora: Date | null = null;
+    maxHora: Date | null = null;
     prestamo: {
         equipoId?: number;
         tipoUsuario?: number;
@@ -332,10 +361,11 @@ export class BibliotecaVirtualComponent {
                 (result: any) => {
                     this.loading = false;
                     if (result.status == "0") {
-                        this.data = result.data;
+                        this.data = result.data
+                            .filter((e: any) => e.estado?.descripcion === 'DISPONIBLE' && this.isDisponibleAhora(e));
                     }
-                }
-                , (error: HttpErrorResponse) => {
+                },
+                   (error: HttpErrorResponse) => {
                     this.loading = false;
                 }
             );
@@ -372,22 +402,32 @@ export class BibliotecaVirtualComponent {
 
       }
     onDateRangeChange() {
-      if (this.prestamo.fechaInicioDate && this.prestamo.fechaFinDate && this.prestamo.fechaInicioTime && this.prestamo.fechaFinTime) {
-        this.showTerms = true;
-        this.acceptedTerms = false;   // resetear checkbox
+     if (
+             this.prestamo.fechaInicioDate &&
+             this.prestamo.fechaFinDate &&
+             this.prestamo.fechaInicioTime &&
+             this.prestamo.fechaFinTime
+           ) {
+             // si se modifican las fechas u horas después de aceptar, se debe volver a aceptar
+             this.acceptedTerms = false;
       }
     }
 
     filtrarPorSede() {
       if (this.sedeFiltro && this.sedeFiltro.id) {
-    this.bibliotecaVirtualService.filtrarPorSede(this.sedeFiltro.id).subscribe(
+        this.bibliotecaVirtualService
+          .filtrarPorSede(this.sedeFiltro.id)
+          .subscribe(
             (result: any) => {
               this.loading = false;
               if (result.status == "0") {
-                this.data = result.data;
+                this.data = result.data.filter(
+                  (e: any) =>
+                    e.estado?.descripcion === 'DISPONIBLE' && this.isDisponibleAhora(e)
+                );
               }
-            }
-            , (error: HttpErrorResponse) => {
+            },
+              (error: HttpErrorResponse) => {
               this.loading = false;
             }
           );
@@ -398,7 +438,31 @@ export class BibliotecaVirtualComponent {
     reservar(item: any) {
         this.selectedItem = item;
         this.selectedTipo = undefined;
+        const now = new Date();
+        if (item.horaInicio && item.horaFin) {
+            this.minHora = this.parseTimeAtDate(item.horaInicio, now);
+            this.maxHora = this.parseTimeAtDate(item.horaFin, now);
+            if (this.maxHora <= this.minHora) {
+                this.maxHora.setDate(this.maxHora.getDate() + 1);
+            }
+        } else {
+            this.minHora = null;
+            this.maxHora = null;
+        }
+        const startBase = this.minHora && now > this.minHora ? now : (this.minHora ?? now);
+        this.prestamo = {
+            fechaInicioDate: new Date(startBase),
+            fechaInicioTime: new Date(startBase),
+            fechaFinDate: new Date(startBase),
+            fechaFinTime: new Date(startBase),
+        };
         this.displayDialog = true;
+    }
+
+    closeDialog() {
+        this.displayDialog = false;
+        this.minHora = null;
+        this.maxHora = null;
     }
 
   private formatLocalDateTime(d: Date): string {
@@ -422,26 +486,22 @@ confirmarPrestamo() {
   }
 
   // 2) validamos que acepte términos
-  if (!this.acceptedTerms) {
-    this.messageService.add({
-      severity: 'warn',
-      detail: 'Debes aceptar los Términos y Condiciones.'
-    });
+  if (
+    !this.prestamo.fechaInicioDate ||
+    !this.prestamo.fechaInicioTime ||
+    !this.prestamo.fechaFinDate ||
+    !this.prestamo.fechaFinTime
+  ) {
+    this.messageService.add({ severity: 'warn', detail: 'Por favor selecciona fecha y hora de inicio y de devolución' });
     return;
   }
-    const email = this.authService.getEmail();
-      if (
-        !this.prestamo.fechaInicioDate ||
-        !this.prestamo.fechaInicioTime ||
-        !this.prestamo.fechaFinDate ||
-        !this.prestamo.fechaFinTime
-      ) {
-        this.messageService.add({
-          severity: 'warn',
-          detail: 'Por favor selecciona fecha y hora de inicio y de devolución'
-        });
-        return;
-      }
+
+  if (!this.acceptedTerms) {
+    this.showTerms = true;
+    return;
+  }
+
+  const email = this.authService.getEmail();
 
       // 2) Ahora TS sabe que no son null/undefined
       const inicioDate = this.prestamo.fechaInicioDate;
@@ -463,6 +523,30 @@ confirmarPrestamo() {
         finTime.getHours(),
         finTime.getMinutes()
       );
+      if (this.selectedItem.horaInicio && this.selectedItem.horaFin) {
+        const inicioPermitido = this.parseTimeAtDate(this.selectedItem.horaInicio, dtInicio);
+        const finPermitido = this.parseTimeAtDate(this.selectedItem.horaFin, dtInicio);
+        if (finPermitido <= inicioPermitido) {
+          // rango cruza medianoche
+          if (dtFin < inicioPermitido) {
+            finPermitido.setDate(finPermitido.getDate() + 1);
+          } else {
+            inicioPermitido.setDate(inicioPermitido.getDate() - 1);
+          }
+        }
+        if (dtInicio < inicioPermitido || dtFin > finPermitido) {
+          this.messageService.add({ severity: 'warn', detail: 'El horario seleccionado est\u00e1 fuera del rango permitido.' });
+          return;
+        }
+      }
+
+      if (this.selectedItem.maxHoras) {
+        const diff = (dtFin.getTime() - dtInicio.getTime()) / 3600000;
+        if (diff > this.selectedItem.maxHoras) {
+          this.messageService.add({ severity: 'warn', detail: `M\u00e1ximo ${this.selectedItem.maxHoras} horas de pr\u00e9stamo.` });
+          return;
+        }
+      }
     const dto = {
         equipoId:      this.selectedItem.idEquipo,
         tipoPrestamo:  this.selectedTipo,
@@ -487,7 +571,7 @@ confirmarPrestamo() {
            this.messageService.add({ severity:'error', detail:'Error al solicitar.' });
          }
        });
-    this.displayDialog = false;
+    this.closeDialog();
     }
 
 

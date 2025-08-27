@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
@@ -20,10 +20,17 @@ import { TemplateModule } from '../../../template.module';
 import { BibliotecaVirtualService } from '../../../services/biblioteca-virtual.service';
 import { Equipo } from '../../../interfaces/biblioteca-virtual/equipo';
 import { ModalNuevoOcurencia } from '../../laboratorio-computo/modal-nuevo-ocurrencia';
+import { OcurrenciaEventService } from '../../../services/ocurrencia-event.service';
 
 @Component({
   selector: 'app-aceptaciones-equipos',
   standalone: true,
+  styles: [
+    `.highlight-row { animation: fadeHighlight 2s ease-in-out forwards; }
+     @keyframes fadeHighlight { from { background-color: #ffe08a; } to { background-color: transparent; } }
+     .pulse { animation: pulse 1s infinite; }
+     @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }`
+  ],
   template: ` <div class="">
                 <div class="">
                     <div class="card flex flex-col gap-4 w-full">
@@ -78,7 +85,7 @@ import { ModalNuevoOcurencia } from '../../laboratorio-computo/modal-nuevo-ocurr
                                 </tr>
                             </ng-template>
                             <ng-template pTemplate="body" let-objeto>
-                                <tr>
+                                <tr [ngClass]="{ 'highlight-row': objeto.highlight }">
                                     <td>
                                         {{ objeto.sede?.descripcion || '—' }}
 
@@ -100,20 +107,32 @@ import { ModalNuevoOcurencia } from '../../laboratorio-computo/modal-nuevo-ocurr
                                     <button
                 pButton
                 type="button"
-                class="p-button-rounded p-button-success"
-                icon="pi pi-check"(click)="cambiarEstadoADisponible(objeto)" pTooltip="Confirmar" tooltipPosition="bottom">
+                class="p-button-rounded"
+                [ngClass]="objeto.tieneOcurrencia ? 'p-button-warning' : 'p-button-success'"
+                icon="pi pi-check"
+                (click)="cambiarEstadoADisponible(objeto)"
+                [disabled]="objeto.tieneOcurrencia"
+                [pTooltip]="objeto.tieneOcurrencia ? 'Material con observación' : 'Confirmar'"
+                tooltipPosition="bottom">
             </button>
+            <span
+                *ngIf="objeto.tieneOcurrencia"
+                (click)="irAutorizacion(objeto)"
+                class="text-xs text-blue-500 underline cursor-pointer block mt-1"
+                pTooltip="Autorizar ocurrencia" tooltipPosition="bottom">
+                Ver ocurrencia
+            </span>
 
                                     </td>
                                     <td>
-                                                                   <p-button
-                                                                     icon="pi pi-file"
-                                                                     rounded
-                                                                     outlined
-                                                                     pTooltip="Registrar ocurrencia"
-                                                                     tooltipPosition="bottom"
-                                                                     (click)="onAbrirOcurrencia(objeto)"
-                                                                   ></p-button>
+<p-button
+  icon="pi pi-file"
+  rounded
+  outlined
+  pTooltip="Registrar ocurrencia"
+  tooltipPosition="bottom"
+  (click)="onAbrirOcurrencia(objeto)"
+></p-button>
                                                                 </td>
                                 </tr>
                             </ng-template>
@@ -140,7 +159,7 @@ import { ModalNuevoOcurencia } from '../../laboratorio-computo/modal-nuevo-ocurr
   imports: [TemplateModule,TooltipModule, ModalNuevoOcurencia],
   providers: [MessageService, ConfirmationService]
 })
-export class AceptacionesEquipos {
+export class AceptacionesEquipos implements AfterViewInit {
   titulo: string = "Aceptaciones de Equipos";
   data: any[] = [];
   detalle:any[]=[];
@@ -159,9 +178,36 @@ export class AceptacionesEquipos {
   filtros: ClaseGeneral[] = [];
   expandedRows = {};
   @ViewChild('modalOcurrencia') modal!: ModalNuevoOcurencia;
+  selectedEquipoOcurrencia: Equipo | null = null;
 
   constructor(private bibliotecaVirtualService: BibliotecaVirtualService, private materialBibliograficoService: MaterialBibliograficoService, private genericoService: GenericoService, private fb: FormBuilder,
-    private router: Router, private authService: AuthService, private confirmationService: ConfirmationService, private messageService: MessageService) { }
+    private router: Router, private authService: AuthService, private confirmationService: ConfirmationService, private messageService: MessageService,
+    private ocurrenciaEvents: OcurrenciaEventService) { }
+
+  ngAfterViewInit(): void {
+    this.modal.saved.subscribe(() => {
+      if (this.selectedEquipoOcurrencia) {
+        this.selectedEquipoOcurrencia.tieneOcurrencia = true;
+        this.selectedEquipoOcurrencia.highlight = true;
+        const id = this.selectedEquipoOcurrencia.id || this.selectedEquipoOcurrencia.idEquipo;
+        if (id) {
+          this.ocurrenciaEvents.addEquipo(id);
+        }
+        const ref = this.selectedEquipoOcurrencia;
+        setTimeout(() => ref.highlight = false, 2000);
+        this.selectedEquipoOcurrencia = null;
+      }
+    });
+
+    this.ocurrenciaEvents.ocurrenciaAutorizada.subscribe(() => {
+      if (this.sedeFiltro && this.sedeFiltro.id && this.sedeFiltro.id !== 0) {
+        this.filtrarPorSede();
+      } else {
+        this.listar();
+      }
+    });
+  }
+
   async ngOnInit() {
     // this.user = this.authService.getUser();
     this.user = {
@@ -182,6 +228,7 @@ export class AceptacionesEquipos {
   }
 
 onAbrirOcurrencia(item: any) {
+  this.selectedEquipoOcurrencia = item;
   this.modal.openModal(item);
 }
   onGlobalFilter(table: Table, event: Event) {
@@ -221,6 +268,7 @@ onAbrirOcurrencia(item: any) {
           this.loading = false;
           if (result.status == 0) {
             this.data = result.data;
+            this.applyPersistedPending();
           }
         }
         , (error: HttpErrorResponse) => {
@@ -273,6 +321,14 @@ onAbrirOcurrencia(item: any) {
 
   }
 
+  irAutorizacion(equipo: Equipo): void {
+    const id = equipo.id || equipo.idEquipo;
+    if (id) {
+      this.ocurrenciaEvents.setDestino(id);
+    }
+    this.router.navigate(['/main/laboratorio-computo/ocurrencias']);
+  }
+
 cambiarEstadoADisponible(equipo: Equipo): void {
   // Extrae el id comprobando si existe 'id' o 'idEquipo'
   const equipoId = equipo.id || equipo.idEquipo;
@@ -281,6 +337,15 @@ cambiarEstadoADisponible(equipo: Equipo): void {
       severity: 'error',
       summary: 'Error',
       detail: 'El equipo no tiene un ID válido para cambiar su estado.'
+    });
+    return;
+  }
+
+  if (equipo.tieneOcurrencia) {
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Advertencia',
+      detail: 'Material con observación pendiente.'
     });
     return;
   }
@@ -303,6 +368,13 @@ cambiarEstadoADisponible(equipo: Equipo): void {
                 summary: 'Estado modificado',
                 detail: 'El equipo ahora está DISPONIBLE.'
               });
+              if (equipo.tieneOcurrencia) {
+                this.messageService.add({
+                  severity: 'warn',
+                  summary: 'Advertencia',
+                  detail: 'Este registro tiene una ocurrencia.'
+                });
+              }
               // Puedes volver a filtrar o recargar la lista para reflejar el cambio
               this.filtrarPorSede();
             } else {
@@ -342,6 +414,7 @@ cambiarEstadoADisponible(equipo: Equipo): void {
                 this.loading = false;
                 if (result.status == "0") {
                   this.data = result.data;
+                  this.applyPersistedPending();
                 }
               }
               , (error: HttpErrorResponse) => {
@@ -359,4 +432,10 @@ cambiarEstadoADisponible(equipo: Equipo): void {
 
 onRowCollapse(event: TableRowCollapseEvent) {
 }
+  private applyPersistedPending(): void {
+    this.data.forEach(e => {
+      const id = e.id || e.idEquipo;
+      e.tieneOcurrencia = this.ocurrenciaEvents.tieneOcurrencia(id);
+    });
+  }
 }

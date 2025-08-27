@@ -1,14 +1,17 @@
 import { Component } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
 import { TemplateModule } from '../../template.module';
 import { Sedes } from '../../interfaces/sedes';
 import { ClaseGeneral } from '../../interfaces/clase-general';
+import { PrestamosService } from '../../services/prestamos.service';
+import { VisitanteBibliotecaVirtualDTO } from '../../interfaces/reportes/visitante-biblioteca-virtual';
 
 @Component({
     selector: 'app-reporte-visitantes-biblioteca',
     standalone: true,
-    template: ` 
+    template: `
         <div class="card flex flex-col gap-4 w-full">
     <h5>{{titulo}}</h5>
     <p-toolbar styleClass="mb-6">
@@ -31,7 +34,7 @@ import { ClaseGeneral } from '../../interfaces/clase-general';
                         <label for="escuela" class="block text-sm font-medium">Escuela</label>
                         <p-select [(ngModel)]="escuelaFiltro" [options]="dataEscuela" optionLabel="descripcion" placeholder="Seleccionar" />
                     </div>
-                    
+
                     <div class="flex flex-col gap-2 col-span-7 md:col-span-2 lg:col-span-3">
                     <label for="programa" class="block text-sm font-medium">Programa</label>
                     <p-select [(ngModel)]="programaFiltro" [options]="dataPrograma" optionLabel="descripcion" placeholder="Seleccionar" />
@@ -42,7 +45,7 @@ import { ClaseGeneral } from '../../interfaces/clase-general';
                     </div>
                     <div class="flex flex-col gap-2 col-span-3 md:col-span-2 lg:col-span-2">
                     <label for="tipoPrestamo" class="block text-sm font-medium">Fecha inicio</label>
-                        <p-datepicker 
+                        <p-datepicker
                             appendTo="body"
                             formControlName="fechaInicio"
                             [ngClass]="'w-full'"
@@ -53,7 +56,7 @@ import { ClaseGeneral } from '../../interfaces/clase-general';
                     </div>
                     <div class="flex flex-col gap-2 col-span-3 md:col-span-2 lg:col-span-2">
                     <label for="tipoPrestamo" class="block text-sm font-medium">Fecha fin</label>
-                    <p-datepicker 
+                    <p-datepicker
                             appendTo="body"
                             formControlName="fechaFin"
                             [ngClass]="'w-full'"
@@ -63,21 +66,43 @@ import { ClaseGeneral } from '../../interfaces/clase-general';
                         </p-datepicker>
                     </div>
                     <div class="flex items-end">
-            <button 
-                pButton 
-                type="button" 
-                class="p-button-rounded p-button-danger" 
+            <button
+                pButton
+                type="button"
+                class="p-button-rounded p-button-danger"
                 icon="pi pi-search"(click)="reporte()" [disabled]="loading"  pTooltip="Ver reporte" tooltipPosition="bottom">
             </button>
         </div>
                     <div class="flex col-span-1 md:col-span-2 lg:col-span-2">
-                    
+
                     </div>
                 </div>
-               
+
             </div>
-       
+
     </p-toolbar>
+    <p-table [value]="resultados" [paginator]="true" [rows]="10" [loading]="loading">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Sede</th>
+                <th>Tipo documento</th>
+                <th>N° documento</th>
+                <th>Apellidos y nombres</th>
+                <th>Tipo usuario</th>
+                <th>Visitas</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+            <tr>
+                <td>{{ row.sede }}</td>
+                <td>{{ row.tipoDocumento }}</td>
+                <td>{{ row.numeroDocumento }}</td>
+                <td>{{ row.apellidosNombres }}</td>
+                <td>{{ row.tipoUsuario }}</td>
+                <td>{{ row.totalVisitas }}</td>
+            </tr>
+        </ng-template>
+    </p-table>
 </div>
 `,
             imports: [TemplateModule, TooltipModule],
@@ -104,9 +129,22 @@ export class ReporteVisitantesBibliotecaVirtual {
     dataTipoPrestamo: ClaseGeneral[] = [];
     tipoPrestamoFiltro: ClaseGeneral = new ClaseGeneral();
     loading: boolean = true;
+    resultados: VisitanteBibliotecaVirtualDTO[] = [];
 
+    constructor(private svc: PrestamosService, private messageService: MessageService) {}
     async ngOnInit() {
         await this.reporte();
     }
-    reporte(){}
+    async reporte() {
+        this.loading = true;
+        try {
+            this.resultados =
+                (await firstValueFrom(this.svc.reporteVisitantesBibliotecaVirtual())) ?? [];
+        } catch (error: any) {
+            const msg = error?.status === 403 ? 'No autorizado para ver el reporte.' : 'No fue posible cargar los datos.';
+            this.messageService.add({ severity: 'error', detail: msg });
+        } finally {
+            this.loading = false;
+        }
+    }
 }
