@@ -101,6 +101,39 @@ public class EmailService {
         mailSender.send(msg);
     }
 
+    public void sendMaterialReturnReminder(DetalleBiblioteca detalle, long amount, ChronoUnit unit) {
+        String unitName = unit == ChronoUnit.HOURS ? "horas" : "minutos";
+        String fecha = detalle.getFechaFin() != null
+                ? detalle.getFechaFin().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                : "N/A";
+
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(from);
+        msg.setTo("moranpedro0398@gmail.com");
+        msg.setSubject(amount > 0
+                ? "Recordatorio de devolución en " + amount + " " + unitName
+                : "El préstamo vence hoy");
+        msg.setText("Hola " + detalle.getCodigoUsuario() + ",\n\n" +
+                "Tu préstamo del material \"" + detalle.getBiblioteca().getTitulo() +
+                "\" vence el " + fecha + ".\n\nSaludos,\nTu App de Préstamos");
+        mailSender.send(msg);
+    }
+
+    public void sendMaterialOverdue(DetalleBiblioteca detalle) {
+        String fecha = detalle.getFechaFin() != null
+                ? detalle.getFechaFin().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                : "N/A";
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(from);
+        msg.setTo("moranpedro0398@gmail.com");
+        msg.setSubject("Préstamo vencido");
+        msg.setText("Hola " + detalle.getCodigoUsuario() + ",\n\n" +
+                "El préstamo del material \"" + detalle.getBiblioteca().getTitulo() +
+                "\" venció el " + fecha + ". Se aplicarán las sanciones correspondientes." +
+                "\n\nSaludos,\nTu App de Préstamos");
+        mailSender.send(msg);
+    }
+
     /**
      * Envía un enlace de restablecimiento de contraseña al correo indicado.
      *

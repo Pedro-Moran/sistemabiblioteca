@@ -1,6 +1,7 @@
 package com.miapp.repository;
 
 import com.miapp.model.OcurrenciaBiblioteca;
+import com.miapp.model.DetalleBiblioteca;
 import org.springframework.data.jpa.repository.JpaRepository;
 import com.miapp.model.dto.EjemplarPrestadoDTO;
 import org.springframework.data.jpa.repository.Query;
@@ -36,6 +37,9 @@ public interface OcurrenciaBibliotecaRepository
             "AND (o.regulariza IS NULL OR o.regulariza = 0) " +
             "AND (o.anulado IS NULL OR o.anulado = 0)")
     List<OcurrenciaBiblioteca> findPendientesByCodigoUsuarioIgnoreCase(@Param("codigoUsuario") String codigoUsuario);
+
+    /** Indica si existe una ocurrencia asociada al detalle dado */
+    boolean existsByDetalleBiblioteca(DetalleBiblioteca detalleBiblioteca);
 
     /**
      * Variante que devuelve tanto pendientes sin costear como aquellas ya
