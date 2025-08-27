@@ -32,7 +32,10 @@ export interface LoginCredentials {
                         <div class="text-center mb-8">
                             <img src="assets/logo.png" alt="Logo" class="mb-8 w-30 shrink-0 mx-auto" />
                             <span class="text-muted-color font-medium mb-4">Inicia sesión para continuar</span>
-                            <p-button label="Iniciar sesión con Microsoft365" styleClass="w-full mt-4" (click)="loginWithMicrosoft()"></p-button>
+                            <div class="flex flex-col sm:flex-row gap-2 w-full mt-4">
+                                <p-button label="Iniciar sesión con Microsoft365" styleClass="w-full flex-1" (click)="loginWithMicrosoft()"></p-button>
+                                <p-button label="Cambiar de cuenta" icon="pi pi-sign-out" severity="secondary" styleClass="w-full flex-1" (click)="logout()" [disabled]="loading"></p-button>
+                            </div>
                              <div class="flex items-center my-4">
                                <!-- Línea izquierda -->
                                <div class="flex-grow border-t border-gray-300"></div>
@@ -83,6 +86,16 @@ export class Login implements OnInit {
      loginWithMicrosoft() {
         this.authService.loginMicrosoft();
      }
+
+    loading: boolean = false;
+
+    logout(): void {
+        this.loading = true;
+        this.msalService.logoutPopup({ mainWindowRedirectUri: '/auth/login' }).subscribe({
+            next: () => (this.loading = false),
+            error: () => (this.loading = false)
+        });
+    }
 
     ngOnInit(): void {
         const remembered = localStorage.getItem('rememberedEmail');

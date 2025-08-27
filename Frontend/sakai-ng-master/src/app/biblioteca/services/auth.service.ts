@@ -320,8 +320,12 @@ private resetInactivityTimer(): void {
     localStorage.removeItem('currentUser');
     localStorage.removeItem(this.TOKEN_NAME);
     localStorage.removeItem(this.REFRESH_NAME);
-    // Redirige a la página de login o principal según tu flujo
-    this.router.navigate(['/']);
+    const activeAccount = this.msalService.instance.getActiveAccount();
+    if (activeAccount) {
+      this.msalService.logoutPopup({ mainWindowRedirectUri: '/auth/login' }).subscribe();
+    } else {
+      this.router.navigate(['/auth/login']);
+    }
     return;
   }
 
