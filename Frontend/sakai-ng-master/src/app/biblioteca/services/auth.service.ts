@@ -185,45 +185,44 @@ export class AuthService {
 // }
 
 loginMicrosoft() {
-    this.msalService.loginPopup().subscribe({
+    // Limpia la cuenta activa para evitar reutilizar sesiones previas
+    this.msalService.instance.setActiveAccount(null);
+    this.msalService.loginPopup({ prompt: 'select_account', scopes: ['user.read'] }).subscribe({
       next: (result: AuthenticationResult) => {
         console.log('Inicio de sesión exitoso', result);
-        // Establece la cuenta activa y continua con la obtención del token
+        // Establece la cuenta activa y continúa con la obtención del token
         this.msalService.instance.setActiveAccount(result.account);
-        this.msalService.acquireTokenSilent({
-            scopes: ['user.read'],
-          }).pipe(
+        this.msalService.acquireTokenSilent({ scopes: ['user.read'] })
+          .pipe(
             catchError(error => {
               // Si el token silencioso falla, intenta obtener el token con un popup
-              return this.msalService.acquireTokenPopup({
-                scopes: ['user.read'],
-              });
+              return this.msalService.acquireTokenPopup({ scopes: ['user.read'] });
             })
           ).subscribe({
-          next: (tokenResponse) => {
-            console.log('Token de Microsoft:', tokenResponse.accessToken);
-            this.http.post<LoginResponse>(`${this.apiUrl}/login-microsoft`, { token: tokenResponse.accessToken })
-              .subscribe({
-                next: (backendResponse) => {
-                  if (backendResponse.token) {
-                    this.setAuthentication(backendResponse.token);
-                    this.currentUserSubject.next(this.getUser());
-                    this.openPendingResource();
-                    this.router.navigate(['/main']);
+            next: (tokenResponse) => {
+              console.log('Token de Microsoft:', tokenResponse.accessToken);
+              this.http.post<LoginResponse>(`${this.apiUrl}/login-microsoft`, { token: tokenResponse.accessToken })
+                .subscribe({
+                  next: (backendResponse) => {
+                    if (backendResponse.token) {
+                      this.setAuthentication(backendResponse.token);
+                      this.currentUserSubject.next(this.getUser());
+                      this.openPendingResource();
+                      this.router.navigate(['/main']);
+                    }
+                  },
+                  error: (error) => {
+                    console.error('Error en autenticación con backend:', error);
+                    // Cierra el popup (MSAL lo debería cerrar automáticamente) y muestra tu alerta
+                    alert(this.obtenerMensajeError(error));
                   }
-                },
-                error: (error) => {
-                  console.error('Error en autenticación con backend:', error);
-                  // Cierra el popup (MSAL lo debería cerrar automáticamente) y muestra tu alerta
-                  alert(this.obtenerMensajeError(error));
-                }
-              });
-          },
-          error: (error) => {
-            console.error('Error obteniendo el token de Microsoft:', error);
-            alert(this.obtenerMensajeError(error));
-          },
-        });
+                });
+            },
+            error: (error) => {
+              console.error('Error obteniendo el token de Microsoft:', error);
+              alert(this.obtenerMensajeError(error));
+            },
+          });
       },
       error: (error) => {
         console.error('Error en la autenticación con Microsoft:', error);
@@ -232,13 +231,15 @@ loginMicrosoft() {
     });
   }
 
- // Método para personalizar el mensaje de error
-     private obtenerMensajeError(error: any): string {
-       if (error.error && error.error.indexOf('AADSTS50020') !== -1) {
-         return 'Usuario no registrado en el tenant. Por favor, utiliza una cuenta válida o contacta a tu administrador.';
-       }
-       return `Error de autenticación: ${error.message || error}`;
-     }
+  // Método para personalizar el mensaje de error
+  private obtenerMensajeError(error: any): string {
+    const errorMessage =
+      error?.error?.message || error?.error || error?.message || error.toString();
+    if (typeof errorMessage === 'string' && errorMessage.includes('AADSTS50020')) {
+      return 'Usuario no registrado en el tenant. Por favor, utiliza una cuenta válida o contacta a tu administrador.';
+    }
+    return `Error de autenticación: ${errorMessage}`;
+  }
 
   // Login manual: envía las credenciales y espera una respuesta con mensaje y token.
   loginManual(credentials: { email: string; password: string }): Observable<any> {

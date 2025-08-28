@@ -8,11 +8,8 @@ import { PasswordModule } from 'primeng/password';
 import { RippleModule } from 'primeng/ripple';
 import { AppFloatingConfigurator } from '../../layout/component/app.floatingconfigurator';
 import { AuthService } from '../../biblioteca/services/auth.service';
-import { LoginRequest, LoginResponse } from '../../biblioteca/interfaces/Authentication';
 
 import { Router } from '@angular/router';
-import { MsalService } from '@azure/msal-angular';
-import { InteractionType, AuthenticationResult } from '@azure/msal-browser';
 
 export interface LoginCredentials {
   email: string;
@@ -34,7 +31,6 @@ export interface LoginCredentials {
                             <span class="text-muted-color font-medium mb-4">Inicia sesión para continuar</span>
                             <div class="flex flex-col sm:flex-row gap-2 w-full mt-4">
                                 <p-button label="Iniciar sesión con Microsoft365" styleClass="w-full flex-1" (click)="loginWithMicrosoft()"></p-button>
-                                <p-button label="Cambiar de cuenta" icon="pi pi-sign-out" severity="secondary" styleClass="w-full flex-1" (click)="logout()" [disabled]="loading"></p-button>
                             </div>
                              <div class="flex items-center my-4">
                                <!-- Línea izquierda -->
@@ -81,21 +77,11 @@ export class Login implements OnInit {
     checked: boolean = false;
     credentials: LoginCredentials = { email: '', password: '' };
 
-    constructor(private msalService: MsalService, private authService: AuthService, private router: Router) {}
+    constructor(private authService: AuthService, private router: Router) {}
 
      loginWithMicrosoft() {
         this.authService.loginMicrosoft();
      }
-
-    loading: boolean = false;
-
-    logout(): void {
-        this.loading = true;
-        this.msalService.logoutPopup({ mainWindowRedirectUri: '/auth/login' }).subscribe({
-            next: () => (this.loading = false),
-            error: () => (this.loading = false)
-        });
-    }
 
     ngOnInit(): void {
         const remembered = localStorage.getItem('rememberedEmail');
