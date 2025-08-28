@@ -44,7 +44,7 @@ import { environment } from '../../../../../environments/environment';
 
                         <p-divider class="w-full bg-surface-200"></p-divider>
                         <div class="p-6">
-            <i class="pi pi-fw pi-calendar !text-2xl text-primary"></i> {{ item.fecha || (item.fechacreacion | date:'dd/MM/yyyy') }}
+            <i class="pi pi-fw pi-calendar !text-2xl text-primary"></i> {{ (item.fecha || item.fechacreacion) | date:'yyyy-MM-dd HH:mm:ss' }}
                 <h3 class="text-xl font-semibold text-gray-900">
                 <a [href]="item.link || item.enlace" target="_blank" class="hover:text-primary focus:text-primary transition-colors">
   {{ item.titular }}
