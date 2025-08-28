@@ -97,7 +97,7 @@ import { environment } from '../../../../environments/environment';
                     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
                     [rowsPerPageOptions]="[10, 25, 50]" [rowHover]="true"
                     styleClass="p-datatable-gridlines" [paginator]="true"
-                    [globalFilterFields]="['codigo','titulo','editorial.autorPersonal','editorial.autorSecundario','editorial.anio']"
+                    [globalFilterFields]="['codigoLocalizacion','titulo','autor','anioPublicacion']"
                     responsiveLayout="scroll">
                     <ng-template pTemplate="caption">
 
@@ -112,11 +112,11 @@ import { environment } from '../../../../environments/environment';
                     <ng-template pTemplate="header">
                         <tr>
                             <th style="width: 8rem" pSortableColumn="urlPortada">PORTADA <p-sortIcon field="urlPortada"></p-sortIcon></th>
-                            <th style="width: 4rem" pSortableColumn="codigo">CODIGO <p-sortIcon field="codigo"></p-sortIcon></th>
+                            <th style="width: 4rem" pSortableColumn="codigoLocalizacion">CODIGO <p-sortIcon field="codigoLocalizacion"></p-sortIcon></th>
                             <th style="min-width:200px" pSortableColumn="titulo"> TITULO <p-sortIcon field="titulo"></p-sortIcon></th>
-                            <th style="min-width:200px" pSortableColumn="editorial.autorPersonal">AUTOR <p-sortIcon field="editorial.autorPersonal"></p-sortIcon></th>
-                            <th style="width: 4rem" pSortableColumn="editorial.anio">AÑO <p-sortIcon
-                                    field="editorial.anio"></p-sortIcon></th>
+                            <th style="min-width:200px" pSortableColumn="autor">AUTOR <p-sortIcon field="autor"></p-sortIcon></th>
+                            <th style="width: 4rem" pSortableColumn="anioPublicacion">AÑO <p-sortIcon
+                                    field="anioPublicacion"></p-sortIcon></th>
                             <th style="width: 10rem">Opciones</th>
 
                         </tr>
@@ -129,14 +129,13 @@ import { environment } from '../../../../environments/environment';
 
                             </td>
                             <td>
-                                {{objeto.codigo}}
+                                {{ objeto.codigoLocalizacion }}
                             </td>
                             <td>
                                 {{objeto.titulo}}
                             </td>
                             <td>
-                                {{objeto.autorPersonal}}<br/>
-                                <span>{{objeto.autorSecundario}}</span>
+                                {{ objeto.autor }}
                             </td>
                             <td>
                                 {{objeto.anioPublicacion}}
@@ -175,7 +174,7 @@ import { environment } from '../../../../environments/environment';
 })
 export class CatalogoLista implements OnInit {
     modulo: string = "catalogo";
-    data: BibliotecaDTO[] = [];
+    data: (BibliotecaDTO & { autor: string })[] = [];
     @ViewChild('menu') menu!: Menu;
     @ViewChild('filter') filter!: ElementRef;
     items: MenuItem[] | undefined;
@@ -277,6 +276,7 @@ listar() {
       list => {
         this.data = list.map(b => ({
           ...b,
+          autor: b.autorPersonal ?? b.autorInstitucional ?? b.autorSecundario ?? '',
           urlPortada: this.getImageUrl(b)
         }));
         this.loading = false;
