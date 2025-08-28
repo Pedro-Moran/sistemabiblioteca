@@ -21,7 +21,7 @@ public class NoticiaService {
     private final EstadoRepository estadoRepo;
 
     public List<NoticiaDTO> listarPorFecha(LocalDateTime start, LocalDateTime end) {
-        return repo.findByFechacreacionBetween(start, end).stream()
+        return repo.findByFechacreacionBetweenOrderByFechacreacionDesc(start, end).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
