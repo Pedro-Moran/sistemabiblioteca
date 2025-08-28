@@ -202,12 +202,21 @@ public class UsuarioService {
 
         // Actualizar los campos simples
         usuarioExistente.setNombreUsuario(usuario.getNombreUsuario());
+        usuarioExistente.setApellidoPaterno(usuario.getApellidoPaterno());
+        usuarioExistente.setApellidoMaterno(usuario.getApellidoMaterno());
         usuarioExistente.setEmail(usuario.getEmail());
         if (usuario.getPassword() != null && !usuario.getPassword().isBlank()) {
             usuarioExistente.setPassword(passwordEncoder.encode(usuario.getPassword()));
         }
         usuarioExistente.setTelefono(usuario.getTelefono());
+        usuarioExistente.setCell(usuario.getCell());
         usuarioExistente.setDireccion(usuario.getDireccion());
+        usuarioExistente.setNumDocumento(usuario.getNumDocumento());
+        if (usuario.getTipodocumento() != null && usuario.getTipodocumento().getIdTipoDocumento() != null) {
+            TipoDocumento tipo = tipoDocumentoRepository.findById(usuario.getTipodocumento().getIdTipoDocumento())
+                    .orElseThrow(() -> new RuntimeException("Tipo de documento no encontrado"));
+            usuarioExistente.setTipodocumento(tipo);
+        }
         // Se omite la actualización de roles aquí, pues se maneja en endpoints específicos
 
         return usuarioRepository.save(usuarioExistente);

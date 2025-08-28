@@ -208,8 +208,8 @@ public class AuthController {
             Usuario nuevoUsuario = usuarioService.registrarUsuario(usuario);
             return ResponseEntity.ok(Map.of("p_status", 0, "p_mensaje", "Usuario registrado exitosamente por el administrador", "data", nuevoUsuario));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("p_status", -1, "p_mensaje", e.getMessage()));
+            // Se retorna 200 para que el frontend pueda manejar el mensaje de validación
+            return ResponseEntity.ok(Map.of("p_status", -1, "p_mensaje", e.getMessage()));
         }
     }
 
@@ -264,11 +264,11 @@ public class AuthController {
                     )
             );
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of(
-                            "p_status", -1,
-                            "p_mensaje", e.getMessage()
-                    ));
+            // Se retorna 200 para permitir que el frontend muestre el mensaje de error
+            return ResponseEntity.ok(Map.of(
+                    "p_status", -1,
+                    "p_mensaje", e.getMessage()
+            ));
         }
     }
 

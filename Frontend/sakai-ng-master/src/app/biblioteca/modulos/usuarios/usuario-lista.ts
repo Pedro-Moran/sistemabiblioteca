@@ -11,6 +11,7 @@ import { Menu } from 'primeng/menu';
 import { Message } from 'primeng/message';
 import { UsuarioService } from '../../services/usuarios.service';
 import { Usuario } from '../../interfaces/usuario';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
     selector: 'app-usuario-lista',
@@ -366,20 +367,20 @@ export class UsuarioLista implements OnInit {
         }
     }
 
-    async tipodocumentos() {
-        this.usuarioService.conf_event_get('lista-activo').subscribe(
-            (result: any) => {
-                if (result.status == '0') {
-                    this.dataTipoDocumento = result.data;
-                    console.log('Tipos de documento:', this.dataTipoDocumento);
-                }
-                this.loading = false;
-            },
-            (error: HttpErrorResponse) => {
-                console.log(error);
-                this.loading = false;
+    async tipodocumentos(): Promise<void> {
+        try {
+            const result: any = await firstValueFrom(
+                this.usuarioService.conf_event_get('lista-activo')
+            );
+            if (result.status === '0') {
+                this.dataTipoDocumento = result.data;
+                console.log('Tipos de documento:', this.dataTipoDocumento);
             }
-        );
+        } catch (error) {
+            console.log(error);
+        } finally {
+            this.loading = false;
+        }
     }
     async formValidar() {
         let dataObjeto = this.objeto ? JSON.parse(JSON.stringify(this.objeto)) : {};
@@ -420,7 +421,12 @@ export class UsuarioLista implements OnInit {
                               return false;
                           }
                         : () => true;
-                this.data = registros.filter((obj: any) => filtroRol(obj));
+                this.data = registros
+                    .filter((obj: any) => filtroRol(obj))
+                    .map((obj: any) => ({
+                        ...obj,
+                        celular: obj.celular ?? obj.CELL ?? obj.cell
+                    }));
             },
             (_error: HttpErrorResponse) => {
                 this.loading = false;
@@ -471,7 +477,13 @@ export class UsuarioLista implements OnInit {
         this.objeto = JSON.parse(JSON.stringify(objeto));
         console.log('Objeto a editar:', this.objeto);
 
-        const documentoSeleccionado = this.dataTipoDocumento.find((item) => item.idTipoDocumento === this.objeto.tipodocumento?.idTipoDocumento);
+        const idTipoDoc =
+            this.objeto.tipodocumento?.idTipoDocumento ??
+            this.objeto.idtipodocumento;
+
+        const documentoSeleccionado = this.dataTipoDocumento.find(
+            (item) => item.idTipoDocumento === Number(idTipoDoc)
+        );
 
         const usuarioPatch = {
             id: this.objeto.idUsuario ?? this.objeto.id, // Corregido para mapear el ID real
@@ -613,9 +625,12 @@ export class UsuarioLista implements OnInit {
             password,
             horaTrabajo: formValues.horaTrabajo,
             idSede: sede?.id,
-            idTipoDocumento: tipodocumento?.idTipoDocumento,
+            tipodocumento: tipodocumento
+                ? { idTipoDocumento: tipodocumento.idTipoDocumento }
+                : null,
             numDocumento: formValues.numDocumento,
             telefono: formValues.telefono,
+            CELL: formValues.celular,
             direccion: formValues.direccion,
             roles: [{ idRol: rol.idRol }],
             usuarioCreacion: usuarioLogeado
