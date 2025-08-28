@@ -109,12 +109,8 @@ public class AuthController {
         Optional<Usuario> usuarioOpt = usuarioService.buscarPorEmail(email);
 
         if (usuarioOpt.isEmpty()) {
-            if (!usuarioService.usuarioPerteneceAlTenant(email)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("message", "El usuario no pertenece al tenant autorizado."));
-            }
             Usuario usuario = usuarioService.registrarDesdeOffice365(email, microsoftId);
-            // Tomamos el primer rol asignado o asignamos un valor por defecto
+            usuarioService.incrementarContadorLogins(usuario.getLogin());
             String rolDescripcion = usuario.getRoles().isEmpty()
                     ? "Sin Rol"
                     : usuario.getRoles().iterator().next().getDescripcion();

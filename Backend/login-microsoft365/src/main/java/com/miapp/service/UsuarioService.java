@@ -7,6 +7,9 @@ import com.miapp.repository.RolRepository;
 import com.miapp.repository.TipoDocumentoRepository;
 import com.miapp.repository.UsuarioRepository;
 import com.miapp.util.JwtUtil;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.exceptions.JWTDecodeException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -133,14 +136,21 @@ public class UsuarioService {
      */
     public Usuario registrarDesdeOffice365(String email, String microsoftId) {
         Usuario usuario = new Usuario();
-        // Puedes asignar un login igual al email o derivarlo de otra forma
+        // El login será el correo corporativo
         usuario.setLogin(email);
         usuario.setEmail(email);
-        // Usamos el ID de Microsoft encriptado como contraseña
+        // Se usa el ID de Microsoft como contraseña encriptada
         usuario.setPassword(passwordEncoder.encode(microsoftId));
-        // Asignar el rol por defecto (por ejemplo, "Usuario")
-        // usuario.setIdRol( ... );
-        // Completar otros campos opcionales o dejarlos nulos según la lógica de tu sistema.
+
+        // Asignar rol "USUARIO" por defecto
+        Rol rolUsuario = rolRepository.findByDescripcion("USUARIO")
+                .orElseThrow(() -> new RuntimeException("Rol 'USUARIO' no encontrado"));
+        usuario.getRoles().add(rolUsuario);
+
+        // Estado activo por defecto
+        usuario.setIdEstado("ACTIVO");
+
+        // Guardar en base de datos
         return usuarioRepository.save(usuario);
     }
 
@@ -150,15 +160,27 @@ public class UsuarioService {
      * el token y extraer el email y un identificador único.
      */
     public Map<String, String> validarYExtraerDatosMicrosoft(String token) {
-        // Aquí simulas la validación y extracción.
-        // Por ejemplo, si el token es válido, se retorna un mapa con "email" e "id".
-        // En una implementación real, consulta la documentación de Microsoft Identity.
-        // Si la validación falla, retorna null.
-        // Para este ejemplo, se asume que el token es válido:
-        return Map.of(
-                "email", "usuario@microsoft.com",
-                "id", "uniqueMicrosoftId123"
-        );
+        try {
+            DecodedJWT decoded = JWT.decode(token);
+
+            String email = decoded.getClaim("preferred_username").asString();
+            if (email == null || email.isBlank()) {
+                email = decoded.getClaim("email").asString();
+            }
+
+            String id = decoded.getSubject();
+
+            if (email == null || id == null) {
+                return null;
+            }
+
+            return Map.of(
+                    "email", email,
+                    "id", id
+            );
+        } catch (JWTDecodeException e) {
+            return null;
+        }
     }
 
 //    public List<Usuario> getUsuariosPorRol(Long idrol) {
