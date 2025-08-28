@@ -98,8 +98,8 @@ export class PortalService {
     // Listar, con parámetros opcionales ?start=yyyy-MM-dd&end=yyyy-MM-dd
       listar(start?: string, end?: string): Observable<{status:string, data:PortalNoticia[]}> {
         const q = [];
-        if (start) q.push(`start=${start}`);
-        if (end)   q.push(`end=${end}`);
+        if (start) q.push(`start=${encodeURIComponent(start)}`);
+        if (end)   q.push(`end=${encodeURIComponent(end)}`);
         const params = q.length ? `?${q.join('&')}` : '';
         return this.http.get<ListDTO<PortalNoticia[]>>(
             `${this.apiUrl}/api/noticias/listar${params}`,

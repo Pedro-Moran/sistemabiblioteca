@@ -47,12 +47,16 @@ import { InputValidation } from '../../input-validation';
                             dateFormat="dd/mm/yy">
                         </p-datepicker>
                     </div>
-                    <div class="flex items-end">
+                <div class="flex items-end">
             <button
                 pButton
                 type="button"
                 class="p-button-rounded p-button-danger"
-                icon="pi pi-search"(click)="filtrar()" [disabled]="loading"  pTooltip="Filtrar" tooltipPosition="bottom">
+                icon="pi pi-search"
+                (click)="filtrar()"
+                [disabled]="loading"
+                pTooltip="Filtrar"
+                tooltipPosition="bottom">
             </button>
         </div>
 
@@ -72,7 +76,7 @@ import { InputValidation } from '../../input-validation';
                         [showCurrentPageReport]="true"
                         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
                         [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true" styleClass="p-datatable-gridlines" [paginator]="true"
-                        [globalFilterFields]="['id','titulo','subtitulo','detalle','fecha','anunciante','activo']" responsiveLayout="scroll">
+                        [globalFilterFields]="['id','titular','titulo','subtitulo','detalle','fecha','fechacreacion','autor','anunciante','estadoDescripcion','activo']" responsiveLayout="scroll">
                         <ng-template pTemplate="caption">
 
                        <div class="flex items-center justify-between">
@@ -311,6 +315,8 @@ export class Noticias implements OnInit{
       clear(table: Table) {
         table.clear();
         this.filter.nativeElement.value = '';
+        this.filterForm.reset();
+        this.listar();
       }
        cambiarEstadoRegistro(n: PortalNoticia) {
            const usuario = this.authService.getUser()?.sub ?? 0;
@@ -441,15 +447,29 @@ this.confirmationService.confirm({
                 const { start, end } = this.filterForm.value;
                 const s = start ? this.toIso(start) : undefined;
                 const e = end   ? this.toIso(end)   : undefined;
-                this.portalService.listar(s, e).subscribe(r => {
-                  this.data = r.data;
-                  this.loading = false;
-                }, _=> this.loading=false);
+                this.portalService.listar(s, e).subscribe({
+                  next: r => {
+                    let noticias = r.data || [];
+                    if (start || end) {
+                      noticias = noticias.filter(n => {
+                        const fechaStr = n.fechacreacion || n.fecha;
+                        const d = this.toDate(fechaStr) || new Date(fechaStr);
+                        if (!d || isNaN(d.getTime())) return false;
+                        return (!start || d >= start) && (!end || d <= end);
+                      });
+                    }
+                    this.data = noticias;
+                    this.loading = false;
+                  },
+                  error: _ => {
+                    this.loading = false;
+                  }
+                });
             }
 
   toIso(d: Date) {
       const pad = (n:number)=>(n<10?'0':'')+n;
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T00:00:00`;
   }
 
   private toDate(fecha: string): Date | null {
