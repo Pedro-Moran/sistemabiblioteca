@@ -18,6 +18,11 @@ public class EspecialidadService {
 
     @Transactional
     public Especialidad save(Especialidad especialidad) {
+        String descripcion = especialidad.getDescripcion().trim();
+        if (especialidadRepository.findByDescripcionIgnoreCase(descripcion).isPresent()) {
+            throw new IllegalArgumentException("La especialidad ya se encuentra registrada");
+        }
+        especialidad.setDescripcion(descripcion);
         return especialidadRepository.save(especialidad);
     }
 

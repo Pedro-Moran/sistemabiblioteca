@@ -808,6 +808,12 @@ export class ModalTesisComponent implements OnInit {
     }
     guardarEspecialidad() {
         if (this.formEspecialidad.valid) {
+            const desc = this.formEspecialidad.value.descripcion.trim().toLowerCase();
+            const existe = this.especialidadLista.some(e => (e.descripcion || '').trim().toLowerCase() === desc);
+            if (existe) {
+                this.messageService.add({ severity: 'warn', summary: 'Advertencia', detail: 'La especialidad ya se encuentra registrada' });
+                return;
+            }
 
             this.confirmationService.confirm({
                 message: '¿Estás seguro(a) de que quieres registrar?',
