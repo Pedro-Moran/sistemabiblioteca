@@ -10,5 +10,5 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface NoticiaRepository extends JpaRepository<Noticia,Long> {
-    List<Noticia> findByFechacreacionBetween(LocalDateTime start, LocalDateTime end);
+    List<Noticia> findByFechacreacionBetweenOrderByFechacreacionDesc(LocalDateTime start, LocalDateTime end);
 }
