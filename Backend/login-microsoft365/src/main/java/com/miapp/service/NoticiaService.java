@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -35,7 +34,6 @@ public class NoticiaService {
             // Alta
             n = new Noticia();
             n.setUsuariocreacion(dto.getUsuariocreacion());
-            n.setFechacreacion(ahora);
         } else {
             // Si viene id, intento recuperarla; si no existe, también la trato como nueva
             n = repo.findById(dto.getIdnoticia()).orElse(new Noticia());
@@ -61,7 +59,11 @@ public class NoticiaService {
                 .orElseThrow(() -> new RuntimeException("Estado no encontrado"));
         n.setEstado(e);
 
-        // 3) Guardo (insertará nuevo o actualizará existente)
+        // 3) Fecha de creación
+        LocalDateTime fecha = dto.getFechacreacion() != null ? dto.getFechacreacion() : ahora;
+        n.setFechacreacion(fecha);
+
+        // 4) Guardo (insertará nuevo o actualizará existente)
         repo.save(n);
     }
 

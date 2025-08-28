@@ -190,22 +190,25 @@ import { InputValidation } from '../../input-validation';
               modelo="link"
               ver="Url de noticia"></app-input-validation>
                         </div>
-                        <div class="flex flex-col gap-2 w-full md:w-1/4" >
+                        <div class="flex flex-col gap-2 w-full md:w-1/2">
       <label for="adjunto">Portada</label>
-      <p-fileupload
-        #fu
-        mode="basic"
-        chooseLabel="Seleccionar"
-        chooseIcon="pi pi-upload"
-        name="adjunto"
-        accept="image/*"
-        maxFileSize="1000000"
-        (onSelect)="onFileSelect($event)">
-
-  <ng-template pTemplate="empty">
-    Ningún archivo seleccionado
-  </ng-template>
-      </p-fileupload>
+      <div class="flex items-center gap-4">
+        <p-fileupload
+          #fu
+          mode="basic"
+          chooseLabel="Seleccionar imagen"
+          chooseIcon="pi pi-upload"
+          name="adjunto"
+          accept="image/*"
+          maxFileSize="1000000"
+          (onSelect)="onFileSelect($event)"
+          class="w-full md:w-auto">
+          <ng-template pTemplate="empty">
+            Ningún archivo seleccionado
+          </ng-template>
+        </p-fileupload>
+        <img *ngIf="imagePreview" [src]="imagePreview" alt="Vista previa" class="w-16 h-16 rounded object-cover border" />
+      </div>
 
       <app-input-validation [form]="form" modelo="adjunto" ver="adjunto"></app-input-validation>
     </div>
@@ -249,6 +252,7 @@ export class Noticias implements OnInit{
     form: FormGroup = new FormGroup({});
     filterForm: FormGroup;
     selectedFile: File | null = null;
+    imagePreview: string | null = null;
 
     constructor(private portalService: PortalService, private genericoService: GenericoService, private fb: FormBuilder,
     private router: Router, private authService: AuthService, private confirmationService: ConfirmationService, private messageService: MessageService) {
@@ -371,6 +375,8 @@ export class Noticias implements OnInit{
         link:       objeto.enlace,
         detalle:    objeto.descripcion
       });
+      this.imagePreview = objeto.urlPortada || objeto.imagenUrl || objeto.imagen || null;
+      this.selectedFile = null;
 
       this.objetoDialog = true;
   }
@@ -452,13 +458,17 @@ this.confirmationService.confirm({
       if (partes.length !== 3) return null;
       return new Date(+partes[2], +partes[1] - 1, +partes[0]);
   }
-          nuevoRegistro(){
-            this.formValidar();
-            this.objetoDialog = true;
-          }
-          cancelar() {
-              this.objetoDialog = false;
-          }
+  nuevoRegistro(){
+    this.formValidar();
+    this.selectedFile = null;
+    this.imagePreview = null;
+    this.objetoDialog = true;
+  }
+  cancelar() {
+      this.objetoDialog = false;
+      this.selectedFile = null;
+      this.imagePreview = null;
+  }
           guardar(){
             this.loading = true;
             // Verificar que exista un token de sesión válido antes de enviar la petición
@@ -519,9 +529,12 @@ this.confirmationService.confirm({
           onFileSelect(event: any) {
               const file = event.files[0];
               if (file) {
-                this.selectedFile = file;         // guarda el file aquí
+                this.selectedFile = file;
                 this.form.patchValue({ adjunto: file });
-                this.messageService.add({ severity: 'info', summary: 'Success', detail: 'Se adjuntó archivo' });
+                const reader = new FileReader();
+                reader.onload = () => this.imagePreview = reader.result as string;
+                reader.readAsDataURL(file);
+                this.messageService.add({ severity: 'info', summary: 'Ok', detail: 'Imagen seleccionada' });
               }
             }
 
