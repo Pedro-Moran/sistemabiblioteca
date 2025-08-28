@@ -53,8 +53,8 @@ public class UsuarioService {
         }
 
         System.out.println(usuario.getEmail());
-        // Verificar si el email ya existe
-        if (usuarioRepository.findByEmail(usuario.getEmail()).isPresent()) {
+        // Verificar si el email ya existe (sin importar mayúsculas/minúsculas)
+        if (usuarioRepository.findByEmailIgnoreCase(usuario.getEmail()).isPresent()) {
             throw new RuntimeException("El email ya existe.");
         }
         // Verificar si el número de documento ya existe
@@ -106,7 +106,7 @@ public class UsuarioService {
 
     // Método para validar credenciales en login manual
     public Optional<Usuario> validarCredenciales(String email, String rawPassword) {
-        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmailIgnoreCase(email);
         if (usuarioOpt.isPresent()) {
             Usuario usuario = usuarioOpt.get();
             if (passwordEncoder.matches(rawPassword, usuario.getPassword())) {
@@ -123,7 +123,7 @@ public class UsuarioService {
 
     // Buscar usuario por email
     public Optional<Usuario> buscarPorEmail(String email) {
-        return usuarioRepository.findByEmail(email);
+        return usuarioRepository.findByEmailIgnoreCase(email);
     }
 
     public boolean usuarioPerteneceAlTenant(String email) {

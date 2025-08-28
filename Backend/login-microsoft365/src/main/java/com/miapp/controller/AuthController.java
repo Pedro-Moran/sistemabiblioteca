@@ -133,7 +133,8 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> loginManual(@RequestBody LoginRequest loginRequest) {
-        Optional<Usuario> usuarioOpt = usuarioService.validarCredenciales(loginRequest.getEmail(), loginRequest.getPassword());
+        String emailUpper = loginRequest.getEmail().toUpperCase();
+        Optional<Usuario> usuarioOpt = usuarioService.validarCredenciales(emailUpper, loginRequest.getPassword());
         if (usuarioOpt.isPresent()) {
             Usuario usuario = usuarioOpt.get();
             String rolDescripcion = usuario.getRoles().isEmpty()
@@ -152,7 +153,7 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
+        String email = request.get("email").toUpperCase();
         return usuarioService.buscarPorEmail(email)
                 .map(usuario -> {
                     String token = passwordResetService.createToken(usuario);
