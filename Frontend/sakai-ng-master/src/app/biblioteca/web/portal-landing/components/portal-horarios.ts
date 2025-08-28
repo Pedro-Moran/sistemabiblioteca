@@ -3,24 +3,28 @@ import { CommonModule } from '@angular/common';
 import { MessageService } from 'primeng/api';
 import { PortalService } from '../../../services/portal.service';
 import { PortalHorario } from '../../../interfaces/portalHorario';
+import { LineBreakPipe } from '../pipes/line-break.pipe';
 
 @Component({
     selector: 'portal-horarios',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, LineBreakPipe],
     template: `
     <div id="portal-horarios" class="py-10">
         <div class="py-6 px-6 lg:px-20 mt-8 mx-0 lg:mx-20">
             <div class="text-surface-900 text-center dark:text-surface-0 font-normal mb-2 text-4xl">Horarios</div>
             <div class="grid grid-cols-12 gap-4 justify-center">
                 <div class="col-span-12 md:col-span-12 lg:col-span-4 p-0 lg:pb-8 mt-6 lg:mt-0" *ngFor="let horario of data">
-                    <div style="height: 160px; padding: 2px; border-radius: 10px; background: linear-gradient(90deg, rgba(251, 199, 145, 0.2), rgba(246, 158, 188, 0.2)), linear-gradient(180deg, rgba(172, 180, 223, 0.2), rgba(212, 162, 221, 0.2))">
-                        <div class="p-4 bg-surface-0 dark:bg-surface-900 h-full" style="border-radius: 8px">
+                    <div style="min-height: 160px; padding: 2px; border-radius: 10px; background: linear-gradient(90deg, rgba(251, 199, 145, 0.2), rgba(246, 158, 188, 0.2)), linear-gradient(180deg, rgba(172, 180, 223, 0.2), rgba(212, 162, 221, 0.2))">
+                        <div class="p-4 bg-surface-0 dark:bg-surface-900" style="border-radius: 8px">
                             <div class="flex items-center justify-center bg-rose-200 mb-4" style="width: 3.5rem; height: 3.5rem; border-radius: 10px">
                                 <i class="pi pi-fw pi-map-marker !text-2xl text-rose-700"></i>
                             </div>
                             <div class="mt-6 mb-1 text-surface-900 dark:text-surface-0 text-l font-semibold">{{ horario.sedeDescripcion }}</div>
-                            <span class="text-surface-600 dark:text-surface-200"><i class="pi pi-fw pi-clock text-primary"></i> {{ horario.descripcion }}</span>
+                            <span class="text-surface-600 dark:text-surface-200 block break-words">
+                                <i class="pi pi-fw pi-clock text-primary"></i>
+                                <span [innerHTML]="horario.descripcion | lineBreak"></span>
+                            </span>
                         </div>
                     </div>
                 </div>
