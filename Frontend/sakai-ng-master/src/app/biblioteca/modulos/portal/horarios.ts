@@ -119,7 +119,7 @@ import { PortalHorario } from '../../interfaces/portalHorario';
                 <div class="flex flex-col gap-4">
                 <div class="flex flex-col gap-2">
                             <label for="sede" class="block text-sm font-medium">Local/Filial</label>
-                            <p-select
+                           <p-select
                               formControlName="sedeId"
                               [options]="dataSede"
                               optionLabel="descripcion"
@@ -130,7 +130,7 @@ import { PortalHorario } from '../../interfaces/portalHorario';
                            <app-input-validation
                              [form]="form"
                              modelo="sedeId"
-                             ver="sedeId">
+                             ver="Local/Filial">
                            </app-input-validation>
                         </div>
 
