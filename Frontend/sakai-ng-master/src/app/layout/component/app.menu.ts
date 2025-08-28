@@ -284,35 +284,11 @@ export class AppMenu {
                 role: ['ADMIN', 'EJECUTIVO'],
                 items: [
                     {
-                        label: 'Email',
-                        icon: 'pi pi-fw pi-envelope',
-                        routerLink: ['/main/configuracion/email'],role: ['ROLE_CONF_EMAIL']
-                    },
-                    {
-                        label: 'Programas Académico',
-                        icon: 'pi pi-fw pi-tags',
-                        routerLink: ['/main/configuracion/programa-academico'],role: ['ROLE_CONF_PROGRAMAS_ACADEMICOS']
-                    },
-                    {
-                        label: 'Escuela Profesional',
-                        icon: 'pi pi-fw pi-tags',
-                        routerLink: ['/main/configuracion/escuela-profesional'],role: ['ROLE_CONF_ESCUELAS_PROFESIONALES']
-                    },
-                    {
                         label: 'Sedes',
                         icon: 'pi pi-fw pi-tags',
                         routerLink: ['/main/configuracion/sedes'],role: ['ROLE_CONF_SEDES']
-                    },
-                    {
-                        label: 'Tipos documento',
-                        icon: 'pi pi-fw pi-tags',
-                        routerLink: ['/main/configuracion/tipo-documento'],role: ['ROLE_CONF_TIPO_DOCUMENTO']
-                    },
-                    {
-                        label: 'Categoria recursos',
-                        icon: 'pi pi-fw pi-tags',
-                        routerLink: ['/main/configuracion/categoria-recurso'],role: ['ROLE_CONF_CATEGORIA_RECURSO']
                     }
+
                 ]
             },
             /*{
