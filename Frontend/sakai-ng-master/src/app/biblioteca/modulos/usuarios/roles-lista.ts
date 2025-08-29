@@ -209,19 +209,14 @@ export class RolesLista {
         icon: 'pi pi-align-justify',
         command: (event) => this.permisosModulos(this.selectedItem)
       },
-    ]
-    this.genericoService.conf_event_get('roles/lista-roles')
-      .subscribe(
-        (result: any) => {
-          this.loading = false;
-          if (result.status == "0") {
-            this.data = result.data;
-          }
-        }
-        , (error: HttpErrorResponse) => {
-          this.loading = false;
-        }
-      );
+      {
+        label: 'Eliminar',
+        icon: 'pi pi-trash',
+        command: (event) => this.deleteRegistro(this.selectedItem)
+      }
+    ];
+
+    this.listar();
   }
 
   onGlobalFilter(table: Table, event: Event) {
@@ -239,15 +234,18 @@ export class RolesLista {
   listar() {
     this.loading = true;
     this.data = [];
-    this.genericoService.roles_get(this.modulo + '/lista')
+    this.genericoService.roles_get(this.modulo + '/lista-roles')
       .subscribe(
         (result: any) => {
           this.loading = false;
           if (result.status == "0") {
-            this.data = result.data;
+            this.data = result.data.map((rol: any) => ({
+              id: rol.idRol,
+              descripcion: rol.descripcion
+            }));
           }
-        }
-        , (error: HttpErrorResponse) => {
+        },
+        (error: HttpErrorResponse) => {
           this.loading = false;
         }
       );
@@ -299,6 +297,32 @@ export class RolesLista {
           this.loading = false;
         });
 
+  }
+  deleteRegistro(objeto: ClaseGeneral) {
+    this.confirmationService.confirm({
+      message: '¿Estás seguro(a) de que quieres eliminar el rol: ' + objeto.descripcion + ' ?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'SI',
+      rejectLabel: 'NO',
+      accept: () => {
+        this.loading = true;
+        this.genericoService.conf_event_delete_1(objeto.id, this.modulo + '/eliminar')
+          .subscribe(result => {
+            if (result.p_status == 0) {
+              this.messageService.add({ severity: 'success', summary: 'Satisfactorio', detail: 'Registro eliminado.' });
+              this.listar();
+            } else {
+              this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se puedo realizar el proceso.' });
+            }
+            this.loading = false;
+          },
+            (error: HttpErrorResponse) => {
+              this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrio un error. Intentelo más tarde' });
+              this.loading = false;
+            });
+      }
+    });
   }
   permisosModulos(objeto: ClaseGeneral) {
     this.rolModulos(objeto.id);

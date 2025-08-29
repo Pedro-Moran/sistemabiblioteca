@@ -36,7 +36,13 @@ public class RolController {
     public ResponseEntity<?> registrarRol(@RequestBody Map<String, Object> payload) {
         try {
             Long id = payload.get("id") != null ? Long.valueOf(payload.get("id").toString()) : 0L;
-            String descripcion = payload.get("descripcion").toString();
+
+            Object descObj = payload.get("descripcion");
+            if (descObj == null || descObj.toString().trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("p_status", -1, "p_mensaje", "La descripción del rol es obligatoria"));
+            }
+            String descripcion = descObj.toString();
 
             // Evita duplicados cuando se registra un nuevo rol
             if (id == 0 && rolRepository.findByDescripcion(descripcion).isPresent()) {
@@ -50,6 +56,25 @@ public class RolController {
 
             return ResponseEntity.ok(
                     Map.of("p_status", 0, "p_mensaje", "Rol registrado correctamente", "data", guardado));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("p_status", -1, "p_mensaje", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/eliminar/{id}")
+    public ResponseEntity<?> eliminarRol(@PathVariable Long id) {
+        try {
+            if (id == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("p_status", -1, "p_mensaje", "El ID del rol es obligatorio"));
+            }
+            if (!rolRepository.existsById(id)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("p_status", -1, "p_mensaje", "Rol no encontrado"));
+            }
+            rolRepository.deleteById(id);
+            return ResponseEntity.ok(Map.of("p_status", 0, "p_mensaje", "Rol eliminado correctamente"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("p_status", -1, "p_mensaje", e.getMessage()));
