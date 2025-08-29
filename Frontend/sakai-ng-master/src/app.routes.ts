@@ -10,7 +10,6 @@ import { PortalRegistrate } from './app/biblioteca/web/registrate/registrate';
 import { PortalReserva } from './app/biblioteca/web/catalogo/reserva';
 import { Dashboard } from './app/biblioteca/modulos/dashboard/dashboard';
 import { Login } from './app/pages/auth/login';
-import { RoleGuard } from './app/guards/role.guard';
 
 export const appRoutes: Routes = [
     {
@@ -18,7 +17,7 @@ export const appRoutes: Routes = [
         component: AppLayout,
         children: [
             { path: '', component: Dashboard },
-            { path: 'mantenimiento',canActivate: [RoleGuard],data: { roles: ['ADMIN'] }, loadChildren: () => import('./app/biblioteca/modulos/mantenimientos/mantenimientos.routes')},
+            { path: 'mantenimiento', loadChildren: () => import('./app/biblioteca/modulos/mantenimientos/mantenimientos.routes')},
             { path: 'prestamos', loadChildren: () => import('./app/biblioteca/modulos/prestamos/prestamos.routes')},
             { path: 'devoluciones', loadChildren: () => import('./app/biblioteca/modulos/devoluciones/devoluciones.routes')},
             { path: 'reportes', loadChildren: () => import('./app/biblioteca/modulos/reportes/reportes.routes')},

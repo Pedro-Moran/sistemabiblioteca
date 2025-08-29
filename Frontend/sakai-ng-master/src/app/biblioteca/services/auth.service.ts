@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of, forkJoin } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { JwtHelperService } from "@auth0/angular-jwt";
 import { Router } from '@angular/router';
@@ -8,6 +8,7 @@ import * as _ from 'lodash';
 import { environment } from '../../../environments/environment';
 import { Authentication, LoginRequest, LoginResponse } from '../interfaces/Authentication';
 import { Usuario } from '../interfaces/usuario';
+import { Modulo } from '../interfaces/modulo';
 
 import { catchError } from 'rxjs/operators';
 import { MsalService } from '@azure/msal-angular';
@@ -22,8 +23,6 @@ interface ResponseDTO<T> {
 
 const httpOptions = {
   headers: new HttpHeaders({
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS,DELETE,PUT',
     'Content-Type': 'application/json'
   }),
   withCredentials: true
@@ -105,30 +104,63 @@ export class AuthService {
 //     return of({ success: false });
 //   }
 
-  setAuthentication(token:string){
+  setAuthentication(token: string) {
     localStorage.setItem(this.TOKEN_NAME, token);
-      const decoded = this.helper.decodeToken(token);
+    const decoded = this.helper.decodeToken(token);
 
-      const isExpired = this.helper.isTokenExpired(token);
+    const isExpired = this.helper.isTokenExpired(token);
 
-      if (isExpired) {
-        this.logout();
-      } else {
-        const roles = Array.isArray(decoded.role) ? decoded.role : [decoded.role];
-        // Si ya no tienes 'user' y 'idrol', usa directamente 'sub' y 'role'
-       const user: Usuario = {
-         id: 0, // Asigna un valor predeterminado o el valor real si está disponible
-         email: decoded.sub,
-         roles: roles
-       };// O guarda más datos si tienes
+    if (isExpired) {
+      this.logout();
+    } else {
+      const roleDescriptions = Array.isArray(decoded.role) ? decoded.role : [decoded.role];
+      const idUsuario = this.extractUserId(decoded);
+      const user: Usuario = {
+        id: idUsuario,
+        email: decoded.email ?? decoded.sub,
+        roles: roleDescriptions
+      };
 
+      const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+      forkJoin<{ status: string; data: Modulo[] }[]>(
+        roleDescriptions.map((desc: string) =>
+          this.http.get<{ status: string; data: Modulo[] }>(
+            `${this.apiUrl}/roles/lista-rolmodulos-desc/${desc}`,
+            { headers }
+          )
+        )
+      ).subscribe({
+        next: (responses: { status: string; data: Modulo[] }[]) => {
+          const modules = Array.from(
+            new Set(
+              responses.flatMap((r: { data: Modulo[] }) => r.data.map((m: Modulo) => m.codigo))
+            )
+          );
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          localStorage.setItem('role', JSON.stringify(roleDescriptions));
+          localStorage.setItem('modules', JSON.stringify(modules));
+          this.currentUserSubject.next(user);
+          this.scheduleAutoLogout();
+        },
+        error: () => {
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          localStorage.setItem('role', JSON.stringify(roleDescriptions));
+          localStorage.setItem('modules', JSON.stringify([]));
+          this.currentUserSubject.next(user);
+          this.scheduleAutoLogout();
+        }
+      });
+    }
+  }
 
-        localStorage.setItem("currentUser", JSON.stringify(user));
-        localStorage.setItem("role", JSON.stringify(roles));
-        // Emite el usuario incluyendo los roles
-        this.currentUserSubject.next({ ...user, roles });
-        this.scheduleAutoLogout();
-      }
+  private extractUserId(payload: any): number {
+    const fields = ['idusuario', 'id', 'userId', 'userid', 'uid', 'nameid', 'sub'];
+    for (const f of fields) {
+      const raw = payload?.[f];
+      const id = Number(raw);
+      if (Number.isFinite(id)) return id;
+    }
+    return 0;
   }
   getToken(): string {
     return localStorage.getItem(this.TOKEN_NAME) || '';
@@ -145,10 +177,21 @@ export class AuthService {
     return decoded;
   }
 
+  /**
+   * Obtiene el identificador numérico del usuario autenticado a partir del token o del almacenamiento local.
+   */
+  getUserId(): number {
+    const decoded = this.getUser();
+    const id = this.extractUserId(decoded);
+    if (id !== 0) return id;
+    const stored = Number(this.currentUserValue?.id);
+    return Number.isFinite(stored) ? stored : 0;
+  }
+
   getRoles(): string[] {
-       const role = localStorage.getItem("role");
-       return role ? JSON.parse(role) : [];
-    }
+    const modules = localStorage.getItem('modules');
+    return modules ? JSON.parse(modules) : [];
+  }
 
   idAuthenticated():boolean{
     const token = this.getToken();

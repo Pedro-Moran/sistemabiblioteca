@@ -7,6 +7,7 @@ import { CommonModule } from '@angular/common';
 import { RippleModule } from 'primeng/ripple';
 import { MenuItem } from 'primeng/api';
 import { LayoutService } from '../service/layout.service';
+import { AuthService } from '../../biblioteca/services/auth.service';
 
 @Component({
     // eslint-disable-next-line @angular-eslint/component-selector
@@ -45,7 +46,7 @@ import { LayoutService } from '../service/layout.service';
 
             <ul *ngIf="item.items && item.visible !== false" [@children]="submenuAnimation">
                 <ng-template ngFor let-child let-i="index" [ngForOf]="item.items">
-                    <li app-menuitem [item]="child" [index]="i" [parentKey]="key" [class]="child['badgeClass']"></li>
+                    <li *ngIf="hasAccess(child)" app-menuitem [item]="child" [index]="i" [parentKey]="key" [class]="child['badgeClass']"></li>
                 </ng-template>
             </ul>
         </ng-container>
@@ -88,7 +89,8 @@ export class AppMenuitem {
 
     constructor(
         public router: Router,
-        private layoutService: LayoutService
+        private layoutService: LayoutService,
+        private authService: AuthService
     ) {
         this.menuSourceSubscription = this.layoutService.menuSource$.subscribe((value) => {
             Promise.resolve(null).then(() => {
@@ -156,6 +158,20 @@ export class AppMenuitem {
     @HostBinding('class.active-menuitem')
     get activeClass() {
         return this.active && !this.root;
+    }
+
+    hasAccess(item: any): boolean {
+        const userRoles = this.authService.getRoles();
+
+        if (item.items && item.items.length > 0) {
+            return item.items.some((child: any) => this.hasAccess(child));
+        }
+
+        if (!item.role || item.role.length === 0) {
+            return true;
+        }
+
+        return item.role.some((role: string) => userRoles.includes(role));
     }
 
     ngOnDestroy() {
