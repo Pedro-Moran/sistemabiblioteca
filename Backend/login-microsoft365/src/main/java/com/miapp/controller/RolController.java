@@ -84,6 +84,8 @@ public class RolController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("p_status", -1, "p_mensaje", "Rol no encontrado"));
             }
+            moduloRepository.removeAllModulosFromRol(id);
+            usuarioRepository.removeRolFromUsuarios(id);
             rolRepository.deleteById(id);
             return ResponseEntity.ok(Map.of("p_status", 0, "p_mensaje", "Rol eliminado correctamente"));
         } catch (Exception e) {

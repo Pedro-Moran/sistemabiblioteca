@@ -3,8 +3,11 @@ package com.miapp.repository;
 import com.miapp.model.Usuario;
 import com.miapp.model.dto.VisitanteBibliotecaVirtualDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 import java.util.Optional;
@@ -48,4 +51,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
                     "WHERE COALESCE(u.loginCount,0) > 0 " +
                     "ORDER BY COALESCE(u.loginCount,0) DESC")
     List<VisitanteBibliotecaVirtualDTO> reporteVisitantesBibliotecaVirtual();
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM USUARIO_ROL WHERE IDROL = :idRol", nativeQuery = true)
+    void removeRolFromUsuarios(@Param("idRol") Long idRol);
 }

@@ -25,4 +25,9 @@ public interface ModuloRepository extends JpaRepository<Modulo, Long> {
     @Transactional
     @Query(value = "DELETE FROM ROLUSUARIO_MODULO WHERE IDROL = :idRol AND IDMODULO = :idModulo", nativeQuery = true)
     void removeModuloFromRol(@Param("idRol") Long idRol, @Param("idModulo") Long idModulo);
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM ROLUSUARIO_MODULO WHERE IDROL = :idRol", nativeQuery = true)
+    void removeAllModulosFromRol(@Param("idRol") Long idRol);
 }
