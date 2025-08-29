@@ -424,12 +424,19 @@ export class AppMenu {
 
     hasAccess(item: AppMenuItem): boolean {
         const userRoles = this.authService.getRoles();
-        if (!item.role) {
+
+        // Si el ítem posee hijos, se muestra solo cuando alguno de ellos es accesible
+        if (item.items && item.items.length > 0) {
+            return item.items.some(child => this.hasAccess(child as AppMenuItem));
+        }
+
+        // Los elementos sin restricción de rol siempre están visibles
+        if (!item.role || item.role.length === 0) {
             return true;
         }
 
-        const hasPermission = item.role.some(role => userRoles.includes(role));
-     return hasPermission
+        // Verificamos intersección entre los roles requeridos y los módulos autorizados
+        return item.role.some(role => userRoles.includes(role));
     }
 
 }

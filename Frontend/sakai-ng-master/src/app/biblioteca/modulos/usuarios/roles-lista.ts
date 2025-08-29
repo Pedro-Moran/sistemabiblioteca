@@ -1,6 +1,7 @@
 import { Component, ViewChild, ElementRef } from '@angular/core';
 import { ClaseGeneral } from '../../interfaces/clase-general';
 import { GenericoService } from '../../services/generico.service';
+import { AuthService } from '../../services/auth.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { InputValidation } from '../../input-validation';
@@ -9,6 +10,7 @@ import { Table } from 'primeng/table';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Menu } from 'primeng/menu';
 import { Message } from 'primeng/message';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-roles-lista',
@@ -118,7 +120,7 @@ import { Message } from 'primeng/message';
                     pTooltip="Agregar" tooltipPosition="bottom" [disabled]="!objetoModulo"></button>
 
 
-                    <p-table #dt1 [value]="data" dataKey="id" [rows]="10"
+                    <p-table #dt1 [value]="dataRolModulos" dataKey="id" [rows]="10"
                 [showCurrentPageReport]="true"
                 currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
                 [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true" styleClass="p-datatable-gridlines" [paginator]="true"
@@ -183,7 +185,6 @@ export class RolesLista {
   objetoModulosDialog!: boolean;
   msgs: Message[] = [];
   form: FormGroup = new FormGroup({});
-  user: any;
   selectedItem: any;
   @ViewChild('menu') menu!: Menu;
   items!: MenuItem[];
@@ -196,12 +197,19 @@ export class RolesLista {
   dataModulos: ClaseGeneral[] = [];
   idRol: number = 0;
   dataRolModulos: ClaseGeneral[] = [];
-  objetoModulo!: ClaseGeneral;
-  constructor(private genericoService: GenericoService, private fb: FormBuilder, private messageService: MessageService, private confirmationService: ConfirmationService) { }
+  objetoModulo: ClaseGeneral | null = null;
+  constructor(
+    private genericoService: GenericoService,
+    private fb: FormBuilder,
+    private messageService: MessageService,
+    private confirmationService: ConfirmationService,
+    private authService: AuthService
+  ) { }
+
+  get userId(): number {
+    return this.authService.getUserId();
+  }
   ngOnInit() {
-    this.user={
-			"idusuario":0
-		}
     this.items = [
 
       {
@@ -280,7 +288,7 @@ export class RolesLista {
   }
   guardar() {
     this.loading = true;
-    const data = { id: this.form.get('id')?.value, descripcion: this.form.get('descripcion')?.value, usuarioid: this.user.idusuario, activo: true, accion: 'registrar' };
+    const data = { id: this.form.get('id')?.value, descripcion: this.form.get('descripcion')?.value, usuarioid: this.userId, activo: true, accion: 'registrar' };
     this.genericoService.conf_event_post(data, this.modulo + '/registrar')
       .subscribe(result => {
         if (result.p_status == 0) {
@@ -333,46 +341,47 @@ export class RolesLista {
 
   rolModulos(idrol: number) {
     this.idRol = idrol;
+    this.loading = true;
     this.dataRolModulos = [];
-    this.genericoService.conf_event_get(`conf/lista-rolmodulos/${idrol}/1`)
-      .subscribe(
-        (result: any) => {
-          this.loading = false;
-          if (result.status == "0") {
-            this.dataRolModulos = result.data;
-          }
-        }
-        , (error: HttpErrorResponse) => {
-          this.loading = false;
-        }
-      );
     this.dataModulos = [];
-    this.genericoService.conf_event_get(`conf/lista-rolmodulos/${idrol}/2`)
-      .subscribe(
-        (result: any) => {
-          this.loading = false;
-          if (result.status == "0") {
-            this.dataModulos = result.data;
+    const asignados$ = this.genericoService.roles_get(`${this.modulo}/lista-rolmodulos/${idrol}`);
+    const todos$ = this.genericoService.modulos_get();
+    forkJoin({ asignados: asignados$, todos: todos$ })
+      .subscribe({
+        next: ({ asignados, todos }) => {
+          const mapModulo = (m: any) => ({
+            id: m.idModulo ?? m.idmodulo ?? m.id,
+            descripcion: m.descripcion ?? m.modulo ?? m.descripcionModulo,
+          });
+          if (asignados.status == "0") {
+            this.dataRolModulos = asignados.data.map(mapModulo);
           }
-        }
-        , (error: HttpErrorResponse) => {
+          if (todos.status == "0") {
+            const existentes = new Set(this.dataRolModulos.map((m: any) => m.id));
+            this.dataModulos = todos.data
+              .map(mapModulo)
+              .filter((m: any) => !existentes.has(m.id));
+          }
+          this.loading = false;
+        },
+        error: (error: HttpErrorResponse) => {
           this.loading = false;
         }
-      );
+      });
   }
 
   agregarRolModulo() {
     this.confirmationService.confirm({
-      message: '¿Estás seguro(a) de que quieres agregar el modulo: ' + this.objetoModulo.descripcion + ' ?',
+      message: `¿Estás seguro(a) de que quieres agregar el modulo: ${this.objetoModulo?.descripcion ?? ''} ?`,
       header: 'Confirmar',
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'SI',
       rejectLabel: 'NO',
       accept: () => {
-        const data = { idrol: this.objetoRol?.id, idmodulo: this.objetoModulo.id, idusuario: this.user.idusuario };
+        const data = { idrol: this.objetoRol?.id, idmodulo: this.objetoModulo?.id };
         this.genericoService.conf_event_post(data, this.modulo + '/agregar-modulo')
           .subscribe(result => {
-            this.objetoModulo = new ClaseGeneral();
+            this.objetoModulo = null;
             if (result.p_status == 0) {
               this.messageService.add({ severity: 'success', summary: 'Satisfactorio', detail: 'Registro satisfactorio.' });
               this.rolModulos(this.idRol);
@@ -395,8 +404,8 @@ export class RolesLista {
         acceptLabel: 'SI',
         rejectLabel: 'NO',
         accept: () => {
-          const data = { idrol: this.objetoRol.id,idmodulo:objeto.id,idusuario:this.user.idusuario};
-          this.genericoService.conf_event_delete(data,this.modulo+'/quitar-modulo')
+          const data = { idrol: this.objetoRol.id, idmodulo: objeto.id };
+          this.genericoService.conf_event_delete(data, this.modulo + '/quitar-modulo')
           .subscribe(result => {
             if (result.p_status == 0) {
               this.messageService.add({severity:'success', summary: 'Satisfactorio', detail: 'Modulo eliminado satisfactorio.'});

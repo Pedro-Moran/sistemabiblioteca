@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DashboardService } from '../../../services/dashboard.service';
+import { AuthService } from '../../../services/auth.service';
 
 interface Estadisticas {
   materiales: number;
@@ -19,7 +20,7 @@ interface Estadisticas {
     imports: [CommonModule],
     template: `
 
-        <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+        <div class="col-span-12 lg:col-span-6 xl:col-span-3" *ngIf="hasRole('ROLE_MATERIAL_BIBLIOGRAFICO')">
             <div class="card mb-0">
                 <div class="flex justify-between mb-4">
                     <div>
@@ -34,7 +35,7 @@ interface Estadisticas {
                 <span class="text-muted-color">prestados</span>
             </div>
         </div>
-        <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+        <div class="col-span-12 lg:col-span-6 xl:col-span-3" *ngIf="hasRole('ROLE_SALA_EQUIPOS_COMPUTO')">
             <div class="card mb-0">
                 <div class="flex justify-between mb-4">
                     <div>
@@ -49,7 +50,7 @@ interface Estadisticas {
                 <span class="text-muted-color">prestados</span>
             </div>
         </div>
-        <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+        <div class="col-span-12 lg:col-span-6 xl:col-span-3" *ngIf="hasRole('ROLE_USUARIOS')">
             <div class="card mb-0">
                 <div class="flex justify-between mb-4">
                     <div>
@@ -64,7 +65,7 @@ interface Estadisticas {
                 <span class="text-muted-color">registrados</span>
             </div>
         </div>
-        <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+        <div class="col-span-12 lg:col-span-6 xl:col-span-3" *ngIf="hasRole('ROLE_COMENTARIOS')">
             <div class="card mb-0">
                 <div class="flex justify-between mb-4">
                     <div>
@@ -92,9 +93,16 @@ export class StatsWidget {
         comentariosRespondidos: 0
     };
 
-    constructor(private dashboardService: DashboardService) {}
+    private roles: string[] = [];
+
+    constructor(private dashboardService: DashboardService, private authService: AuthService) {}
 
     ngOnInit() {
+        this.roles = this.authService.getRoles();
         this.dashboardService.stats().subscribe((res) => (this.datos = res));
+    }
+
+    hasRole(role: string): boolean {
+        return this.roles.includes(role);
     }
 }

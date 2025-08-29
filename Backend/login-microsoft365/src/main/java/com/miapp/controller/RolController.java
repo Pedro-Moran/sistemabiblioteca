@@ -1,10 +1,15 @@
 package com.miapp.controller;
 
+import com.miapp.model.Modulo;
 import com.miapp.model.Rol;
+import com.miapp.repository.ModuloRepository;
 import com.miapp.repository.RolRepository;
+import com.miapp.repository.UsuarioRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
 
 import java.util.List;
 import java.util.Map;
@@ -14,9 +19,15 @@ import java.util.Map;
 public class RolController {
 
     private final RolRepository rolRepository;
+    private final ModuloRepository moduloRepository;
+    private final UsuarioRepository usuarioRepository;
 
-    public RolController(RolRepository rolRepository) {
+    public RolController(RolRepository rolRepository,
+                         ModuloRepository moduloRepository,
+                         UsuarioRepository usuarioRepository) {
         this.rolRepository = rolRepository;
+        this.moduloRepository = moduloRepository;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @GetMapping("/lista-roles")
@@ -75,6 +86,74 @@ public class RolController {
             }
             rolRepository.deleteById(id);
             return ResponseEntity.ok(Map.of("p_status", 0, "p_mensaje", "Rol eliminado correctamente"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("p_status", -1, "p_mensaje", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/lista-rolmodulos/{idRol}")
+    public ResponseEntity<?> listaRolModulos(@PathVariable Long idRol) {
+        try {
+            List<Modulo> modulos = moduloRepository.findByRol(idRol);
+            return ResponseEntity.ok(Map.of("status", "0", "data", modulos));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "-1", "message", "Error al cargar módulos: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/lista-rolmodulos-desc/{descripcion}")
+    public ResponseEntity<?> listaRolModulosPorDescripcion(@PathVariable String descripcion) {
+        try {
+            return rolRepository.findByDescripcion(descripcion)
+                    .map(rol -> ResponseEntity.ok(Map.of(
+                            "status", "0",
+                            "data", moduloRepository.findByRol(rol.getIdRol())
+                    )))
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(Map.of("status", "-1", "message", "Rol no encontrado")));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "-1", "message", "Error al cargar módulos: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/agregar-modulo")
+    public ResponseEntity<?> agregarModulo(@RequestBody Map<String, Long> payload, Principal principal) {
+        try {
+            Long idRol = payload.get("idrol");
+            Long idModulo = payload.get("idmodulo");
+            Long idUsuario = payload.get("idusuario");
+
+            if (idUsuario == null || idUsuario <= 0) {
+                String login = principal.getName();
+                idUsuario = usuarioRepository.findByEmailIgnoreCase(login)
+                        .or(() -> usuarioRepository.findByLoginIgnoreCase(login))
+                        .map(u -> u.getIdUsuario())
+                        .orElse(null);
+            }
+
+            if (idUsuario == null || !usuarioRepository.existsById(idUsuario)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("p_status", -1, "p_mensaje", "Usuario no encontrado"));
+            }
+
+            moduloRepository.addModuloToRol(idRol, idModulo, idUsuario);
+            return ResponseEntity.ok(Map.of("p_status", 0, "p_mensaje", "Módulo agregado correctamente"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("p_status", -1, "p_mensaje", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/quitar-modulo")
+    public ResponseEntity<?> quitarModulo(@RequestBody Map<String, Long> payload) {
+        try {
+            Long idRol = payload.get("idrol");
+            Long idModulo = payload.get("idmodulo");
+            moduloRepository.removeModuloFromRol(idRol, idModulo);
+            return ResponseEntity.ok(Map.of("p_status", 0, "p_mensaje", "Módulo eliminado correctamente"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("p_status", -1, "p_mensaje", e.getMessage()));

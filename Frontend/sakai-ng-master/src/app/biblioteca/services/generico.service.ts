@@ -60,6 +60,14 @@ export class GenericoService {
     );
   }
 
+  /** Obtiene el catálogo completo de módulos disponibles en el sistema */
+  modulos_get(): Observable<any> {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/conf/lista-modulos`,
+      { headers: this.authHeaders() }
+    );
+  }
+
   sedes_get(modulo: any):Observable<any>{
     return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
     ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
