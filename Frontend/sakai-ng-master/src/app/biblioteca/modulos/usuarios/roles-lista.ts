@@ -211,16 +211,20 @@ export class RolesLista {
   }
   ngOnInit() {
     this.items = [
-
+      {
+        label: 'Editar',
+        icon: 'pi pi-pencil',
+        command: () => this.editarRegistro(this.selectedItem)
+      },
       {
         label: 'Modulos',
         icon: 'pi pi-align-justify',
-        command: (event) => this.permisosModulos(this.selectedItem)
+        command: () => this.permisosModulos(this.selectedItem)
       },
       {
         label: 'Eliminar',
         icon: 'pi pi-trash',
-        command: (event) => this.deleteRegistro(this.selectedItem)
+        command: () => this.deleteRegistro(this.selectedItem)
       }
     ];
 
@@ -268,6 +272,12 @@ export class RolesLista {
     this.objetoDialog = true;
 
   }
+  editarRegistro(objeto: ClaseGeneral) {
+    this.objetoRol = { id: objeto.id, descripcion: objeto.descripcion };
+    this.formValidar();
+    this.submitted = false;
+    this.objetoDialog = true;
+  }
   formValidar() {
     let dataObjeto = {
       id: this.objetoRol.id,
@@ -288,12 +298,20 @@ export class RolesLista {
   }
   guardar() {
     this.loading = true;
-    const data = { id: this.form.get('id')?.value, descripcion: this.form.get('descripcion')?.value, usuarioid: this.userId, activo: true, accion: 'registrar' };
+    const id = this.form.get('id')?.value;
+    const data = {
+      id,
+      descripcion: this.form.get('descripcion')?.value,
+      usuarioid: this.userId,
+      activo: true,
+      accion: id && id > 0 ? 'actualizar' : 'registrar'
+    };
     this.genericoService.conf_event_post(data, this.modulo + '/registrar')
       .subscribe(result => {
         if (result.p_status == 0) {
           this.objetoDialog = false;
-          this.messageService.add({ severity: 'success', summary: 'Satisfactorio', detail: 'Registro guardado.' });
+          const detalle = id && id > 0 ? 'Registro actualizado.' : 'Registro guardado.';
+          this.messageService.add({ severity: 'success', summary: 'Satisfactorio', detail: detalle });
           this.listar();
         } else {
           this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se puedo realizar el proceso.' });
