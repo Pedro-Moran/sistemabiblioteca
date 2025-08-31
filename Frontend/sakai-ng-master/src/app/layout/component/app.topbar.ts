@@ -3,7 +3,6 @@ import { MenuItem } from 'primeng/api';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
-import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
 
 import { OverlayPanelModule } from 'primeng/overlaypanel';
@@ -23,7 +22,7 @@ import { AuthService } from '../../biblioteca/services/auth.service';
 @Component({
     selector: 'app-topbar',
     standalone: true,
-    imports: [RouterModule, CommonModule, StyleClassModule, StyleClassModule, OverlayPanelModule, DialogModule, TableModule, ButtonModule, OverlayBadgeModule, MenuModule, AppConfigurator],
+    imports: [RouterModule, CommonModule, StyleClassModule, StyleClassModule, OverlayPanelModule, DialogModule, TableModule, ButtonModule, OverlayBadgeModule, MenuModule],
     styles: [
       `.highlight-row { animation: fadeHighlight 2s ease-in-out forwards; }
        @keyframes fadeHighlight { from { background-color: #ffe08a; } to { background-color: transparent; } }`
@@ -39,25 +38,6 @@ import { AuthService } from '../../biblioteca/services/auth.service';
         </div>
 
         <div class="layout-topbar-actions">
-            <div class="layout-config-menu">
-                <button type="button" class="layout-topbar-action" (click)="toggleDarkMode()">
-                    <i [ngClass]="{ 'pi ': true, 'pi-moon': layoutService.isDarkTheme(), 'pi-sun': !layoutService.isDarkTheme() }"></i>
-                </button>
-                <div class="relative">
-                    <button
-                        class="layout-topbar-action layout-topbar-action-highlight"
-                        pStyleClass="@next"
-                        enterFromClass="hidden"
-                        enterActiveClass="animate-scalein"
-                        leaveToClass="hidden"
-                        leaveActiveClass="animate-fadeout"
-                        [hideOnOutsideClick]="true"
-                    >
-                        <i class="pi pi-palette"></i>
-                    </button>
-                    <app-configurator />
-                </div>
-            </div>
 
                 <button class="layout-topbar-menu-button layout-topbar-action" pStyleClass="@next" enterFromClass="hidden" enterActiveClass="animate-scalein" leaveToClass="hidden" leaveActiveClass="animate-fadeout" [hideOnOutsideClick]="true">
                     <i class="pi pi-ellipsis-v"></i>
@@ -65,10 +45,6 @@ import { AuthService } from '../../biblioteca/services/auth.service';
 
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
-                    <button type="button" class="layout-topbar-action">
-                        <i class="pi pi-calendar"></i>
-                        <span>Calendar</span>
-                    </button>
 
                     <p-overlaybadge [value]="unreadCount" severity="danger">
                       <button
@@ -77,13 +53,13 @@ import { AuthService } from '../../biblioteca/services/auth.service';
                         (click)="toggleNotifications($event)"
                         [disabled]="loadingNotifications">
                         <i class="pi pi-inbox"></i>
-                        <span>Messages</span>
+                        <span>Mensajes</span>
                       </button>
                     </p-overlaybadge>
 
                     <button type="button" class="layout-topbar-action" (click)="profileMenu.toggle($event)">
                         <i class="pi pi-user"></i>
-                        <span>Profile</span>
+                        <span>{{ userEmail }}</span>
                     </button>
                     <p-menu #profileMenu [popup]="true" [model]="profileItems" appendTo="body"></p-menu>
 
@@ -188,6 +164,7 @@ export class AppTopbar implements OnInit {
     profileItems: MenuItem[] = [];
     highlightSolicitudes: number[] = [];
     highlightOcurrencias: number[] = [];
+    userEmail = '';
 
     get solicitudesNuevas(): number {
       return this.notificaciones.filter(n => !n.leida && !n.mensaje.toLowerCase().includes('ocurrencia')).length;
@@ -208,6 +185,15 @@ export class AppTopbar implements OnInit {
     ) {}
 
     ngOnInit() {
+        const user = this.authService.getUser();
+        const rawEmail =
+          this.authService.currentUserValue?.email ||
+          user?.email ||
+          user?.sub ||
+          (user?.preferred_username ?? user?.unique_name ?? user?.upn ?? '');
+        this.userEmail = (rawEmail || '')
+          .toString()
+          .replace(/@upsjb\.edu\.pe$/i, '');
         this.loadNotifications();
         this.initProfileMenu();
     }
@@ -300,19 +286,23 @@ export class AppTopbar implements OnInit {
 
   private initProfileMenu() {
     const user = this.authService.getUser();
-    const name = user?.givenname ? `${user.givenname} ${user.surname || ''}` : (user?.nombres || user?.email || '');
-    const roles = user?.roles ? (Array.isArray(user.roles) ? user.roles.join(', ') : user.roles) : (user?.role || '');
-    const items: MenuItem[] = [
-      { label: name, disabled: true }
-    ];
+    const email = this.userEmail || user?.email || user?.sub || '';
+    const name = user?.givenname
+      ? `${user.givenname} ${user.surname || ''}`
+      : (user?.nombres || email || '');
+    const roles = user?.roles
+      ? (Array.isArray(user.roles) ? user.roles.join(', ') : user.roles)
+      : (user?.role || '');
+    const items: MenuItem[] = [{ label: name, disabled: true }];
     if (roles) {
       items.push({ label: `Tipo: ${roles}`, disabled: true });
     }
     items.push({ separator: true });
-    items.push({ label: 'Cerrar sesión', icon: 'pi pi-sign-out', command: () => this.authService.logout() });
+    items.push({
+      label: 'Cerrar sesión',
+      icon: 'pi pi-sign-out',
+      command: () => this.authService.logout()
+    });
     this.profileItems = items;
   }
-    toggleDarkMode() {
-        this.layoutService.layoutConfig.update((state) => ({ ...state, darkTheme: !state.darkTheme }));
-    }
 }

@@ -1,5 +1,7 @@
 import { Injectable, effect, signal, computed } from '@angular/core';
 import { Subject } from 'rxjs';
+import { $t } from '@primeng/themes';
+import Aura from '@primeng/themes/aura';
 
 export interface layoutConfig {
     preset?: string;
@@ -86,6 +88,7 @@ export class LayoutService {
         this._config.darkTheme = dark;
         this.layoutConfig.set({ ...this._config });
         this.toggleDarkMode(this._config);
+        this.applyPreset();
 
         effect(() => {
             const config = this.layoutConfig();
@@ -104,6 +107,48 @@ export class LayoutService {
 
             this.handleDarkModeTransition(config);
         });
+    }
+
+    private applyPreset(): void {
+        const color = (Aura as any).primitive.rose;
+        $t()
+            .preset(Aura)
+            .preset({
+                semantic: {
+                    primary: color,
+                    colorScheme: {
+                        light: {
+                            primary: {
+                                color: '{primary.500}',
+                                contrastColor: '#ffffff',
+                                hoverColor: '{primary.600}',
+                                activeColor: '{primary.700}'
+                            },
+                            highlight: {
+                                background: '{primary.50}',
+                                focusBackground: '{primary.100}',
+                                color: '{primary.700}',
+                                focusColor: '{primary.800}'
+                            }
+                        },
+                        dark: {
+                            primary: {
+                                color: '{primary.400}',
+                                contrastColor: '{surface.900}',
+                                hoverColor: '{primary.300}',
+                                activeColor: '{primary.200}'
+                            },
+                            highlight: {
+                                background: 'color-mix(in srgb, {primary.400}, transparent 84%)',
+                                focusBackground: 'color-mix(in srgb, {primary.400}, transparent 76%)',
+                                color: 'rgba(255,255,255,.87)',
+                                focusColor: 'rgba(255,255,255,.87)'
+                            }
+                        }
+                    }
+                }
+            })
+            .use({ useDefaultOptions: true });
     }
 
     private handleDarkModeTransition(config: layoutConfig): void {
