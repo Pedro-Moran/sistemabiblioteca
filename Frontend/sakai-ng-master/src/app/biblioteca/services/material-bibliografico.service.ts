@@ -97,9 +97,11 @@ api_libros_lista(modulo: any): Observable<any> {
     return this.http.get<any[]>('assets/demo/biblioteca/material-bibliografico/ejemplar.json');
   }
   lista_tipo_material(modulo: any):Observable<any>{
-    return this.http.get<any[]>(`${this.apiUrl}/api/${modulo}`
-            ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-            );
+    const token = this.authService.getToken();
+    const options = token
+      ? { headers: new HttpHeaders().set('Authorization', `Bearer ${token}`) }
+      : {};
+    return this.http.get<any[]>(`${this.apiUrl}/api/${modulo}`, options);
   }
   lista_tipo_adquisicion(modulo: any):Observable<any>{
     return this.http.get<any[]>(`${this.apiUrl}/api/${modulo}`
