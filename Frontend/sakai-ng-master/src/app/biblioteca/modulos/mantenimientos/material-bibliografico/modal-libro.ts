@@ -387,7 +387,7 @@ import { Output, EventEmitter } from '@angular/core';
                   </ng-template>
                 </p-dialog>
                 <p-dialog [(visible)]="displayEjemplar" [style]="{width: '75%'}" header="Detalle" [modal]="true" [closable]="true"
-                  styleClass="p-fluid">
+                  styleClass="p-fluid" [contentStyle]="{overflow: 'visible'}">
                   <ng-template pTemplate="content">
                     <form [formGroup]="formDetalle">
                       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
@@ -457,6 +457,7 @@ import { Output, EventEmitter } from '@angular/core';
                 </p-dialog>
                 <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
                 <p-toast></p-toast>`,
+    styles: [`:host ::ng-deep label{white-space:normal !important;overflow:visible !important;text-overflow:initial !important;}`],
     imports: [TemplateModule, InputValidation],
     providers: [MessageService, ConfirmationService]
 })
