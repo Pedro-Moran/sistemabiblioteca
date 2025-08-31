@@ -139,6 +139,12 @@ import { DocumentoService } from '../../../biblioteca/services/documento.service
                             </div>
 
                             <div class="flex flex-col gap-2">
+                                <label for="rol" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Perfil</label>
+                                <p-dropdown id="rol" [options]="roles" optionLabel="descripcion" optionValue="idRol" formControlName="rol" placeholder="Seleccione"></p-dropdown>
+                                <app-input-validation [form]="form" modelo="rol" ver="Perfil"></app-input-validation>
+                            </div>
+
+                            <div class="flex flex-col gap-2">
                                 <label for="password" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2 mt-4">Contraseña</label>
                                 <input pInputText id="password" type="password" placeholder="Contraseña" formControlName="password" />
                                 <app-input-validation [form]="form" modelo="password" ver="Contraseña"></app-input-validation>
@@ -177,6 +183,7 @@ export class PortalRegistrate implements OnInit {
         { code: '06', label: 'RUC' },
         { code: '00', label: 'Otros' }
     ];
+    roles: { idRol: number; descripcion: string }[] = [];
     constructor(private router: Router,
                 private fb: FormBuilder,
                 private messageService: MessageService,
@@ -192,6 +199,7 @@ export class PortalRegistrate implements OnInit {
             apellidoPaterno: [ '', [Validators.required, Validators.maxLength(100), Validators.minLength(3),Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-\\s]+$')]],
 
             email: [ '', [Validators.required, Validators.maxLength(100), Validators.minLength(3),Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-@\\s]+$')]],
+            rol: [null, Validators.required],
             password: ['' , [Validators.maxLength(150),Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ,.;-\\s\\-()]+$')]]
         });
     }
@@ -199,6 +207,10 @@ export class PortalRegistrate implements OnInit {
     ngOnInit() {
         this.limpiarObjeto();
         this.formValidar();
+        this.authService.getPublicRoles().subscribe({
+            next: roles => this.roles = roles,
+            error: () => this.roles = []
+        });
     }
     limpiarObjeto() {
         this.fieldsDisabled = true;
@@ -227,7 +239,8 @@ export class PortalRegistrate implements OnInit {
             PHONE: '',
             PROGRAM: '',
             SEX: '',
-            STATE: ''
+            STATE: '',
+            rol: 0
         }
     }
 
@@ -257,7 +270,8 @@ export class PortalRegistrate implements OnInit {
             PHONE: this.objeto.PHONE,
             PROGRAM: this.objeto.PROGRAM,
             SEX: this.objeto.SEX,
-            STATE: this.objeto.STATE
+            STATE: this.objeto.STATE,
+            rol: this.objeto.rol
         };
         this.form = this.fb.group({
             tipoDocumento: [dataObjeto.tipoDocumento, [Validators.required]],
@@ -267,6 +281,7 @@ export class PortalRegistrate implements OnInit {
             apellidoMaterno: [ dataObjeto.apellidoMaterno , [Validators.required, Validators.maxLength(80), Validators.minLength(3),Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-\\s]+$')]],
             apellidoPaterno: [ dataObjeto.apellidoMaterno , [Validators.required, Validators.maxLength(80), Validators.minLength(3),Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-\\s]+$')]],
             email: [ dataObjeto.email , [Validators.maxLength(150),Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ,.;-@\\s\\-()]+$')]],
+            rol: [dataObjeto.rol, [Validators.required]],
             password: [ dataObjeto.password , [Validators.maxLength(150),Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ,.;-\\s\\-()]+$')]],
             ADDRESS: [dataObjeto.ADDRESS],
             AGE: [dataObjeto.AGE],
@@ -298,7 +313,8 @@ export class PortalRegistrate implements OnInit {
           return;
         }
 
-        const userData = this.form.value;
+        const { rol, ...rest } = this.form.value;
+        const userData = { ...rest, roles: [{ idRol: rol }] };
 
         this.confirmationService.confirm({
           message: '¿Estás seguro(a) que la información ingresada es correcta?',
