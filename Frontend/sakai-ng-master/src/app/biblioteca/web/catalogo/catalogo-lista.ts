@@ -97,11 +97,7 @@ import { environment } from '../../../../environments/environment';
                     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
                     [rowsPerPageOptions]="[10, 25, 50]" [rowHover]="true"
                     styleClass="p-datatable-gridlines" [paginator]="true"
-<<<<<<< HEAD
                     [globalFilterFields]="['codigoLocalizacion','titulo','autor','anioPublicacion']"
-=======
-                    [globalFilterFields]="['codigo','titulo','editorial.autorPersonal','editorial.autorSecundario','editorial.anio']"
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
                     responsiveLayout="scroll">
                     <ng-template pTemplate="caption">
 
@@ -116,19 +112,11 @@ import { environment } from '../../../../environments/environment';
                     <ng-template pTemplate="header">
                         <tr>
                             <th style="width: 8rem" pSortableColumn="urlPortada">PORTADA <p-sortIcon field="urlPortada"></p-sortIcon></th>
-<<<<<<< HEAD
                             <th style="width: 4rem" pSortableColumn="codigoLocalizacion">CODIGO <p-sortIcon field="codigoLocalizacion"></p-sortIcon></th>
                             <th style="min-width:200px" pSortableColumn="titulo"> TITULO <p-sortIcon field="titulo"></p-sortIcon></th>
                             <th style="min-width:200px" pSortableColumn="autor">AUTOR <p-sortIcon field="autor"></p-sortIcon></th>
                             <th style="width: 4rem" pSortableColumn="anioPublicacion">AÑO <p-sortIcon
                                     field="anioPublicacion"></p-sortIcon></th>
-=======
-                            <th style="width: 4rem" pSortableColumn="codigo">CODIGO <p-sortIcon field="codigo"></p-sortIcon></th>
-                            <th style="min-width:200px" pSortableColumn="titulo"> TITULO <p-sortIcon field="titulo"></p-sortIcon></th>
-                            <th style="min-width:200px" pSortableColumn="editorial.autorPersonal">AUTOR <p-sortIcon field="editorial.autorPersonal"></p-sortIcon></th>
-                            <th style="width: 4rem" pSortableColumn="editorial.anio">AÑO <p-sortIcon
-                                    field="editorial.anio"></p-sortIcon></th>
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
                             <th style="width: 10rem">Opciones</th>
 
                         </tr>
@@ -141,22 +129,13 @@ import { environment } from '../../../../environments/environment';
 
                             </td>
                             <td>
-<<<<<<< HEAD
                                 {{ objeto.codigoLocalizacion }}
-=======
-                                {{objeto.codigo}}
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
                             </td>
                             <td>
                                 {{objeto.titulo}}
                             </td>
                             <td>
-<<<<<<< HEAD
                                 {{ objeto.autor }}
-=======
-                                {{objeto.autorPersonal}}<br/>
-                                <span>{{objeto.autorSecundario}}</span>
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
                             </td>
                             <td>
                                 {{objeto.anioPublicacion}}
@@ -195,11 +174,7 @@ import { environment } from '../../../../environments/environment';
 })
 export class CatalogoLista implements OnInit {
     modulo: string = "catalogo";
-<<<<<<< HEAD
     data: (BibliotecaDTO & { autor: string })[] = [];
-=======
-    data: BibliotecaDTO[] = [];
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
     @ViewChild('menu') menu!: Menu;
     @ViewChild('filter') filter!: ElementRef;
     items: MenuItem[] | undefined;
@@ -243,16 +218,16 @@ export class CatalogoLista implements OnInit {
 
     async ListaSede() {
         try {
-            const result: any = await this.genericoService.sedes_get('conf/tipo-lista').toPromise();
-            if (result.status === "0") {
-                let sedes = [{ id: 0, descripcion: 'TODOS', activo: true, estado: 1 }, ...result.data];
-
-                this.dataSedeFiltro = sedes;
-                this.sedeFiltro = this.dataSedeFiltro[0];
-            }
+            const result: any = await this.genericoService
+                .sedes_get('api/equipos/sedes')
+                .toPromise();
+            const sedes = [{ id: 0, descripcion: 'TODOS', activo: true, estado: 1 },
+                ...((Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : []))];
+            this.dataSedeFiltro = sedes;
+            this.sedeFiltro = this.dataSedeFiltro[0];
         } catch (error) {
             console.log(error);
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrió un error. No se pudo cargar roles' });
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrió un error. No se pudo cargar sedes' });
         }
 
     }
@@ -271,20 +246,32 @@ export class CatalogoLista implements OnInit {
     }
 
     async listarTiposRecurso() {
-        this.dataTipoRecursoFiltro = [];
-        this.genericoService
-            .tiporecurso_get(this.modulo + '/lista')
-            .subscribe(
-                (result: any) => {
-                    if (result.status == "0") {
-                        let recursosFiltrados = result.data.filter((recurso: { tipo: { id: any; }; }) => recurso.tipo.id === 1);
+        try {
+            const result: any = await this.genericoService
+                .tiporecurso_get('api/catalogos/tipomaterial/activos')
+                .toPromise();
 
-                        let filtro = [{ id: 0, descripcion: 'TODOS', activo: true, estado: 1 }, ...recursosFiltrados];
-                        this.dataTipoRecursoFiltro = filtro;
-                        this.tipoRecursoFiltro = this.dataTipoRecursoFiltro[0];
-                    }
-                }
-            );
+            const data = Array.isArray(result?.data)
+                ? result.data.map((r: any) => ({
+                    id: r.tipo?.id,
+                    descripcion: r.descripcion,
+                    activo: r.activo
+                }))
+                : Array.isArray(result)
+                    ? result
+                    : [];
+
+            const filtro = [{ id: 0, descripcion: 'TODOS', activo: true, estado: 1 }, ...data];
+            this.dataTipoRecursoFiltro = filtro;
+            this.tipoRecursoFiltro = this.dataTipoRecursoFiltro[0];
+        } catch (error) {
+            console.log(error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Ocurrió un error. No se pudo cargar tipos de material'
+            });
+        }
     }
 
 listar() {
@@ -301,10 +288,7 @@ listar() {
       list => {
         this.data = list.map(b => ({
           ...b,
-<<<<<<< HEAD
           autor: b.autorPersonal ?? b.autorInstitucional ?? b.autorSecundario ?? '',
-=======
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
           urlPortada: this.getImageUrl(b)
         }));
         this.loading = false;

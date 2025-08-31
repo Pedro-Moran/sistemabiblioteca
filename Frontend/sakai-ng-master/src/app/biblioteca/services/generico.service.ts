@@ -88,9 +88,11 @@ export class GenericoService {
   }
 
   tiporecurso_get(modulo: any):Observable<any>{
-    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );
+    const token = this.authService.getToken();
+    const options = token
+      ? { headers: new HttpHeaders().set('Authorization', `Bearer ${token}`) }
+      : {};
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`, options);
 //     return this.http.get<any[]>('assets/demo/biblioteca/tipos-recurso.json');
   }
 
