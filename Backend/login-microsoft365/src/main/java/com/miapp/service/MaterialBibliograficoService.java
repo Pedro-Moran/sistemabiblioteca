@@ -4,6 +4,7 @@ import com.miapp.model.*;
 import com.miapp.repository.*;
 import jakarta.persistence.criteria.Join;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -189,7 +190,8 @@ public class MaterialBibliograficoService {
 
     // Listado de todos
     public List<MaterialBibliografico> listAll() {
-        return materialBibliograficoRepository.findAll();
+        return materialBibliograficoRepository.findAll(
+                Sort.by(Sort.Direction.DESC, "id"));
     }
 
 
@@ -222,7 +224,8 @@ public class MaterialBibliograficoService {
                 );
             }
         }
-        return materialBibliograficoRepository.findAll(spec);
+        return materialBibliograficoRepository.findAll(spec,
+                Sort.by(Sort.Direction.DESC, "id"));
     }
 
     public List<MaterialBibliografico> searchBySede(Long sedeId, String opcion, String valor) {
@@ -255,7 +258,8 @@ public class MaterialBibliograficoService {
                 );
             }
         }
-        return materialBibliograficoRepository.findAll(spec);
+        return materialBibliograficoRepository.findAll(spec,
+                Sort.by(Sort.Direction.DESC, "id"));
     }
 
 
