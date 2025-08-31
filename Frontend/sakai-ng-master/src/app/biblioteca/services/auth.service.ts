@@ -283,7 +283,7 @@ loginMicrosoft() {
   }
 
   // Login manual: envía las credenciales y espera una respuesta con mensaje y token.
-  loginManual(credentials: { email: string; password: string; role?: string }): Observable<any> {
+  loginManual(credentials: LoginRequest): Observable<LoginResponse> {
       const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
       return this.http.post<LoginResponse>(`${this.apiUrl}/login`, credentials, { headers, withCredentials: true })
         .pipe(

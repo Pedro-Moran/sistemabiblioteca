@@ -9,6 +9,7 @@ export interface Authentication {
 export interface LoginRequest {
   email: string;
   password: string;
+  role: string;
 }
 
 export interface LoginResponse {

@@ -131,17 +131,21 @@ public class AuthController {
         return ResponseEntity.ok(new LoginResponse("Login exitoso", jwt, refresh.getToken()));
     }
 
-    @PostMapping("/login")
+        @PostMapping("/login")
     public ResponseEntity<?> loginManual(@RequestBody LoginRequest loginRequest) {
         String emailUpper = loginRequest.getEmail().toUpperCase();
         Optional<Usuario> usuarioOpt = usuarioService.validarCredenciales(emailUpper, loginRequest.getPassword());
         if (usuarioOpt.isPresent()) {
             Usuario usuario = usuarioOpt.get();
-            String rolDescripcion = usuario.getRoles().isEmpty()
-                    ? "Sin Rol"
-                    : usuario.getRoles().iterator().next().getDescripcion();
+            String requestedRole = loginRequest.getRole();
+            boolean hasRole = usuario.getRoles().stream()
+                    .anyMatch(r -> r.getDescripcion().equalsIgnoreCase(requestedRole));
+            if (!hasRole) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("message", "Rol no autorizado"));
+            }
             usuarioService.incrementarContadorLogins(usuario.getLogin());
-            String jwt = jwtUtil.generateToken(usuario.getEmail(), rolDescripcion);
+            String jwt = jwtUtil.generateToken(usuario.getEmail(), requestedRole);
             RefreshToken refresh = refreshTokenService.createRefreshToken(usuario);
             System.out.println(jwt);
             return ResponseEntity.ok(new LoginResponse("Login exitoso", jwt, refresh.getToken()));
@@ -150,7 +154,6 @@ public class AuthController {
                     .body("Credenciales incorrectas");
         }
     }
-
     @PostMapping("/forgot-password")
     public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody Map<String, String> request) {
         String email = request.get("email").toUpperCase();
