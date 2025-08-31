@@ -60,22 +60,19 @@ export class GenericoService {
     );
   }
 
-<<<<<<< HEAD
-  /** Obtiene el catálogo completo de módulos disponibles en el sistema */
-  modulos_get(): Observable<any> {
-    return this.http.get<any[]>(
-      `${this.apiUrl}/conf/lista-modulos`,
-      { headers: this.authHeaders() }
-    );
-  }
-
-=======
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
-  sedes_get(modulo: any):Observable<any>{
-    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );
-//     return this.http.get<any[]>('assets/demo/biblioteca/sedes.json');
+    /** Obtiene el catálogo completo de módulos disponibles en el sistema */
+    modulos_get(): Observable<any> {
+      return this.http.get<any[]>(
+        `${this.apiUrl}/conf/lista-modulos`,
+        { headers: this.authHeaders() }
+      );
+    }
+    sedes_get(modulo: any):Observable<any>{
+    const token = this.authService.getToken();
+    const options = token
+      ? { headers: new HttpHeaders().set('Authorization', `Bearer ${token}`) }
+      : {};
+    return this.http.get<any[]>(`${this.apiUrl}/${modulo}`, options);
   }
 
   tipodocumento_get(modulo: any): Observable<any> {

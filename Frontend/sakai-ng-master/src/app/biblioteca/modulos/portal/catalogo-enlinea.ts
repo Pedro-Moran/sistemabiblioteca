@@ -396,6 +396,42 @@ export class CatalogoEnLineaComponent {
 
     user: any;
 
+    /** Carga la lista de sedes disponibles */
+    private async cargarSedes() {
+        try {
+            const res: any = await this.genericoService
+                .sedes_get('api/equipos/sedes')
+                .toPromise();
+            const rawList: any[] = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+            this.dataSede = rawList.map(s => new Sedes(s));
+            this.sedeFiltro = this.dataSede[0] ?? new Sedes();
+        } catch (err) {
+            this.messageService.add({ severity: 'error', detail: 'Error al cargar sedes' });
+        }
+    }
+
+    /** Carga los tipos de material bibliográfico */
+    private async cargarColecciones() {
+        try {
+            const res: any = await this.materialBibliograficoService
+                .lista_tipo_material('catalogos/tipomaterial/activos')
+                .toPromise();
+            const rawList: any[] = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+            this.dataColeccion = rawList.map(
+                t =>
+                    new ClaseGeneral({
+                        id: t.id ?? t.tipo?.id,
+                        descripcion: t.descripcion ?? t.tipo?.descripcion,
+                        activo: t.activo ?? true,
+                        estado: 1,
+                    }),
+            );
+            this.coleccionFiltro = this.dataColeccion[0] ?? new ClaseGeneral();
+        } catch (err) {
+            this.messageService.add({ severity: 'error', detail: 'Error al cargar colecciones' });
+        }
+    }
+
     private parseTime(t: string) {
         const [h, m] = t.split(':').map(n => parseInt(n, 10));
         return { h, m };
@@ -431,22 +467,6 @@ export class CatalogoEnLineaComponent {
         return undefined;
     }
 
-<<<<<<< HEAD
-=======
-    private isDisponibleAhora(det: any): boolean {
-        if (!det.horaInicio || !det.horaFin) {
-            return true;
-        }
-        const now = new Date();
-        const start = this.parseTimeAtDate(det.horaInicio, now);
-        const end = this.parseTimeAtDate(det.horaFin, now);
-        if (end <= start) {
-            return now >= start || now <= end;
-        }
-        return now >= start && now <= end;
-    }
-
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
     constructor(
         private materialBibliograficoService: MaterialBibliograficoService,
         private genericoService: GenericoService,
@@ -456,13 +476,13 @@ export class CatalogoEnLineaComponent {
     ) { }
 
     async ngOnInit() {
-         this.user = this.authService.getUser();
+        this.user = this.authService.getUser();
+        await Promise.all([this.cargarSedes(), this.cargarColecciones()]);
         this.listar();
         this.detallesPorBiblioteca = {};
     }
     listar() {
         // Recupera solo las cabeceras disponibles
-<<<<<<< HEAD
         this.loading = true;
         this.materialBibliograficoService
             .api_libros_lista('api/biblioteca/catalogo?estadoId=2')
@@ -471,21 +491,6 @@ export class CatalogoEnLineaComponent {
                     const cabeceras = (Array.isArray(result) ? result : result?.data || []).filter(
                         (b: any) =>
                             b.estadoId === 2 || b.estado?.descripcion === 'DISPONIBLE'
-=======
-        this.materialBibliograficoService
-            .api_libros_lista('api/biblioteca/disponibles')
-            .subscribe({
-                next: (result: any) => {
-                    if (result.status !== '0') {
-                        this.loading = false;
-                        return;
-                    }
-
-                    const cabeceras = result.data.filter(
-                        (b: any) =>
-                            (b.estadoId === 2 || b.estado?.descripcion === 'DISPONIBLE') &&
-                            this.isDisponibleAhora(b)
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
                     );
 
                     if (cabeceras.length === 0) {
@@ -502,12 +507,7 @@ export class CatalogoEnLineaComponent {
                                     cab: b,
                                     detalles: det.filter(
                                         d =>
-<<<<<<< HEAD
                                             d.idEstado === 2 || d.estado?.descripcion === 'DISPONIBLE'
-=======
-                                            (d.idEstado === 2 || d.estado?.descripcion === 'DISPONIBLE') &&
-                                            this.isDisponibleAhora(d)
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
                                     )
                                 }))
                             )
@@ -563,13 +563,7 @@ export class CatalogoEnLineaComponent {
             .subscribe({
                 next: (lista: any[]) => {
                     this.detallesPorBiblioteca[row.id] = lista.filter(
-<<<<<<< HEAD
                         d => d.idEstado === 2 || d.estado?.descripcion === 'DISPONIBLE'
-=======
-                        d =>
-                            (d.idEstado === 2 || d.estado?.descripcion === 'DISPONIBLE') &&
-                            this.isDisponibleAhora(d)
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
                     );
                 },
                 error: () => {
