@@ -364,11 +364,13 @@ export class Noticias implements OnInit{
     ? 'DISPONIBLE'
     : 'DESCARTE';
          this.confirmationService.confirm({
-           message: `¿Estás seguro de cambiar "${n.titular}" al estado ${nuevoEstadoDesc}?`,
-           accept: () => {
-             this.loading = true;
-             this.portalService
-               .toggleEstado(n.idnoticia!, nuevoEstadoId, usuario)
+          message: `¿Estás seguro de cambiar "${n.titular}" al estado ${nuevoEstadoDesc}?`,
+          acceptLabel: 'SI',
+          rejectLabel: 'NO',
+          accept: () => {
+            this.loading = true;
+            this.portalService
+              .toggleEstado(n.idnoticia!, nuevoEstadoId, usuario)
                .subscribe({
                  next: res => {
                    if (res.p_status === 0) {
@@ -455,6 +457,8 @@ export class Noticias implements OnInit{
 //             });
 this.confirmationService.confirm({
       message: `Eliminar "${objeto.titular}"?`,
+      acceptLabel: 'SI',
+      rejectLabel: 'NO',
       accept: () => {
         this.loading = true;
         this.portalService.delete(objeto.idnoticia!).subscribe(r=>{

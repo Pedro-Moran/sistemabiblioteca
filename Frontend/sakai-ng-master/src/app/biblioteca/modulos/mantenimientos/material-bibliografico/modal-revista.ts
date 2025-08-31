@@ -986,6 +986,8 @@ export class ModalRevistaComponent implements OnInit {
             message : '¿Estás seguro(a) de que quieres registrar?',
             header  : 'Confirmar',
             icon    : 'pi pi-exclamation-triangle',
+            acceptLabel: 'SI',
+            rejectLabel: 'NO',
             accept  : () => {
 
               const tipoAdqId = this.formDetalle.value.tipoAdquisicion;
