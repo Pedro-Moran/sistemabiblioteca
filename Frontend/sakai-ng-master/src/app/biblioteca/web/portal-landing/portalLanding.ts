@@ -13,7 +13,6 @@ import { PortalNosotros } from './components/portal-nosotros';
 import { PortalHorarios } from './components/portal-horarios';
 import { PricingWidget } from '../../../pages/landing/components/pricingwidget';
 import { TopbarWidget } from '../../../pages/landing/components/topbarwidget.component';
-import { AppFloatingConfigurator } from '../../../layout/component/app.floatingconfigurator';
 import { PortalEjemplares } from './components/portal-ejemplares';
 import { PortalNoticias } from './components/portal-noticias';
 import { PortalTopbar } from './components/portal-topbar';
@@ -25,9 +24,8 @@ import { PortalRecursosElectronicos } from './components/portal-recursos-electro
 @Component({
     selector: 'app-portal-landing',
     standalone: true,
-        imports: [ScrollTopModule,RouterModule, AppFloatingConfigurator,PortalFooter,PortalContactanos,PortalTopbar,PortalEjemplares,PortalNoticias, RippleModule, StyleClassModule, ButtonModule, DividerModule, PortalNosotros,PortalHorarios,PortalRecursosElectronicos, Portal,ScrollTopModule],
+        imports: [ScrollTopModule,RouterModule,PortalFooter,PortalContactanos,PortalTopbar,PortalEjemplares,PortalNoticias, RippleModule, StyleClassModule, ButtonModule, DividerModule, PortalNosotros,PortalHorarios,PortalRecursosElectronicos, Portal,ScrollTopModule],
     template: `
-        <app-floating-configurator />
         <div class="bg-app min-h-screen">
             <div id="home" class="landing-wrapper">
                 <portal-topbar />

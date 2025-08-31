@@ -404,6 +404,8 @@ private resetInactivityTimer(): void {
     localStorage.removeItem('currentUser');
     localStorage.removeItem(this.TOKEN_NAME);
     localStorage.removeItem(this.REFRESH_NAME);
+    // Reinicia el estado del usuario actual para evitar datos residuales tras cerrar sesión
+    this.currentUserSubject.next({} as Usuario);
     const activeAccount = this.msalService.instance.getActiveAccount();
     if (activeAccount) {
       this.msalService.logoutPopup({ mainWindowRedirectUri: '/auth/login' }).subscribe();
