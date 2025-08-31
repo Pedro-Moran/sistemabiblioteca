@@ -4,12 +4,16 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
 
     @Value("${jwt.secret}")
     private String secret;
@@ -57,8 +61,8 @@ public class JwtUtil {
                     .parseClaimsJws(token);
             return true;
         } catch (JwtException e) {
-            // El token es inválido
-            System.out.println("Token inválido: " + e.getMessage());
+            // El token es inválido o expirado
+            log.warn("Token inválido: {}", e.getMessage());
             return false;
         }
     }
@@ -72,8 +76,6 @@ public class JwtUtil {
                 .getSubject();
     }
 
-<<<<<<< HEAD
-=======
     public String getRoleFromToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(Keys.hmacShaKeyFor(secret.getBytes()))
@@ -82,8 +84,6 @@ public class JwtUtil {
                 .getBody()
                 .get("role", String.class);
     }
-
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
     public long getRefreshExpirationMs() {
         return refreshExpirationMs;
     }
