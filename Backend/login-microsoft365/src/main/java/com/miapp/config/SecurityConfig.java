@@ -34,13 +34,8 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Permite OPTIONS en todas las rutas
-<<<<<<< HEAD
-                    .requestMatchers("/auth/login-microsoft",
-                            "/auth/login",
-=======
                     .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/login-microsoft").permitAll()
                     .requestMatchers(
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
                             "/auth/forgot-password",
                             "/reset-password",
                             "/reset-password/**",
@@ -49,6 +44,7 @@ public class SecurityConfig {
                             "/auth/lista-activo",
                             "/auth/actualizar",
                             "/auth/permisosRolPorUsuario/**",
+                            "/auth/permisosRolPorUsuarioEmail/**",
                             "/auth/agregar-rol",
                             "/auth/quitar-rol",
                             "/auth/roles/**",
