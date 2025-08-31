@@ -1,0 +1,19 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"foto": "https://biblioteca.upsjb.edu.pe/lan/Imagenes/Uploads/UPSJB_1_30112024_133774580434692598_469.jpg",
+        "nombres": "Nombre del solicitante",
+        "tipo":{"id":1,"descripcion": "En sala", "activo": true},
+        "cantidad": 1}, 
+        
+        {"id":2,"foto": "https://biblioteca.upsjb.edu.pe/lan/Imagenes/Uploads/UPSJB_1_30112024_133774580434692598_469.jpg",
+        "nombres": "Nombre del solicitante",
+        "tipo":{"id":1,"descripcion": "En sala", "activo": true},
+        "cantidad": 2}, 
+        
+        {"id":3,"foto": "https://biblioteca.upsjb.edu.pe/lan/Imagenes/Uploads/UPSJB_1_30112024_133774580434692598_469.jpg",
+        "nombres": "Nombre del solicitante",
+        "tipo":{"id":1,"descripcion": "En sala", "activo": true},
+        "cantidad": 3}
+    ]
+}

@@ -1,0 +1,9 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"descripcion": "Base de datos virtual", "activo": true}, 
+        {"id":2,"descripcion": "Libros electronicos", "activo": true}, 
+        {"id":3,"descripcion": "Base de datos presencial", "activo": true}, 
+        {"id":4,"descripcion": "Base de datos acceso libre", "activo": true}
+    ]
+}

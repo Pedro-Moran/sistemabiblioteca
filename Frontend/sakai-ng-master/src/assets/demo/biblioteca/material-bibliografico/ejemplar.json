@@ -1,0 +1,21 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,
+        "sede":{"id":1,"descripcion": "Sede A", "activo": true},
+        "tipoMaterial":{"id":1,"descripcion": "tipoMaterial A", "activo": true},
+        "fechaIngreso": "20/02/2025 08:30",
+        "tipoAdquisicion":{"id":1,"descripcion": "tipoAdquisicion A", "activo": true},        
+        "costo":453,
+        "nroFactura":"F001-999"
+    }, 
+    {"id":2,
+    "sede":{"id":2,"descripcion": "Sede B", "activo": true},
+    "tipoMaterial":{"id":1,"descripcion": "tipoMaterial A", "activo": true},
+    "fechaIngreso": "18/02/2025 08:30",
+    "tipoAdquisicion":{"id":1,"descripcion": "tipoAdquisicion A", "activo": true},        
+    "costo":653,
+    "nroFactura":"F001-998"
+}
+    ]
+}

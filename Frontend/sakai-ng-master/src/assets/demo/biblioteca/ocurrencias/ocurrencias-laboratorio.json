@@ -1,0 +1,14 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"usuario":{"id":1,"nombres": "Nombres del usuario","codigo":"02543", "activo": true},
+        "ocurrencia":"193",
+        "semestre": "20132", 
+        "sede":"01",
+        "especialidad":"MEDICINA HUMANA",
+        "ciclo":"02",
+        "laboratorio":"laboratorio",
+        "fecha":"03/09/2024",
+        "activo": true}
+    ]
+}

@@ -1,0 +1,13 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":0,"descripcion": "Cualquier campo", "activo": true}, 
+        {"id":1,"descripcion": "Tema", "activo": true}, 
+        {"id":2,"descripcion": "Codigo", "activo": true}, 
+        {"id":3,"descripcion": "Nombre", "activo": true},
+        {"id":4,"descripcion": "Descripcion", "activo": true}, 
+        {"id":5,"descripcion": "Autor", "activo": true}, 
+        {"id":6,"descripcion": "Genero", "activo": true}, 
+        {"id":7,"descripcion": "Editorial", "activo": true}
+    ]
+}

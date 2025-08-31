@@ -1,0 +1,9 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"descripcion": "Pendiente", "activo": true}, 
+        {"id":2,"descripcion": "En uso", "activo": true}, 
+        {"id":3,"descripcion": "Anulado", "activo": true}, 
+        {"id":4,"descripcion": "Finalizado", "activo": true}
+    ]
+}

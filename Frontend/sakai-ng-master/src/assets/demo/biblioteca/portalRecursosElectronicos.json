@@ -1,0 +1,24 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,
+        "link":"https://www.elsevier.com/connect/coronavirus-information-center?dgcid=_SD_banner",
+        "tipo":{"id":1,"descripcion": "Base de datos virtual", "activo": true},
+        "urlPortada":"https://upcover-shreethemes.vercel.app/static/media/02.4f217e19830043f478ff.jpg",
+        "titulo":"Titulo Noticia A",
+        "activo": true}, 
+        {"id":2,
+        "link":"https://www.elsevier.com/connect/coronavirus-information-center?dgcid=_SD_banner",
+        "tipo":{"id":1,"descripcion": "Base de datos virtual", "activo": true},
+        "urlPortada":"https://upcover-shreethemes.vercel.app/static/media/02.4f217e19830043f478ff.jpg",
+        "titulo":"Titulo Noticia A",
+        "activo": true}, 
+        {"id":3,
+        "link":"https://www.elsevier.com/connect/coronavirus-information-center?dgcid=_SD_banner",
+        "tipo":{"id":1,"descripcion": "Base de datos virtual", "activo": true},
+        "urlPortada":"https://upcover-shreethemes.vercel.app/static/media/02.4f217e19830043f478ff.jpg",
+        "titulo":"Titulo Noticia A",
+        "activo": true}
+        
+    ]
+}

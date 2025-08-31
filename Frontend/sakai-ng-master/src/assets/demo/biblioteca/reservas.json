@@ -1,0 +1,43 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,
+        "usuario":{"id":1,"sede":{"id":1,"descripcion": "Sede A", "activo": true,"estado":0},
+        "rol":{"id":1,"descripcion": "Rol A", "activo": true,"estado":0},
+        "tipodocumento":{"id":1,"descripcion": "DNI", "activo": true,"estado":0},
+        "numerodocumento":"12345678","nombres":"Ejemplo","email":"ejemplo@gmail.com",
+        "telefono":"707070","celular":"987812343","direccion":"direccion","activo":true
+        },
+        "recurso":{
+            "id":1,
+            "tipoRecurso":{"id":1,"tipo":{"id":1,"descripcion": "Material", "activo": true},"descripcion": "Libro", "activo": true}, 
+            "nombre":"Nombre A","descripcion":"-a","sede":{"id":1,"descripcion": "Sede A", "activo": true},
+            "estado":{"id":1,"descripcion": "Disponible", "activo": true},"codigo":"00001","capacidad":50,"ubicacion":"A201","caracteristicas":"","activo":true
+            },        
+        "fechaHoraInicio": "20/02/2025 08:30", 
+        "fechaHoraFin": "20/02/2025 10:30", 
+        "situacionReserva":{"id":1,"descripcion": "Pendiente", "activo": true},
+        "fechaRegistro":"16/02/2025 15:30",
+        "motivo":"Motivo"
+        },
+        {"id":2,
+        "usuario":{"id":1,"sede":{"id":1,"descripcion": "Sede A", "activo": true,"estado":0},
+        "rol":{"id":1,"descripcion": "Rol A", "activo": true,"estado":0},
+        "tipodocumento":{"id":1,"descripcion": "DNI", "activo": true,"estado":0},
+        "numerodocumento":"12345678","nombres":"Ejemplo","email":"ejemplo@gmail.com",
+        "telefono":"707070","celular":"987812343","direccion":"direccion","activo":true
+        },
+        "recurso":{
+            "id":1,
+            "tipoRecurso":{"id":1,"tipo":{"id":1,"descripcion": "Material", "activo": true},"descripcion": "Libro", "activo": true}, 
+            "nombre":"Nombre A","descripcion":"-a","sede":{"id":1,"descripcion": "Sede A", "activo": true},
+            "estado":{"id":1,"descripcion": "Disponible", "activo": true},"codigo":"00001","capacidad":50,"ubicacion":"A101","caracteristicas":"","activo":true
+            },        
+        "fechaHoraInicio": "20/02/2025 08:30", 
+        "fechaHoraFin": "20/02/2025 10:30", 
+        "situacionReserva":{"id":1,"descripcion": "En Uso", "activo": true},
+        "fechaRegistro":"16/02/2025 15:30",
+        "motivo":"Motivo"
+        }
+    ]
+}

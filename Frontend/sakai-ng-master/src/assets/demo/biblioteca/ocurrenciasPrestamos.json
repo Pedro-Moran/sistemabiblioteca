@@ -1,0 +1,150 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"fechaRegistro": "19/02/2025 10:30", "fechaOcurrencia": "18/02/2025 08:30","codigoAlumno":"COD-000001",
+        "nombreInvolucrado":"Nombre involucrado","codigoBibliografico":"COD-000A1","numeroIngreso":"NI-0001",
+        "ejemplar":{
+            "id":1,
+            "material":{
+                "id":2,
+                "tipoRecurso":{"id":1,"tipo":{"id":1,"descripcion": "Material", "activo": true},"descripcion": "Libro", "activo": true}, 
+                "nombre":"Libro A",
+                "descripcion":"breve descripcion de libro A v1",
+                "autor":{"id":1,"descripcion": "Dato A", "activo": true},
+                "genero":"genero A",
+                "editorial":{"id":1,"descripcion": "Dato A", "activo": true},
+                "anioPublicacion":"2020","numPaginas":230,"img":"","url":"",
+                "tipoActivo":{"id":1,"descripcion": "En Sede", "activo": true}
+            },
+            "sede":{"id":1,"descripcion": "Sede A", "activo": true},
+            "estado":{"id":1,"descripcion": "Disponible", "activo": true},
+            "tipoEjemplar":{"id":1,"descripcion": "Original", "activo": true},
+            "fechaRegistro":"23/02/2025 10:34",
+            "codigo":"00001","nroingreso":"LD-00001"
+            },
+            "detalle":"detalle ocurencia",
+            "prestamo":{"id":1,
+            "usuario":{"id":1,"sede":{"id":1,"descripcion": "Sede A", "activo": true,"estado":0},
+            "rol":{"id":1,"descripcion": "Rol A", "activo": true,"estado":0},
+            "tipodocumento":{"id":1,"descripcion": "DNI", "activo": true,"estado":0},
+            "numerodocumento":"12345678","nombres":"Ejemplo usuario","email":"ejemplo@gmail.com",
+            "telefono":"707070","celular":"987812343","direccion":"direccion","activo":true
+            },
+            "ejemplar":{
+                "id":1,
+                "material":{
+                    "id":2,
+                    "tipoRecurso":{"id":1,"tipo":{"id":1,"descripcion": "Material", "activo": true},"descripcion": "Libro", "activo": true}, 
+                    "nombre":"Libro A",
+                    "descripcion":"breve descripcion de libro A v1",
+                    "autor":{"id":1,"descripcion": "Dato A", "activo": true},
+                    "genero":"genero A",
+                    "editorial":{"id":1,"descripcion": "Dato A", "activo": true},
+                    "anioPublicacion":"2020","numPaginas":230,"img":"","url":"",
+                    "tipoActivo":{"id":1,"descripcion": "En Sede", "activo": true}
+                },
+                "sede":{"id":1,"descripcion": "Sede A", "activo": true},
+                "estado":{"id":1,"descripcion": "Disponible", "activo": true},
+                "tipoEjemplar":{"id":1,"descripcion": "Original", "activo": true},
+                "fechaRegistro":"23/02/2025 10:34",
+                "codigo":"00001","nroingreso":"LD-00001"
+                },        
+            "fechaHoraInicio": "20/02/2025 08:30", 
+            "fechaHoraFin": "20/02/2025 10:30", 
+            "situacionReserva":{"id":1,"descripcion": "Pendiente", "activo": true},
+            "fechaRegistro":"16/02/2025 15:30",
+            "motivo":"Motivo"
+            },
+            "costo":"340",
+            "usuarioCosto":{"id":1,"sede":{"id":1,"descripcion": "Sede A", "activo": true,"estado":0},
+            "rol":{"id":1,"descripcion": "Rol A", "activo": true,"estado":0},
+            "tipodocumento":{"id":1,"descripcion": "DNI", "activo": true,"estado":0},
+            "numerodocumento":"12345678","nombres":"Ejemplo usuario","email":"ejemplo@gmail.com",
+            "telefono":"707070","celular":"987812343","direccion":"direccion","activo":true
+            },
+            
+            "usuarioRegistro":{"id":1,"sede":{"id":1,"descripcion": "Sede A", "activo": true,"estado":0},
+            "rol":{"id":1,"descripcion": "Rol A", "activo": true,"estado":0},
+            "tipodocumento":{"id":1,"descripcion": "DNI", "activo": true,"estado":0},
+            "numerodocumento":"12345678","nombres":"Ejemplo usuario","email":"ejemplo@gmail.com",
+            "telefono":"707070","celular":"987812343","direccion":"direccion","activo":true
+            },
+            "mailEnviado":false,
+            "fechaEnvio":"",
+            "situacionOcurrencia":{"id":1,"descripcion": "Pendiente Costo", "activo": true,"estado":0}
+        },
+        
+        {"id":2,"fechaRegistro": "20/02/2025 10:30", "fechaOcurrencia": "16/02/2025 08:30","codigoAlumno":"COD-000002",
+        "nombreInvolucrado":"Nombre involucrado B","codigoBibliografico":"COD-000A1","numeroIngreso":"NI-0001",
+        "ejemplar":{
+            "id":1,
+            "material":{
+                "id":2,
+                "tipoRecurso":{"id":1,"tipo":{"id":1,"descripcion": "Material", "activo": true},"descripcion": "Libro", "activo": true}, 
+                "nombre":"Libro A",
+                "descripcion":"breve descripcion de libro A v1",
+                "autor":{"id":1,"descripcion": "Dato A", "activo": true},
+                "genero":"genero A",
+                "editorial":{"id":1,"descripcion": "Dato A", "activo": true},
+                "anioPublicacion":"2020","numPaginas":230,"img":"","url":"",
+                "tipoActivo":{"id":1,"descripcion": "En Sede", "activo": true}
+            },
+            "sede":{"id":1,"descripcion": "Sede A", "activo": true},
+            "estado":{"id":1,"descripcion": "Disponible", "activo": true},
+            "tipoEjemplar":{"id":1,"descripcion": "Original", "activo": true},
+            "fechaRegistro":"23/02/2025 10:34",
+            "codigo":"00001","nroingreso":"LD-00001"
+            },
+            "detalle":"detalle ocurencia",
+            "prestamo":{"id":1,
+            "usuario":{"id":1,"sede":{"id":1,"descripcion": "Sede A", "activo": true,"estado":0},
+            "rol":{"id":1,"descripcion": "Rol A", "activo": true,"estado":0},
+            "tipodocumento":{"id":1,"descripcion": "DNI", "activo": true,"estado":0},
+            "numerodocumento":"12345678","nombres":"Ejemplo usuario","email":"ejemplo@gmail.com",
+            "telefono":"707070","celular":"987812343","direccion":"direccion","activo":true
+            },
+            "ejemplar":{
+                "id":1,
+                "material":{
+                    "id":2,
+                    "tipoRecurso":{"id":1,"tipo":{"id":1,"descripcion": "Material", "activo": true},"descripcion": "Libro", "activo": true}, 
+                    "nombre":"Libro A",
+                    "descripcion":"breve descripcion de libro A v1",
+                    "autor":{"id":1,"descripcion": "Dato A", "activo": true},
+                    "genero":"genero A",
+                    "editorial":{"id":1,"descripcion": "Dato A", "activo": true},
+                    "anioPublicacion":"2020","numPaginas":230,"img":"","url":"",
+                    "tipoActivo":{"id":1,"descripcion": "En Sede", "activo": true}
+                },
+                "sede":{"id":1,"descripcion": "Sede A", "activo": true},
+                "estado":{"id":1,"descripcion": "Disponible", "activo": true},
+                "tipoEjemplar":{"id":1,"descripcion": "Original", "activo": true},
+                "fechaRegistro":"23/02/2025 10:34",
+                "codigo":"00001","nroingreso":"LD-00001"
+                },        
+            "fechaHoraInicio": "20/02/2025 08:30", 
+            "fechaHoraFin": "20/02/2025 10:30", 
+            "situacionReserva":{"id":1,"descripcion": "Pendiente", "activo": true},
+            "fechaRegistro":"16/02/2025 15:30",
+            "motivo":"Motivo"
+            },
+            "costo":"740",
+            "usuarioCosto":{"id":1,"sede":{"id":1,"descripcion": "Sede A", "activo": true,"estado":0},
+            "rol":{"id":1,"descripcion": "Rol A", "activo": true,"estado":0},
+            "tipodocumento":{"id":1,"descripcion": "DNI", "activo": true,"estado":0},
+            "numerodocumento":"12345678","nombres":"Ejemplo usuario","email":"ejemplo@gmail.com",
+            "telefono":"707070","celular":"987812343","direccion":"direccion","activo":true
+            },
+            
+            "usuarioRegistro":{"id":1,"sede":{"id":1,"descripcion": "Sede A", "activo": true,"estado":0},
+            "rol":{"id":1,"descripcion": "Rol A", "activo": true,"estado":0},
+            "tipodocumento":{"id":1,"descripcion": "DNI", "activo": true,"estado":0},
+            "numerodocumento":"12345678","nombres":"Ejemplo usuario","email":"ejemplo@gmail.com",
+            "telefono":"707070","celular":"987812343","direccion":"direccion","activo":true
+            },
+            "mailEnviado":true,
+            "fechaEnvio":"25/02/2025 11:30",
+            "situacionOcurrencia":{"id":1,"descripcion": "Costeado y enviado", "activo": true,"estado":0}
+        }
+    ]
+}

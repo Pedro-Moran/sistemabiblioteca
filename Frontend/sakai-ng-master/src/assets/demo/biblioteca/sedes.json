@@ -1,0 +1,9 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"descripcion": "Local Chorrillos", "activo": true}, 
+        {"id":2,"descripcion": "Local San Borja", "activo": true}, 
+        {"id":3,"descripcion": "Filial Ica", "activo": true}, 
+        {"id":4,"descripcion": "Filial Chincha", "activo": true}
+    ]
+}

@@ -1,0 +1,9 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"descripcion": "categoria", "activo": true}, 
+        {"id":2,"descripcion": "categoria", "activo": true}, 
+        {"id":3,"descripcion": "categoria", "activo": true}, 
+        {"id":4,"descripcion": "categoria", "activo": true}
+    ]
+}
