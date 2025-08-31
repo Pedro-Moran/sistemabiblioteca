@@ -201,7 +201,9 @@ public class UsuarioService {
 //    }
 
     public List<Usuario> getUsuariosPorRol(Long idrol) {
-        return usuarioRepository.findByRoles_IdRol(idrol);
+        List<Usuario> usuarios = usuarioRepository.findByRoles_IdRol(idrol);
+        usuarios.forEach(u -> u.getRoles().removeIf(r -> !r.getIdRol().equals(idrol)));
+        return usuarios;
     }
 
 
