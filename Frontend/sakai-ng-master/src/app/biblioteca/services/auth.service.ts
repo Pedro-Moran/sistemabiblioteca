@@ -352,6 +352,24 @@ loginMicrosoft() {
       );
   }
 
+  getProgramas(): Observable<{ idPrograma: number; descripcion: string }[]> {
+    return this.http
+      .get<any>(`${this.apiUrl}/api/catalogos/programas`)
+      .pipe(
+        map(res => Array.isArray(res) ? res : (res?.data ?? [])),
+        catchError(() => of([]))
+      );
+  }
+
+  getEspecialidades(): Observable<{ idEspecialidad: number; descripcion: string }[]> {
+    return this.http
+      .get<any>(`${this.apiUrl}/api/catalogos/especialidades`)
+      .pipe(
+        map(res => Array.isArray(res) ? res : (res?.data ?? [])),
+        catchError(() => of([]))
+      );
+  }
+
 // Registro manual: envía los datos del usuario
 register(userData: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/register`, userData);

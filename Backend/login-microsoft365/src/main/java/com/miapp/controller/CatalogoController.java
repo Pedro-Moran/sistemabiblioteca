@@ -1,7 +1,11 @@
 package com.miapp.controller;
 
 import com.miapp.model.TipoMaterial;
+import com.miapp.model.Programa;
+import com.miapp.model.Especialidad;
 import com.miapp.service.TipoMaterialService;
+import com.miapp.service.ProgramaService;
+import com.miapp.service.EspecialidadService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,9 +21,15 @@ import java.util.stream.Collectors;
 public class CatalogoController {
 
     private final TipoMaterialService tipoMaterialService;
+    private final ProgramaService programaService;
+    private final EspecialidadService especialidadService;
 
-    public CatalogoController(TipoMaterialService tipoMaterialService) {
+    public CatalogoController(TipoMaterialService tipoMaterialService,
+                              ProgramaService programaService,
+                              EspecialidadService especialidadService) {
         this.tipoMaterialService = tipoMaterialService;
+        this.programaService = programaService;
+        this.especialidadService = especialidadService;
     }
 
     // Endpoint para listar todos los tipos de material
@@ -48,6 +58,18 @@ public class CatalogoController {
         }).toList();
 
         return ResponseEntity.ok(Map.of("status", "0", "data", listaMapeada));
+    }
+
+    @GetMapping("/programas")
+    public ResponseEntity<List<Programa>> listarProgramas() {
+        List<Programa> lista = programaService.listActivos();
+        return ResponseEntity.ok(lista);
+    }
+
+    @GetMapping("/especialidades")
+    public ResponseEntity<List<Especialidad>> listarEspecialidades() {
+        List<Especialidad> lista = especialidadService.getActivos();
+        return ResponseEntity.ok(lista);
     }
 
 }

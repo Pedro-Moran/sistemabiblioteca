@@ -21,7 +21,9 @@ export class Registro {
     NATIONAL_ID?: string;
     NATIONAL_ID_TYPE?: string;
     PHONE?: string;
-    PROGRAM?: string;
+    programa?: number | null;
+    especialidad?: number | null;
+    ciclo?: string | null;
     SEX?: string;
     STATE?: string;
     rol?: number;
@@ -49,7 +51,9 @@ export class Registro {
         this.NATIONAL_ID = '';
         this.NATIONAL_ID_TYPE = '';
         this.PHONE = '';
-        this.PROGRAM = '';
+        this.programa = null;
+        this.especialidad = null;
+        this.ciclo = null;
         this.SEX = '';
         this.STATE = '';
         this.rol = 0;
