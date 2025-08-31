@@ -102,12 +102,12 @@ import { DocumentoService } from '../../../biblioteca/services/documento.service
                                 <input pInputText id="cell" type="text" placeholder="Celular" formControlName="CELL" [readonly]="fieldsDisabled" [ngClass]="{'disabled-input': fieldsDisabled}" />
                             </div>
                             <div class="flex flex-col gap-2">
-                                <label for="program" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Programa</label>
-                                <input pInputText id="program" type="text" placeholder="Programa" formControlName="PROGRAM" [readonly]="fieldsDisabled" [ngClass]="{'disabled-input': fieldsDisabled}" />
+                                <label for="program" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Esc. Prof / Area Laboral</label>
+                                <input pInputText id="program" type="text" placeholder="Esc. Prof / Area Laboral" formControlName="PROGRAM" [readonly]="fieldsDisabled" [ngClass]="{'disabled-input': fieldsDisabled}" />
                             </div>
                             <div class="flex flex-col gap-2">
-                                <label for="campus" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Campus</label>
-                                <input pInputText id="campus" type="text" placeholder="Campus" formControlName="CAMPUS" [readonly]="fieldsDisabled" [ngClass]="{'disabled-input': fieldsDisabled}" />
+                                <label for="campus" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Local de estudios / trabajo</label>
+                                <input pInputText id="campus" type="text" placeholder="Local de estudios / trabajo" formControlName="CAMPUS" [readonly]="fieldsDisabled" [ngClass]="{'disabled-input': fieldsDisabled}" />
                             </div>
                             <div class="flex flex-col gap-2">
                                 <label for="country" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">País</label>
