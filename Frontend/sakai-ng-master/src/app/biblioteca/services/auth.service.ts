@@ -1,23 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-<<<<<<< HEAD
 import { BehaviorSubject, Observable, of, forkJoin } from 'rxjs';
-=======
-import { BehaviorSubject, Observable, of } from 'rxjs';
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
-import { map, tap } from 'rxjs/operators';
-import { JwtHelperService } from "@auth0/angular-jwt";
+import { map, tap, catchError } from 'rxjs/operators';
+import { JwtHelperService } from '@auth0/angular-jwt';
 import { Router } from '@angular/router';
 import * as _ from 'lodash';
 import { environment } from '../../../environments/environment';
 import { Authentication, LoginRequest, LoginResponse } from '../interfaces/Authentication';
 import { Usuario } from '../interfaces/usuario';
-<<<<<<< HEAD
 import { Modulo } from '../interfaces/modulo';
-=======
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
-
-import { catchError } from 'rxjs/operators';
 import { MsalService } from '@azure/msal-angular';
 import { AuthenticationResult } from '@azure/msal-browser';
 
@@ -30,11 +21,6 @@ interface ResponseDTO<T> {
 
 const httpOptions = {
   headers: new HttpHeaders({
-<<<<<<< HEAD
-=======
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS,DELETE,PUT',
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
     'Content-Type': 'application/json'
   }),
   withCredentials: true
@@ -116,7 +102,6 @@ export class AuthService {
 //     return of({ success: false });
 //   }
 
-<<<<<<< HEAD
   setAuthentication(token: string) {
     localStorage.setItem(this.TOKEN_NAME, token);
     const decoded = this.helper.decodeToken(token);
@@ -174,32 +159,6 @@ export class AuthService {
       if (Number.isFinite(id)) return id;
     }
     return 0;
-=======
-  setAuthentication(token:string){
-    localStorage.setItem(this.TOKEN_NAME, token);
-      const decoded = this.helper.decodeToken(token);
-
-      const isExpired = this.helper.isTokenExpired(token);
-
-      if (isExpired) {
-        this.logout();
-      } else {
-        const roles = Array.isArray(decoded.role) ? decoded.role : [decoded.role];
-        // Si ya no tienes 'user' y 'idrol', usa directamente 'sub' y 'role'
-       const user: Usuario = {
-         id: 0, // Asigna un valor predeterminado o el valor real si está disponible
-         email: decoded.sub,
-         roles: roles
-       };// O guarda más datos si tienes
-
-
-        localStorage.setItem("currentUser", JSON.stringify(user));
-        localStorage.setItem("role", JSON.stringify(roles));
-        // Emite el usuario incluyendo los roles
-        this.currentUserSubject.next({ ...user, roles });
-        this.scheduleAutoLogout();
-      }
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
   }
   getToken(): string {
     return localStorage.getItem(this.TOKEN_NAME) || '';
@@ -216,7 +175,6 @@ export class AuthService {
     return decoded;
   }
 
-<<<<<<< HEAD
   /**
    * Obtiene el identificador numérico del usuario autenticado a partir del token o del almacenamiento local.
    */
@@ -232,12 +190,6 @@ export class AuthService {
     const modules = localStorage.getItem('modules');
     return modules ? JSON.parse(modules) : [];
   }
-=======
-  getRoles(): string[] {
-       const role = localStorage.getItem("role");
-       return role ? JSON.parse(role) : [];
-    }
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
 
   idAuthenticated():boolean{
     const token = this.getToken();
@@ -274,7 +226,6 @@ export class AuthService {
 // }
 
 loginMicrosoft() {
-<<<<<<< HEAD
     // Limpia la cuenta activa para evitar reutilizar sesiones previas
     this.msalService.instance.setActiveAccount(null);
     this.msalService.loginPopup({ prompt: 'select_account', scopes: ['user.read'] }).subscribe({
@@ -313,47 +264,6 @@ loginMicrosoft() {
               alert(this.obtenerMensajeError(error));
             },
           });
-=======
-    this.msalService.loginPopup().subscribe({
-      next: (result: AuthenticationResult) => {
-        console.log('Inicio de sesión exitoso', result);
-        // Establece la cuenta activa y continua con la obtención del token
-        this.msalService.instance.setActiveAccount(result.account);
-        this.msalService.acquireTokenSilent({
-            scopes: ['user.read'],
-          }).pipe(
-            catchError(error => {
-              // Si el token silencioso falla, intenta obtener el token con un popup
-              return this.msalService.acquireTokenPopup({
-                scopes: ['user.read'],
-              });
-            })
-          ).subscribe({
-          next: (tokenResponse) => {
-            console.log('Token de Microsoft:', tokenResponse.accessToken);
-            this.http.post<LoginResponse>(`${this.apiUrl}/login-microsoft`, { token: tokenResponse.accessToken })
-              .subscribe({
-                next: (backendResponse) => {
-                  if (backendResponse.token) {
-                    this.setAuthentication(backendResponse.token);
-                    this.currentUserSubject.next(this.getUser());
-                    this.openPendingResource();
-                    this.router.navigate(['/main']);
-                  }
-                },
-                error: (error) => {
-                  console.error('Error en autenticación con backend:', error);
-                  // Cierra el popup (MSAL lo debería cerrar automáticamente) y muestra tu alerta
-                  alert(this.obtenerMensajeError(error));
-                }
-              });
-          },
-          error: (error) => {
-            console.error('Error obteniendo el token de Microsoft:', error);
-            alert(this.obtenerMensajeError(error));
-          },
-        });
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
       },
       error: (error) => {
         console.error('Error en la autenticación con Microsoft:', error);
@@ -362,7 +272,6 @@ loginMicrosoft() {
     });
   }
 
-<<<<<<< HEAD
   // Método para personalizar el mensaje de error
   private obtenerMensajeError(error: any): string {
     const errorMessage =
@@ -372,18 +281,9 @@ loginMicrosoft() {
     }
     return `Error de autenticación: ${errorMessage}`;
   }
-=======
- // Método para personalizar el mensaje de error
-     private obtenerMensajeError(error: any): string {
-       if (error.error && error.error.indexOf('AADSTS50020') !== -1) {
-         return 'Usuario no registrado en el tenant. Por favor, utiliza una cuenta válida o contacta a tu administrador.';
-       }
-       return `Error de autenticación: ${error.message || error}`;
-     }
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
 
   // Login manual: envía las credenciales y espera una respuesta con mensaje y token.
-  loginManual(credentials: { email: string; password: string }): Observable<any> {
+  loginManual(credentials: { email: string; password: string; role?: string }): Observable<any> {
       const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
       return this.http.post<LoginResponse>(`${this.apiUrl}/login`, credentials, { headers, withCredentials: true })
         .pipe(
@@ -428,6 +328,20 @@ loginMicrosoft() {
       );
   }
 
+  getRolesByEmail(email: string): Observable<{ label: string; value: string }[]> {
+    const normalized = email?.trim().toUpperCase();
+    if (!normalized) {
+      return of([]);
+    }
+    const encoded = encodeURIComponent(normalized);
+    return this.http
+      .get<{ status: string; data: any[] }>(`${this.apiUrl}/permisosRolPorUsuarioEmail/${encoded}`)
+      .pipe(
+        map(res => res.data.map(r => ({ label: r.descripcion, value: r.descripcion }))),
+        catchError(() => of([]))
+      );
+  }
+
 // Registro manual: envía los datos del usuario
 register(userData: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/register`, userData);
@@ -462,17 +376,12 @@ private resetInactivityTimer(): void {
     localStorage.removeItem('currentUser');
     localStorage.removeItem(this.TOKEN_NAME);
     localStorage.removeItem(this.REFRESH_NAME);
-<<<<<<< HEAD
     const activeAccount = this.msalService.instance.getActiveAccount();
     if (activeAccount) {
       this.msalService.logoutPopup({ mainWindowRedirectUri: '/auth/login' }).subscribe();
     } else {
       this.router.navigate(['/auth/login']);
     }
-=======
-    // Redirige a la página de login o principal según tu flujo
-    this.router.navigate(['/']);
->>>>>>> c36c32b (chore: ignore build artifacts (target, *.jar))
     return;
   }
 

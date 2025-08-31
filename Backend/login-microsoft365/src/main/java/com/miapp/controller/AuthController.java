@@ -292,6 +292,22 @@ public class AuthController {
         }
     }
 
+    @GetMapping("/permisosRolPorUsuarioEmail/{email}")
+    public ResponseEntity<?> getPermisosRolPorUsuarioEmail(@PathVariable String email) {
+        try {
+            Optional<Usuario> usuarioOpt = usuarioService.buscarPorEmail(email.toUpperCase());
+            if (usuarioOpt.isPresent()) {
+                List<Rol> rolesAsignados = List.copyOf(usuarioOpt.get().getRoles());
+                return ResponseEntity.ok(Map.of("status", "0", "data", rolesAsignados));
+            } else {
+                return ResponseEntity.ok(Map.of("status", "0", "data", Collections.emptyList()));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "-1", "message", e.getMessage()));
+        }
+    }
+
     @PostMapping("/agregar-rol")
     public ResponseEntity<?> agregarRol(@RequestBody Map<String, Object> payload) {
         try {
