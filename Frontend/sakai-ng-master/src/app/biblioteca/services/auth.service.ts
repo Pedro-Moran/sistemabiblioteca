@@ -342,6 +342,16 @@ loginMicrosoft() {
       );
   }
 
+  /** Obtiene la lista pública de roles disponibles */
+  getPublicRoles(): Observable<{ idRol: number; descripcion: string }[]> {
+    return this.http
+      .get<{ status: string; data: any[] }>(`${this.apiUrl}/roles/lista-roles`)
+      .pipe(
+        map(res => res.data || []),
+        catchError(() => of([]))
+      );
+  }
+
 // Registro manual: envía los datos del usuario
 register(userData: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/register`, userData);

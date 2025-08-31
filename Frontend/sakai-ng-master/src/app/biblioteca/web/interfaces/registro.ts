@@ -24,6 +24,7 @@ export class Registro {
     PROGRAM?: string;
     SEX?: string;
     STATE?: string;
+    rol?: number;
 
     constructor(init?: Partial<Registro>) {
         this.tipoDocumento = '';
@@ -51,6 +52,7 @@ export class Registro {
         this.PROGRAM = '';
         this.SEX = '';
         this.STATE = '';
+        this.rol = 0;
 
         // Inicialización opcional si se pasa un objeto
         Object.assign(this, init);
