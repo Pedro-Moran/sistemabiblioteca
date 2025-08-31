@@ -12,7 +12,7 @@ import { environment } from '../../../../../environments/environment';
     standalone: true,
     imports: [ButtonModule, RippleModule, TemplateModule, DatePipe],
     template: `
-       <p-dialog [(visible)]="displayDialog" [modal]="true" [closable]="false" [style]="{width: '80vw'}" position="right">
+       <p-dialog [(visible)]="displayDialog" [modal]="true" [closable]="false" [style]="{ width: '80vw' }" position="center">
     <ng-template pTemplate="header">
         <div class="flex justify-between items-center w-full">
             <span class="text-lg font-semibold">DATOS DE MATERIAL BIBLIOGRÁFICO</span>
@@ -20,7 +20,7 @@ import { environment } from '../../../../../environments/environment';
         </div>
     </ng-template>
 
-    <div class="p-4 grid md:grid-cols-3 lg:grid-cols-12 gap-4">
+    <div class="p-4 grid grid-cols-1 md:grid-cols-12 gap-4">
     <!-- Imagen del libro -->
     <div class="col-span-12 md:col-span-3 lg:col-span-6 xl:col-span-5 flex justify-center mx-8">
         <img [src]="getImageUrl(objeto) || 'assets/logo.png'"
@@ -45,30 +45,30 @@ import { environment } from '../../../../../environments/environment';
                 <div class="text-gray-700" *ngIf="objeto?.director"><span class="font-semibold">Director:</span><br/>{{ objeto?.director }}</div><hr *ngIf="objeto?.director"/>
                 <div class="text-gray-700" *ngIf="objeto?.editorialPublicacion"><span class="font-semibold">Editorial:</span><br/>{{ objeto?.editorialPublicacion }}</div><hr *ngIf="objeto?.editorialPublicacion"/>
                 <div class="grid grid-cols-3 gap-4">
-                    <div class="text-gray-700"><span class="font-semibold">País:</span><br/>{{ paisDescripcion || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Ciudad:</span><br/>{{ ciudadDescripcion || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">N° de Páginas:</span><br/>{{ objeto?.numeroPaginas || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">País:</span>{{ paisDescripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Ciudad:</span>{{ ciudadDescripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">N° de Páginas:</span>{{ objeto?.numeroPaginas || '—' }}</div>
                 </div>
                 <div class="grid grid-cols-3 gap-4">
-                    <div class="text-gray-700"><span class="font-semibold">Edición:</span>{{ objeto?.edicion || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Reimpresión:</span>{{ objeto?.reimpresion || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Año:</span>{{ objeto?.anioPublicacion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Edición:</span>{{ objeto?.edicion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Reimpresión:</span>{{ objeto?.reimpresion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Año:</span>{{ objeto?.anioPublicacion || '—' }}</div>
                 </div>
-                <div class="text-gray-700"><span class="font-semibold">Serie:</span>{{ objeto?.serie || '—' }}</div><hr/>
-                <div class="text-gray-700" *ngIf="objeto?.isbn"><span class="font-semibold">ISBN:</span> {{ objeto?.isbn }}</div><hr *ngIf="objeto?.isbn"/>
-                <div class="text-gray-700" *ngIf="idiomaDescripcion"><span class="font-semibold">Idioma:</span> {{ idiomaDescripcion }}</div><hr *ngIf="idiomaDescripcion"/>
-                <div class="text-gray-700" *ngIf="objeto?.especialidad"><span class="font-semibold">Especialidad:</span> {{ objeto?.especialidad?.descripcion }}</div><hr *ngIf="objeto?.especialidad"/>
-                <div class="text-gray-700"><span class="font-semibold">Descriptores:</span> {{ objeto?.descriptor || '—' }}</div><hr/>
-                <div class="text-gray-700" *ngIf="objeto?.notaContenido"><span class="font-semibold">Nota de Contenido:</span> {{ objeto?.notaContenido }}</div><hr *ngIf="objeto?.notaContenido"/>
-                <div class="text-gray-700" *ngIf="objeto?.notaGeneral"><span class="font-semibold">Nota General:</span> {{ objeto?.notaGeneral }}</div><hr *ngIf="objeto?.notaGeneral"/>
+                <div class="text-gray-700"><span class="font-semibold block">Serie:</span>{{ objeto?.serie || '—' }}</div><hr/>
+                <div class="text-gray-700" *ngIf="objeto?.isbn"><span class="font-semibold block">ISBN:</span>{{ objeto?.isbn }}</div><hr *ngIf="objeto?.isbn"/>
+                <div class="text-gray-700" *ngIf="idiomaDescripcion"><span class="font-semibold block">Idioma:</span>{{ idiomaDescripcion }}</div><hr *ngIf="idiomaDescripcion"/>
+                <div class="text-gray-700" *ngIf="objeto?.especialidad"><span class="font-semibold block">Especialidad:</span>{{ objeto?.especialidad?.descripcion }}</div><hr *ngIf="objeto?.especialidad"/>
+                <div class="text-gray-700"><span class="font-semibold block">Descriptores:</span>{{ objeto?.descriptor || '—' }}</div><hr/>
+                <div class="text-gray-700" *ngIf="objeto?.notaContenido"><span class="font-semibold block">Nota de Contenido:</span>{{ objeto?.notaContenido }}</div><hr *ngIf="objeto?.notaContenido"/>
+                <div class="text-gray-700" *ngIf="objeto?.notaGeneral"><span class="font-semibold block">Nota General:</span>{{ objeto?.notaGeneral }}</div><hr *ngIf="objeto?.notaGeneral"/>
                 <ng-container *ngIf="detalle">
-                    <div class="text-gray-700"><span class="font-semibold">N° de Ingreso:</span> {{ detalle.numeroIngreso || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Sede:</span> {{ detalle.sede?.descripcion || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Tipo de adquisición:</span> {{ detalle.tipoAdquisicion?.descripcion || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Fecha de Ingreso:</span> {{ detalle.fechaIngreso | date:'dd-MM-yyyy' }}</div>
-                    <div class="text-gray-700" *ngIf="detalle.costo != null"><span class="font-semibold">Costo:</span> {{ detalle.costo }}</div>
-                    <div class="text-gray-700" *ngIf="detalle.numeroFactura || detalle.nroFactura"><span class="font-semibold">N° de Factura:</span> {{ detalle.numeroFactura || detalle.nroFactura }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Estado:</span> {{ detalle.estadoDescripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">N° de Ingreso:</span>{{ detalle.numeroIngreso || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Sede:</span>{{ detalle.sede?.descripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Tipo de adquisición:</span>{{ detalle.tipoAdquisicion?.descripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Fecha de Ingreso:</span>{{ detalle.fechaIngreso | date:'dd-MM-yyyy' }}</div>
+                    <div class="text-gray-700" *ngIf="detalle.costo != null"><span class="font-semibold block">Costo:</span>{{ detalle.costo }}</div>
+                    <div class="text-gray-700" *ngIf="detalle.numeroFactura || detalle.nroFactura"><span class="font-semibold block">N° de Factura:</span>{{ detalle.numeroFactura || detalle.nroFactura }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Estado:</span>{{ detalle.estadoDescripcion || '—' }}</div>
                 </ng-container>
             </ng-container>
 
@@ -80,24 +80,24 @@ import { environment } from '../../../../../environments/environment';
                 <div class="text-gray-700"><span class="font-semibold">Editorial:</span><br/>{{ objeto?.editorialPublicacion || '—' }}</div><hr/>
                 <div class="text-gray-700" *ngIf="periodicidad"><span class="font-semibold">Periodicidad:</span><br/>{{ periodicidad?.descripcion }}</div><hr *ngIf="periodicidad"/>
                 <div class="grid grid-cols-3 gap-4">
-                    <div class="text-gray-700"><span class="font-semibold">País:</span><br/>{{ paisDescripcion || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Ciudad:</span><br/>{{ ciudadDescripcion || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">N° de Páginas:</span><br/>{{ objeto?.numeroPaginas || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">País:</span>{{ paisDescripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Ciudad:</span>{{ ciudadDescripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">N° de Páginas:</span>{{ objeto?.numeroPaginas || '—' }}</div>
                 </div>
-                <div class="text-gray-700"><span class="font-semibold">Año:</span> {{ objeto?.anioPublicacion || '—' }}</div><hr/>
-                <div class="text-gray-700" *ngIf="objeto?.issn"><span class="font-semibold">ISSN:</span> {{ objeto?.issn }}</div><hr *ngIf="objeto?.issn"/>
-                <div class="text-gray-700" *ngIf="objeto?.especialidad"><span class="font-semibold">Especialidad:</span> {{ objeto?.especialidad?.descripcion }}</div><hr *ngIf="objeto?.especialidad"/>
-                <div class="text-gray-700"><span class="font-semibold">Descriptores:</span> {{ objeto?.descriptor || '—' }}</div><hr/>
-                <div class="text-gray-700" *ngIf="objeto?.notaGeneral"><span class="font-semibold">Nota general:</span> {{ objeto?.notaGeneral }}</div><hr *ngIf="objeto?.notaGeneral"/>
+                <div class="text-gray-700"><span class="font-semibold block">Año:</span>{{ objeto?.anioPublicacion || '—' }}</div><hr/>
+                <div class="text-gray-700" *ngIf="objeto?.issn"><span class="font-semibold block">ISSN:</span>{{ objeto?.issn }}</div><hr *ngIf="objeto?.issn"/>
+                <div class="text-gray-700" *ngIf="objeto?.especialidad"><span class="font-semibold block">Especialidad:</span>{{ objeto?.especialidad?.descripcion }}</div><hr *ngIf="objeto?.especialidad"/>
+                <div class="text-gray-700"><span class="font-semibold block">Descriptores:</span>{{ objeto?.descriptor || '—' }}</div><hr/>
+                <div class="text-gray-700" *ngIf="objeto?.notaGeneral"><span class="font-semibold block">Nota general:</span>{{ objeto?.notaGeneral }}</div><hr *ngIf="objeto?.notaGeneral"/>
                 <ng-container *ngIf="detalle">
-                    <div class="text-gray-700"><span class="font-semibold">N° de Ingreso:</span> {{ detalle.numeroIngreso || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Sede:</span> {{ detalle.sede?.descripcion || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Existencias:</span> {{ objeto?.existencias || detalle.nroExistencia || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Tipo de adquisición:</span> {{ detalle.tipoAdquisicion?.descripcion || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Fecha de Ingreso:</span> {{ detalle.fechaIngreso | date:'dd-MM-yyyy' }}</div>
-                    <div class="text-gray-700" *ngIf="detalle.costo != null"><span class="font-semibold">Costo:</span> {{ detalle.costo }}</div>
-                    <div class="text-gray-700" *ngIf="detalle.numeroFactura || detalle.nroFactura"><span class="font-semibold">N° de Factura:</span> {{ detalle.numeroFactura || detalle.nroFactura }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Estado:</span> {{ detalle.estadoDescripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">N° de Ingreso:</span>{{ detalle.numeroIngreso || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Sede:</span>{{ detalle.sede?.descripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Existencias:</span>{{ objeto?.existencias || detalle.nroExistencia || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Tipo de adquisición:</span>{{ detalle.tipoAdquisicion?.descripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Fecha de Ingreso:</span>{{ detalle.fechaIngreso | date:'dd-MM-yyyy' }}</div>
+                    <div class="text-gray-700" *ngIf="detalle.costo != null"><span class="font-semibold block">Costo:</span>{{ detalle.costo }}</div>
+                    <div class="text-gray-700" *ngIf="detalle.numeroFactura || detalle.nroFactura"><span class="font-semibold block">N° de Factura:</span>{{ detalle.numeroFactura || detalle.nroFactura }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Estado:</span>{{ detalle.estadoDescripcion || '—' }}</div>
                 </ng-container>
             </ng-container>
 
@@ -106,21 +106,21 @@ import { environment } from '../../../../../environments/environment';
                 <div class="text-gray-700"><span class="font-semibold">Título:</span><br/>{{ objeto?.titulo || '—' }}</div><hr/>
                 <div class="text-gray-700"><span class="font-semibold">Autor:</span><br/>{{ objeto?.autorPersonal || '—' }}</div><hr/>
                 <div class="grid grid-cols-3 gap-4">
-                    <div class="text-gray-700"><span class="font-semibold">País:</span><br/>{{ paisDescripcion || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Ciudad:</span><br/>{{ ciudadDescripcion || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">N° de Hojas:</span><br/>{{ objeto?.numeroPaginas || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">País:</span>{{ paisDescripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Ciudad:</span>{{ ciudadDescripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">N° de Hojas:</span>{{ objeto?.numeroPaginas || '—' }}</div>
                 </div>
-                <div class="text-gray-700"><span class="font-semibold">Año:</span> {{ objeto?.anioPublicacion || '—' }}</div><hr/>
-                <div class="text-gray-700" *ngIf="objeto?.especialidad"><span class="font-semibold">Especialidad:</span> {{ objeto?.especialidad?.descripcion }}</div><hr *ngIf="objeto?.especialidad"/>
-                <div class="text-gray-700"><span class="font-semibold">Descriptores:</span> {{ objeto?.descriptor || '—' }}</div><hr/>
-                <div class="text-gray-700" *ngIf="objeto?.notaContenido"><span class="font-semibold">Nota de tesis:</span> {{ objeto?.notaContenido }}</div><hr *ngIf="objeto?.notaContenido"/>
-                <div class="text-gray-700" *ngIf="objeto?.notaGeneral"><span class="font-semibold">Nota general:</span> {{ objeto?.notaGeneral }}</div><hr *ngIf="objeto?.notaGeneral"/>
+                <div class="text-gray-700"><span class="font-semibold block">Año:</span>{{ objeto?.anioPublicacion || '—' }}</div><hr/>
+                <div class="text-gray-700" *ngIf="objeto?.especialidad"><span class="font-semibold block">Especialidad:</span>{{ objeto?.especialidad?.descripcion }}</div><hr *ngIf="objeto?.especialidad"/>
+                <div class="text-gray-700"><span class="font-semibold block">Descriptores:</span>{{ objeto?.descriptor || '—' }}</div><hr/>
+                <div class="text-gray-700" *ngIf="objeto?.notaContenido"><span class="font-semibold block">Nota de tesis:</span>{{ objeto?.notaContenido }}</div><hr *ngIf="objeto?.notaContenido"/>
+                <div class="text-gray-700" *ngIf="objeto?.notaGeneral"><span class="font-semibold block">Nota general:</span>{{ objeto?.notaGeneral }}</div><hr *ngIf="objeto?.notaGeneral"/>
                 <ng-container *ngIf="detalle">
-                    <div class="text-gray-700"><span class="font-semibold">N° de Ingreso:</span> {{ detalle.numeroIngreso || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Sede:</span> {{ detalle.sede?.descripcion || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Tipo de adquisición:</span> {{ detalle.tipoAdquisicion?.descripcion || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Fecha de Ingreso:</span> {{ detalle.fechaIngreso | date:'dd-MM-yyyy' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Estado:</span> {{ detalle.estadoDescripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">N° de Ingreso:</span>{{ detalle.numeroIngreso || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Sede:</span>{{ detalle.sede?.descripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Tipo de adquisición:</span>{{ detalle.tipoAdquisicion?.descripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Fecha de Ingreso:</span>{{ detalle.fechaIngreso | date:'dd-MM-yyyy' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Estado:</span>{{ detalle.estadoDescripcion || '—' }}</div>
                 </ng-container>
             </ng-container>
 
@@ -131,12 +131,12 @@ import { environment } from '../../../../../environments/environment';
                 <div class="text-gray-700"><span class="font-semibold">Título de Revista fuente:</span><br/>{{ tituloRevistaFuente || '—' }}</div><hr/>
                 <div class="text-gray-700" *ngIf="objeto?.descripcionRevista"><span class="font-semibold">Descripción de la Revista fuente:</span><br/>{{ objeto?.descripcionRevista }}</div><hr *ngIf="objeto?.descripcionRevista"/>
                 <div class="text-gray-700"><span class="font-semibold">Páginas del artículo:</span><br/>{{ objeto?.numeroPaginas || '—' }}</div><hr/>
-                <div class="text-gray-700"><span class="font-semibold">Descriptores:</span> {{ objeto?.descriptor || '—' }}</div><hr/>
-                <div class="text-gray-700" *ngIf="objeto?.notaGeneral"><span class="font-semibold">Nota general:</span> {{ objeto?.notaGeneral }}</div><hr *ngIf="objeto?.notaGeneral"/>
+                <div class="text-gray-700"><span class="font-semibold block">Descriptores:</span>{{ objeto?.descriptor || '—' }}</div><hr/>
+                <div class="text-gray-700" *ngIf="objeto?.notaGeneral"><span class="font-semibold block">Nota general:</span>{{ objeto?.notaGeneral }}</div><hr *ngIf="objeto?.notaGeneral"/>
                 <ng-container *ngIf="detalle">
-                    <div class="text-gray-700"><span class="font-semibold">Sede:</span> {{ detalle.sede?.descripcion || '—' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Fecha de Ingreso:</span> {{ detalle.fechaIngreso | date:'dd-MM-yyyy' }}</div>
-                    <div class="text-gray-700"><span class="font-semibold">Estado:</span> {{ detalle.estadoDescripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Sede:</span>{{ detalle.sede?.descripcion || '—' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Fecha de Ingreso:</span>{{ detalle.fechaIngreso | date:'dd-MM-yyyy' }}</div>
+                    <div class="text-gray-700"><span class="font-semibold block">Estado:</span>{{ detalle.estadoDescripcion || '—' }}</div>
                 </ng-container>
             </ng-container>
         </ng-container>
