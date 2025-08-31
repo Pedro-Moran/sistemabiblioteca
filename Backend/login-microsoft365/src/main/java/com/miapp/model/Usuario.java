@@ -25,6 +25,17 @@ public class Usuario {
     @Column(name = "IDSEDE")
     private Long idSede;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "IDPROGRAMA")
+    private Programa programa;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "IDESPECIALIDAD")
+    private Especialidad especialidad;
+
+    @Column(name = "CICLO")
+    private String ciclo;
+
     // Nueva relación: un usuario puede tener muchos roles y un rol puede asignarse a muchos usuarios
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(

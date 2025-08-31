@@ -102,8 +102,16 @@ import { DocumentoService } from '../../../biblioteca/services/documento.service
                                 <input pInputText id="cell" type="text" placeholder="Celular" formControlName="CELL" [readonly]="fieldsDisabled" [ngClass]="{'disabled-input': fieldsDisabled}" />
                             </div>
                             <div class="flex flex-col gap-2">
-                                <label for="program" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Esc. Prof / Area Laboral</label>
-                                <input pInputText id="program" type="text" placeholder="Esc. Prof / Area Laboral" formControlName="PROGRAM" [readonly]="fieldsDisabled" [ngClass]="{'disabled-input': fieldsDisabled}" />
+                                <label for="programa" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Programa</label>
+                                <p-dropdown id="programa" [options]="programas" optionLabel="descripcion" optionValue="idPrograma" formControlName="programa" placeholder="Seleccione" [showClear]="true"></p-dropdown>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label for="especialidad" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Especialidad</label>
+                                <p-dropdown id="especialidad" [options]="especialidades" optionLabel="descripcion" optionValue="idEspecialidad" formControlName="especialidad" placeholder="Seleccione" [showClear]="true"></p-dropdown>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label for="ciclo" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Ciclo</label>
+                                <p-dropdown id="ciclo" [options]="ciclos" optionLabel="label" optionValue="value" formControlName="ciclo" placeholder="Seleccione" [showClear]="true"></p-dropdown>
                             </div>
                             <div class="flex flex-col gap-2">
                                 <label for="campus" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Local de estudios / trabajo</label>
@@ -145,7 +153,7 @@ import { DocumentoService } from '../../../biblioteca/services/documento.service
                             </div>
 
                             <div class="flex flex-col gap-2">
-                                <label for="password" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2 mt-4">Contraseña</label>
+                                <label for="password" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Contraseña</label>
                                 <input pInputText id="password" type="password" placeholder="Contraseña" formControlName="password" />
                                 <app-input-validation [form]="form" modelo="password" ver="Contraseña"></app-input-validation>
                             </div>
@@ -184,6 +192,9 @@ export class PortalRegistrate implements OnInit {
         { code: '00', label: 'Otros' }
     ];
     roles: { idRol: number; descripcion: string }[] = [];
+    programas: { idPrograma: number; descripcion: string }[] = [];
+    especialidades: { idEspecialidad: number; descripcion: string }[] = [];
+    ciclos: { label: string; value: string | null }[] = [];
     constructor(private router: Router,
                 private fb: FormBuilder,
                 private messageService: MessageService,
@@ -200,7 +211,10 @@ export class PortalRegistrate implements OnInit {
 
             email: [ '', [Validators.required, Validators.maxLength(100), Validators.minLength(3),Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-@\\s]+$')]],
             rol: [null, Validators.required],
-            password: ['' , [Validators.maxLength(150),Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ,.;-\\s\\-()]+$')]]
+            password: ['' , [Validators.maxLength(150),Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ,.;-\\s\\-()]+$')]],
+            programa: [null],
+            especialidad: [null],
+            ciclo: [null]
         });
     }
 
@@ -211,6 +225,32 @@ export class PortalRegistrate implements OnInit {
             next: roles => this.roles = roles,
             error: () => this.roles = []
         });
+        this.authService.getProgramas().subscribe({
+            next: data => this.programas = data,
+            error: () => this.programas = []
+        });
+        this.authService.getEspecialidades().subscribe({
+            next: data => this.especialidades = data,
+            error: () => this.especialidades = []
+        });
+        this.ciclos = [
+            { label: 'Ninguno', value: null },
+            { label: 'I', value: 'I' },
+            { label: 'II', value: 'II' },
+            { label: 'III', value: 'III' },
+            { label: 'IV', value: 'IV' },
+            { label: 'V', value: 'V' },
+            { label: 'VI', value: 'VI' },
+            { label: 'VII', value: 'VII' },
+            { label: 'VIII', value: 'VIII' },
+            { label: 'IX', value: 'IX' },
+            { label: 'X', value: 'X' },
+            { label: 'XI', value: 'XI' },
+            { label: 'XII', value: 'XII' },
+            { label: 'XIII', value: 'XIII' },
+            { label: 'XIV', value: 'XIV' },
+            { label: 'XV', value: 'XV' }
+        ];
     }
     limpiarObjeto() {
         this.fieldsDisabled = true;
@@ -237,7 +277,9 @@ export class PortalRegistrate implements OnInit {
             NATIONAL_ID: '',
             NATIONAL_ID_TYPE: '',
             PHONE: '',
-            PROGRAM: '',
+            programa: null,
+            especialidad: null,
+            ciclo: null,
             SEX: '',
             STATE: '',
             rol: 0
@@ -268,7 +310,9 @@ export class PortalRegistrate implements OnInit {
             NATIONAL_ID: this.objeto.NATIONAL_ID,
             NATIONAL_ID_TYPE: this.objeto.NATIONAL_ID_TYPE,
             PHONE: this.objeto.PHONE,
-            PROGRAM: this.objeto.PROGRAM,
+            programa: this.objeto.programa,
+            especialidad: this.objeto.especialidad,
+            ciclo: this.objeto.ciclo,
             SEX: this.objeto.SEX,
             STATE: this.objeto.STATE,
             rol: this.objeto.rol
@@ -297,7 +341,9 @@ export class PortalRegistrate implements OnInit {
             NATIONAL_ID: [dataObjeto.NATIONAL_ID],
             NATIONAL_ID_TYPE: [dataObjeto.NATIONAL_ID_TYPE],
             PHONE: [dataObjeto.PHONE],
-            PROGRAM: [dataObjeto.PROGRAM],
+            programa: [dataObjeto.programa],
+            especialidad: [dataObjeto.especialidad],
+            ciclo: [dataObjeto.ciclo],
             SEX: [dataObjeto.SEX],
             STATE: [dataObjeto.STATE]
         });
@@ -313,8 +359,14 @@ export class PortalRegistrate implements OnInit {
           return;
         }
 
-        const { rol, ...rest } = this.form.value;
-        const userData = { ...rest, roles: [{ idRol: rol }] };
+        const { rol, programa, especialidad, ciclo, ...rest } = this.form.value;
+        const userData = {
+            ...rest,
+            ciclo: ciclo,
+            programa: programa ? { idPrograma: programa } : null,
+            especialidad: especialidad ? { idEspecialidad: especialidad } : null,
+            roles: [{ idRol: rol }]
+        };
 
         this.confirmationService.confirm({
           message: '¿Estás seguro(a) que la información ingresada es correcta?',
@@ -377,7 +429,6 @@ export class PortalRegistrate implements OnInit {
                   NATIONAL_ID: data.NATIONAL_ID || '',
                   NATIONAL_ID_TYPE: data.NATIONAL_ID_TYPE || '',
                   PHONE: data.PHONE || '',
-                  PROGRAM: data.PROGRAM || '',
                   SEX: data.SEX || '',
                   STATE: data.STATE || ''
               });
@@ -407,7 +458,6 @@ export class PortalRegistrate implements OnInit {
                   NATIONAL_ID: '',
                   NATIONAL_ID_TYPE: '',
                   PHONE: '',
-                  PROGRAM: '',
                   SEX: '',
                   STATE: ''
               });
