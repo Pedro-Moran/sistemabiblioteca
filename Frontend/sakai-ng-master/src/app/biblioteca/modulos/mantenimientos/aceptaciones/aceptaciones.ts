@@ -395,6 +395,8 @@ export class Aceptaciones implements OnInit, AfterViewInit {
 aceptarDetalle(detalle: any) {
   this.confirmationService.confirm({
     message: `¿Marcar ingreso #${detalle.numeroIngreso} como DISPONIBLE?`,
+    acceptLabel: 'SI',
+    rejectLabel: 'NO',
     accept: () => {
       this.loading = true;
       const payload = {

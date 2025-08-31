@@ -257,6 +257,8 @@ constructor(private fb: FormBuilder,private genericoService: GenericoService, pr
   confirmarCosto() {
     this.confirmationService.confirm({
       message: '¿El costo será agregado y se cargará a la cuenta del(los) usuario(s)?',
+      acceptLabel: 'SI',
+      rejectLabel: 'NO',
       accept: () => {
         this.loading = true;
 

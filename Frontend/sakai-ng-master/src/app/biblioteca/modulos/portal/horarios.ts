@@ -393,9 +393,11 @@ export class HorariosComponent implements OnInit {
           : 'DESCARTE';
           const decoded = this.authService.getUser();
           const usuario = decoded.sub;
-               this.confirmationService.confirm({
-                 message: `¿Cambiar estado a ${nuevoEstadoDesc}?`,
-                 accept: () => {
+              this.confirmationService.confirm({
+                message: `¿Cambiar estado a ${nuevoEstadoDesc}?`,
+                acceptLabel: 'SI',
+                rejectLabel: 'NO',
+                accept: () => {
                    this.loading = true;
                    this.portalService
                      .toggleHorario(n.id, nuevoEstadoId, usuario)
