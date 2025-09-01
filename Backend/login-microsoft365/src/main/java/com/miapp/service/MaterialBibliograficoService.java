@@ -220,7 +220,12 @@ public class MaterialBibliograficoService {
             } else {
                 // Para otros campos, si la propiedad es directa en MaterialBibliografico
                 spec = spec.and((root, query, cb) ->
-                        cb.like(cb.lower(root.get(opcion.toLowerCase()).as(String.class)), "%" + valor.toLowerCase() + "%")
+                        cb.like(
+                                cb.lower(
+                                        cb.function("TO_CHAR", String.class, root.get(opcion.toLowerCase()))
+                                ),
+                                "%" + valor.toLowerCase() + "%"
+                        )
                 );
             }
         }
@@ -253,8 +258,12 @@ public class MaterialBibliograficoService {
             } else {
                 // Para otros campos que sean propiedades directas en MaterialBibliografico
                 spec = spec.and((root, query, cb) ->
-                        cb.like(cb.lower(root.get(opcion.toLowerCase()).as(String.class)),
-                                "%" + valor.toLowerCase() + "%")
+                        cb.like(
+                                cb.lower(
+                                        cb.function("TO_CHAR", String.class, root.get(opcion.toLowerCase()))
+                                ),
+                                "%" + valor.toLowerCase() + "%"
+                        )
                 );
             }
         }
