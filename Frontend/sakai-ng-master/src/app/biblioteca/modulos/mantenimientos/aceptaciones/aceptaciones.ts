@@ -347,13 +347,41 @@ export class Aceptaciones implements OnInit, AfterViewInit {
       );
   }
     async listar() {
-      const sedeParam   = this.sedeFiltro?.id  ? `sedeId=${this.sedeFiltro.id}&` : '';
-      const opcionParam = this.opcionFiltro?.descripcion
-                            ? `opcion=${encodeURIComponent(this.opcionFiltro.descripcion)}&`
-                            : '';
-      const valorParam  = `valor=${encodeURIComponent(this.palabraClave.trim())}`;
-      const extra       = `soloEnProceso=true`;
-      this.baseEndpoint = `api/biblioteca/search?${sedeParam}${opcionParam}${valorParam}&${extra}`;
+      const opcion = this.opcionFiltro?.valor;
+      const valor  = this.palabraClave?.trim() || '';
+
+      if (opcion === 'codigoLocalizacion') {
+        if (valor && !/^\d+$/.test(valor)) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Código inválido',
+            detail: 'Ingrese solo números para buscar por código'
+          });
+          return;
+        }
+      }
+
+      if (opcion && !valor) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Valor requerido',
+          detail: 'Ingrese un valor para realizar la búsqueda'
+        });
+        return;
+      }
+
+      const params: string[] = [];
+      if (this.sedeFiltro?.id) {
+        params.push(`sedeId=${this.sedeFiltro.id}`);
+      }
+      if (opcion) {
+        params.push(`opcion=${encodeURIComponent(opcion)}`);
+      }
+      if (valor) {
+        params.push(`valor=${encodeURIComponent(valor)}`);
+      }
+      params.push('soloEnProceso=true');
+      this.baseEndpoint = `api/biblioteca/search?${params.join('&')}`;
       this.totalRecords = 0;
       this.data = [];
       this.first = 0;

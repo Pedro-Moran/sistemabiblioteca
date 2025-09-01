@@ -335,9 +335,32 @@ public class BibliotecaServiceImpl implements BibliotecaService {
                 String pattern = "%" + valor.toLowerCase() + "%";
 
                 if ("editorial".equalsIgnoreCase(opcion)) {
-                    preds.add(cb.like(cb.lower(root.get("editorialPublicacion")), pattern));
+                    preds.add(
+                            cb.like(
+                                    cb.lower(
+                                            cb.function("TO_CHAR", String.class, root.get("editorialPublicacion"))
+                                    ),
+                                    pattern
+                            )
+                    );
+                } else if ("descriptor".equalsIgnoreCase(opcion)) {
+                    preds.add(
+                            cb.like(
+                                    cb.lower(
+                                            cb.function("TO_CHAR", String.class, root.get("descriptor"))
+                                    ),
+                                    pattern
+                            )
+                    );
                 } else {
-                    preds.add(cb.like(cb.lower(root.get(opcion)), pattern));
+                    preds.add(
+                            cb.like(
+                                    cb.lower(
+                                            cb.function("TO_CHAR", String.class, root.get(opcion))
+                                    ),
+                                    pattern
+                            )
+                    );
                 }
             }
 

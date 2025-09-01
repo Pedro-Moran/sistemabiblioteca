@@ -275,14 +275,37 @@ export class CatalogoLista implements OnInit {
     }
 
 listar() {
+  const valor  = this.palabraClave?.trim() || '';
+  const opcion = this.opcionFiltro.valor || undefined;
+
+  if (opcion === 'codigoLocalizacion') {
+    if (valor && !/^\d+$/.test(valor)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Código inválido',
+        detail: 'Ingrese solo números para buscar por código'
+      });
+      return;
+    }
+  }
+
+  if (opcion && !valor) {
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Valor requerido',
+      detail: 'Ingrese un valor para realizar la búsqueda'
+    });
+    return;
+  }
+
   this.loading = true;
   this.data = [];
   this.materialBibliograficoService
     .catalogo(
-      this.palabraClave,
+      valor,
       this.sedeFiltro.id,
       this.tipoRecursoFiltro.id,
-      this.opcionFiltro.descripcion
+      opcion
     )
     .subscribe(
       list => {

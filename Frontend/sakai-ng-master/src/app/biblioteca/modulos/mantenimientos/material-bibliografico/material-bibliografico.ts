@@ -255,6 +255,16 @@ export class MaterialBibliografico {
           { field: 'anioPublicacion', header: 'Año' }
         ];
         break;
+      case 4: // Artículo
+        this.columns = [
+          { field: 'codigoLocalizacion', header: 'Codigo' },
+          { field: 'titulo', header: 'Título' },
+          { field: 'autorPersonal', header: 'Autor' },
+          { field: 'editorialPublicacion', header: 'Revista' },
+          { field: 'numeroPaginas', header: 'Páginas' },
+          { field: 'anioPublicacion', header: 'Año' }
+        ];
+        break;
       default: // Otros
         this.columns = [
           { field: 'codigoLocalizacion', header: 'Codigo' },
@@ -512,144 +522,96 @@ onSaved(): void {
     }
 
   }
-//   async listar() {
-//     this.loading = true;
-//     this.data = [];
-//
-//     if(this.tipoRecursoFiltro.tipo.id==1){//Libro
-//       this.lista_libros();
-//     }else if(this.tipoRecursoFiltro.tipo.id==2){//Revista
-//       this.lista_revistas();
-//     }else{
-//       this.lista_otro();
-//     }
-//     this.loading = false;
-//   }
-
 async listar() {
   this.loading = true;
   this.data = [];
   this.setColumns();
-  // Si se ingresa palabra clave o se ha seleccionado una opción de búsqueda distinta a "TODOS"
-  if (this.palabraClave && this.palabraClave.trim() !== ""||
-  (this.opcionFiltro && this.opcionFiltro.descripcion && this.opcionFiltro.descripcion.toLowerCase() !== "todos")) {
 
-    // Construir los parámetros de búsqueda
-    const tipoParam = this.tipoRecursoFiltro?.tipo?.id ? `tipoMaterial=${this.tipoRecursoFiltro.tipo.id}&` : "";
-    const opcionParam = this.opcionFiltro?.descripcion ? `opcion=${this.opcionFiltro.descripcion}&` : "";
-    const valorParam = `valor=${encodeURIComponent(this.palabraClave.trim())}`;
-    const extraParam = `soloEnProceso=false`;
-    const endpoint = `api/biblioteca/search?${tipoParam}${opcionParam}${valorParam}&${extraParam}`;
+  const opcion = this.opcionFiltro?.valor;
+  const valor  = this.palabraClave?.trim() || '';
 
-    this.materialBibliograficoService.search_get(endpoint)
-      .subscribe(
-        (result: any) => {
-          // Supongamos que el endpoint devuelve directamente un array
-          console.log(result);
-          // Normalizamos la respuesta para trabajar siempre con un arreglo
-          const lista: any[] = Array.isArray(result?.data?.content)
-            ? result.data.content
-            : Array.isArray(result?.content)
-            ? result.content
-            : Array.isArray(result?.data)
-            ? result.data
-            : Array.isArray(result)
-            ? result
-            : [];
-          this.data = lista.filter((b: any) => Number(b.estadoId) === 2);
-          this.loading = false;
-        },
-        (error: HttpErrorResponse) => {
-          console.error("Error en búsqueda:", error);
-          this.loading = false;
-        }
-      );
-
+  if (opcion === 'codigoLocalizacion') {
+    if (valor && !/^\d+$/.test(valor)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Código inválido',
+        detail: 'Ingrese solo números para buscar por código'
+      });
+      this.loading = false;
+      return;
+    }
   }
 
-  else {
-    // Si no se ingresó palabra clave, se filtra según el tipo de material.
-    if (this.tipoRecursoFiltro?.tipo?.id === 1) { // Libro
-      this.lista_libros();
-    } else if (this.tipoRecursoFiltro?.tipo?.id === 2) { // Revista
-      this.lista_revistas();
-    } else {
-      this.lista_otro();
+  if (opcion && !valor) {
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Valor requerido',
+      detail: 'Ingrese un valor para realizar la búsqueda'
+    });
+    this.loading = false;
+    return;
+  }
+
+  if (valor || opcion) {
+    const params: string[] = [];
+    if (this.tipoRecursoFiltro?.tipo?.id) {
+      params.push(`tipoMaterial=${this.tipoRecursoFiltro.tipo.id}`);
     }
+    if (opcion) {
+      params.push(`opcion=${opcion}`);
+    }
+    if (valor) {
+      params.push(`valor=${encodeURIComponent(valor)}`);
+    }
+    params.push('soloEnProceso=false');
+    const endpoint = `api/biblioteca/search?${params.join('&')}`;
+
+    this.materialBibliograficoService.search_get(endpoint).subscribe(
+      (result: any) => {
+        const lista: any[] = Array.isArray(result?.data?.content)
+          ? result.data.content
+          : Array.isArray(result?.content)
+          ? result.content
+          : Array.isArray(result?.data)
+          ? result.data
+          : Array.isArray(result)
+          ? result
+          : [];
+        this.data = lista.filter((b: any) => Number(b.estadoId) === 2);
+        this.loading = false;
+      },
+      (error: HttpErrorResponse) => {
+        console.error('Error en búsqueda:', error);
+        this.loading = false;
+      }
+    );
+  } else {
+    this.listarPorTipoMaterial(this.tipoRecursoFiltro?.tipo?.id);
   }
 }
 
-
-  lista_libros() {
-    this.materialBibliograficoService
-      .api_libros_lista('api/material-bibliografico/libros')
-      .subscribe(
-        (result: any) => {
-          const lista: any[] = Array.isArray(result?.data?.content)
-            ? result.data.content
-            : Array.isArray(result?.content)
-            ? result.content
-            : Array.isArray(result?.data)
-            ? result.data
-            : Array.isArray(result)
-            ? result
-            : [];
-          this.data = lista.filter((b: any) => Number(b.estadoId) === 2);
-          this.loading = false;
-        },
-        (error: HttpErrorResponse) => {
-          this.loading = false;
-        }
-      );
+  private listarPorTipoMaterial(tipo?: number) {
+    const base = 'api/biblioteca/search?soloEnProceso=false';
+    const endpoint = tipo ? `${base}&tipoMaterial=${tipo}` : base;
+    this.materialBibliograficoService.search_get(endpoint).subscribe(
+      (result: any) => {
+        const lista: any[] = Array.isArray(result?.data?.content)
+          ? result.data.content
+          : Array.isArray(result?.content)
+          ? result.content
+          : Array.isArray(result?.data)
+          ? result.data
+          : Array.isArray(result)
+          ? result
+          : [];
+        this.data = lista.filter((b: any) => Number(b.estadoId) === 2);
+        this.loading = false;
+      },
+      () => (this.loading = false)
+    );
   }
 
-  lista_revistas() {
-    this.materialBibliograficoService
-      .api_revistas_lista('api/material-bibliografico/revistas')
-      .subscribe(
-        (result: any) => {
-          const lista: any[] = Array.isArray(result?.data?.content)
-            ? result.data.content
-            : Array.isArray(result?.content)
-            ? result.content
-            : Array.isArray(result?.data)
-            ? result.data
-            : Array.isArray(result)
-            ? result
-            : [];
-          this.data = lista.filter((b: any) => Number(b.estadoId) === 2);
-          this.loading = false;
-        },
-        (error: HttpErrorResponse) => {
-          this.loading = false;
-        }
-      );
-  }
-
-  lista_otro() {
-    this.materialBibliograficoService
-      .api_otros_lista(this.modulo + '/lista')
-      .subscribe(
-        (result: any) => {
-          const lista: any[] = Array.isArray(result?.data?.content)
-            ? result.data.content
-            : Array.isArray(result?.content)
-            ? result.content
-            : Array.isArray(result?.data)
-            ? result.data
-            : Array.isArray(result)
-            ? result
-            : [];
-          this.data = lista.filter((b: any) => Number(b.estadoId) === 2);
-          this.loading = false;
-        },
-        (error: HttpErrorResponse) => {
-          this.loading = false;
-        }
-      );
-  }
-
-
+  
 
   cambiarEstadoRegistro(objeto: Ejemplar) {
     let estado = "";

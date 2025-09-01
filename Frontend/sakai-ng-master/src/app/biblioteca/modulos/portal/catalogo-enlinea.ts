@@ -420,9 +420,30 @@ export class CatalogoEnLineaComponent {
         this.detallesPorBiblioteca = {};
     }
     listar() {
-        // Construye los parámetros de búsqueda según los filtros seleccionados
+        const opcion = this.opcionFiltro?.valor;
+        const valor  = this.palabraClave?.trim() || '';
+
+        if (opcion === 'codigoLocalizacion') {
+            if (valor && !/^\d+$/.test(valor)) {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Código inválido',
+                    detail: 'Ingrese solo números para buscar por código'
+                });
+                return;
+            }
+        }
+
+        if (opcion && !valor) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Valor requerido',
+                detail: 'Ingrese un valor para realizar la búsqueda'
+            });
+            return;
+        }
+
         const params = new URLSearchParams();
-        const valor = this.palabraClave?.trim();
         if (valor) {
             params.set('valor', valor);
         }
@@ -432,13 +453,12 @@ export class CatalogoEnLineaComponent {
         if (this.coleccionFiltro?.id) {
             params.set('tipoMaterial', String(this.coleccionFiltro.id));
         }
-        if (this.opcionFiltro?.descripcion) {
-            params.set('opcion', this.opcionFiltro.descripcion);
+        if (opcion) {
+            params.set('opcion', opcion);
         }
 
         const url = params.toString() ? `api/biblioteca/catalogo?${params}` : 'api/biblioteca/catalogo';
 
-        // Recupera solo las cabeceras disponibles
         this.loading = true;
         this.materialBibliograficoService.api_libros_lista(url).subscribe({
             next: (result: any) => {
