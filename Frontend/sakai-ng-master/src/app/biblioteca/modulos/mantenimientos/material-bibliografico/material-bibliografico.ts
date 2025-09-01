@@ -94,7 +94,7 @@ interface Column {
                         [showCurrentPageReport]="true"
                         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
                         [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true" styleClass="p-datatable-gridlines" [paginator]="true"
-                        [globalFilterFields]="['id','codigo','titulo','autor','descripcion','coleccion','editorial','anioPublicacion']" responsiveLayout="scroll">
+                        [globalFilterFields]="filterFields" responsiveLayout="scroll">
                         <ng-template pTemplate="caption">
 
                        <div class="flex items-center justify-between">
@@ -213,6 +213,7 @@ export class MaterialBibliografico {
   itemsMaterial: any[] = [];
   palabraClave:string="";
   columns: Column[] = [];
+  filterFields: string[] = [];
 
   @ViewChild('modalLibro') modalLibro!: ModalLibroComponent;
   @ViewChild('modalRevista') modalRevista!: ModalRevistaComponent;
@@ -276,6 +277,7 @@ export class MaterialBibliografico {
         ];
         break;
     }
+    this.filterFields = this.columns.map(col => col.field);
   }
 
   async ngOnInit() {
