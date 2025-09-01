@@ -23,6 +23,7 @@ import { TemplateModule } from '../../../template.module';
 import { ModalTesisComponent } from './modal-tesis';
 import { BibliotecaDTO  } from '../../../interfaces/material-bibliografico/biblioteca.model';
 import { environment } from '../../../../../environments/environment';
+import { firstValueFrom } from 'rxjs';
 
 interface Column {
   field: string;
@@ -292,7 +293,6 @@ export class MaterialBibliografico {
     await this.listarTiposRecurso();
     await this.listaFiltros();
     await this.listar();
-    this.setColumns();
     this.formValidar();
   }
   limpiar() {
@@ -478,25 +478,23 @@ onSaved(): void {
 
   }
 
-  async listarTiposRecurso() {
+  async listarTiposRecurso(): Promise<void> {
     this.loading = true;
     this.dataTipoRecurso = [];
-    this.genericoService.tiporecurso_get('api/catalogos/tipomaterial/activos')
-      .subscribe(
-        (result: any) => {
-          this.loading = false;
-          if (result.status == 0) {
-
-            this.dataTipoRecurso = result.data;
-
-            this.dataTipoRecursoFiltro = result.data;
-            this.tipoRecursoFiltro = this.dataTipoRecursoFiltro[0];
-          }
-        }
-        , (error: HttpErrorResponse) => {
-          this.loading = false;
-        }
+    try {
+      const result: any = await firstValueFrom(
+        this.genericoService.tiporecurso_get('api/catalogos/tipomaterial/activos')
       );
+      if (result.status == 0) {
+        this.dataTipoRecurso = result.data;
+        this.dataTipoRecursoFiltro = result.data;
+        this.tipoRecursoFiltro = this.dataTipoRecursoFiltro[0];
+      }
+    } catch (error) {
+      // manejo silencioso; loading se restablece abajo
+    } finally {
+      this.loading = false;
+    }
   }
   async ListaSede() {
     try {
@@ -715,21 +713,21 @@ async listar() {
     return undefined;
   }
 
-  listaFiltros() {
+  async listaFiltros(): Promise<void> {
     this.loading = true;
     this.data = [];
-    this.materialBibliograficoService.filtros(this.modulo + '/lista')
-      .subscribe(
-        (result: any) => {
-          this.loading = false;
-          if (result.status == "0") {
-            this.filtros = result.data;
-            this.opcionFiltro = this.filtros[0];
-          }
-        }
-        , (error: HttpErrorResponse) => {
-          this.loading = false;
-        }
+    try {
+      const result: any = await firstValueFrom(
+        this.materialBibliograficoService.filtros(this.modulo + '/lista')
       );
+      if (result.status == "0") {
+        this.filtros = result.data;
+        this.opcionFiltro = this.filtros[0];
+      }
+    } catch (error) {
+      // manejo silencioso de errores
+    } finally {
+      this.loading = false;
+    }
   }
 }
