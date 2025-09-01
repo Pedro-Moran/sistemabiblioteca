@@ -352,7 +352,7 @@ import { Output, EventEmitter } from '@angular/core';
                             {{detalle.numeroFactura}}
                           </td>
                           <td>
-                            {{detalle.fechaIngreso}}
+                            {{ detalle.fechaIngreso | date:'dd-MM-yyyy' }}
                           </td>
                           <td class="text-center">
                             <div style="position: relative;">

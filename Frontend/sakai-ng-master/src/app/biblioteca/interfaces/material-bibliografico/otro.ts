@@ -3,6 +3,7 @@ import { Detalle } from "./detalle";
 
 export class Otro {
     id: number;
+    codigo: string;
     tituloArticulo:string;
     tituloRevista:string;
     autorPrincipal:string;
@@ -18,6 +19,7 @@ export class Otro {
     detalle: Detalle[];
     constructor(init?: Partial<Otro>) {
         this.id = 0;
+        this.codigo='';
         this.tituloArticulo='';
         this.tituloRevista='';
         this.autorPrincipal='';

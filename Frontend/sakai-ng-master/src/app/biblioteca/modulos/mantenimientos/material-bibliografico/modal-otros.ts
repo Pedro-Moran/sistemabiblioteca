@@ -28,6 +28,14 @@ import { AuthService } from '../../../services/auth.service';
     <ng-template pTemplate="content">
     <form [formGroup]="formOtro">
     <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
+            <div class="flex flex-col gap-2 w-full md:w-1/4">
+                      <label for="codigo">Codigo</label>
+                                <input pInputText id="codigo" type="text" formControlName="codigo"  />
+                                <app-input-validation
+                  [form]="formOtro"
+                  modelo="codigo"
+                  ver="codigo"></app-input-validation>
+            </div>
 
             <div class="flex flex-col gap-2 w-full md:w-1/2">
                       <label for="autorPrincipal">Autor</label>
@@ -36,23 +44,23 @@ import { AuthService } from '../../../services/auth.service';
                   [form]="formOtro"
                   modelo="autorPrincipal"
                   ver="autorPrincipal"></app-input-validation>
-</div>
-<div class="flex flex-col gap-2 w-full">
+            </div>
+            <div class="flex flex-col gap-2 w-full">
                       <label for="tituloArticulo">Titulo de articulo</label>
                                 <input pInputText id="tituloArticulo" type="text" formControlName="tituloArticulo"  />
                                 <app-input-validation
                   [form]="formOtro"
                   modelo="tituloArticulo"
                   ver="tituloArticulo"></app-input-validation>
-</div>
-<div class="flex flex-col gap-2 w-full">
+            </div>
+            <div class="flex flex-col gap-2 w-full">
                       <label for="tituloRevista">Titulo de revista fuente</label>
                                 <input pInputText id="tituloRevista" type="text" formControlName="tituloRevista"  />
                                 <app-input-validation
                   [form]="formOtro"
                   modelo="tituloRevista"
                   ver="tituloRevista"></app-input-validation>
-</div>
+            </div>
         </div>
     <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
     <div class="flex flex-col gap-2 w-full">
@@ -216,7 +224,7 @@ import { AuthService } from '../../../services/auth.service';
                                 {{objeto.sede?.descripcion}}
                             </td>
                             <td>
-                                {{objeto.fechaIngreso}}
+                                {{ objeto.fechaIngreso | date:'dd-MM-yyyy' }}
                             </td>
                             <td class="text-center">
                                 <div style="position: relative;">
@@ -347,6 +355,11 @@ export class ModalOtrosComponent implements OnInit {
 
             id: [this.objetoOtro.id],
             tipoMaterialId: [null],
+            codigo: [this.objetoOtro.codigo, [
+                Validators.required,
+                Validators.maxLength(20),
+                Validators.pattern('^[a-zA-Z0-9./]+$')
+            ]],
             tituloArticulo: [this.objetoOtro.tituloArticulo,
                 [
                     Validators.required,
@@ -468,9 +481,11 @@ export class ModalOtrosComponent implements OnInit {
         const id = tipoId ?? this.tipoMaterialId ?? null;
         this.formOtro.reset();
         this.objetoOtro.id = mat.id ?? 0;
+        this.objetoOtro.codigo = mat.codigoLocalizacion ?? '';
         this.formOtro.patchValue({
             id: mat.id ?? null,
             tipoMaterialId: id,
+            codigo: mat.codigoLocalizacion,
             tituloArticulo: mat.titulo,
             tituloRevista: mat.editorialPublicacion,
             autorPrincipal: mat.autorPersonal,
@@ -522,7 +537,7 @@ export class ModalOtrosComponent implements OnInit {
 
         return {
             id: otro.id > 0 ? otro.id : null,
-            codigoLocalizacion: '',
+            codigoLocalizacion: otro.codigo,
             titulo: otro.tituloArticulo,
             autorPersonal: otro.autorPrincipal,
             tipoMaterialId: otro.tipoMaterialId ?? this.tipoMaterialId ?? null,
