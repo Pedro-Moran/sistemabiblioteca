@@ -285,7 +285,7 @@ import { AuthService } from '../../../services/auth.service';
                                 {{detalle.nroFactura}}
                             </td>
                             <td>
-                                {{detalle.fechaIngreso}}
+                                {{ detalle.fechaIngreso | date:'dd-MM-yyyy' }}
                             </td>
                             <td class="text-center">
                                 <div style="position: relative;">

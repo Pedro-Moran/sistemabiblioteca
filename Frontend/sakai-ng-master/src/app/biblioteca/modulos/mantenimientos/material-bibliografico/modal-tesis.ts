@@ -265,7 +265,7 @@ import { AuthService } from '../../../services/auth.service';
                                 {{objeto.tipoAdquisicion.descripcion}}
                             </td>
                             <td>
-                                {{objeto.fechaIngreso}}
+                                {{ objeto.fechaIngreso | date:'dd-MM-yyyy' }}
                             </td>
                             <td class="text-center">
                                 <div style="position: relative;">
