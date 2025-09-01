@@ -65,20 +65,13 @@ import { AuthService } from '../../../services/auth.service';
 </div>
     </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
-
-
-      <div class="flex flex-col gap-2 min-w-[100px] ">
+    <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
+      <div class="flex flex-col gap-2 w-full">
         <label for="cantidad">Cantidad</label>
         <input pInputText id="cantidad" type="text" formControlName="cantidad" />
         <app-input-validation [form]="formOtro" modelo="cantidad" ver="cantidad"></app-input-validation>
       </div>
-
-
     </div>
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-6 gap-4">
-
-</div>
 <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
     <div class="flex flex-col gap-4 w-full">
     <div class="flex items-center space-x-3 py-2">
