@@ -23,6 +23,7 @@ import { TemplateModule } from '../../../template.module';
 import { Tesis } from '../../../interfaces/material-bibliografico/tesis';
 import { BibliotecaDTO, DetalleBibliotecaDTO } from '../../../interfaces/material-bibliografico/biblioteca.model';
 import { AuthService } from '../../../services/auth.service';
+import { environment } from '../../../../../environments/environment';
 @Component({
     selector: 'app-modal-tesis',
     standalone: true,
@@ -213,6 +214,8 @@ import { AuthService } from '../../../services/auth.service';
   </ng-template>
       </p-fileupload>
 
+      <img *ngIf="portadaUrl" [src]="portadaUrl" alt="Portada" class="h-48 w-auto object-contain mt-2" />
+
       <app-input-validation [form]="formPortada" modelo="adjunto" ver="adjunto"></app-input-validation>
     </div>
 </div>
@@ -380,6 +383,9 @@ export class ModalTesisComponent implements OnInit {
     items!: MenuItem[];
     uploadedFiles: any[] = [];
     selectedFile: File | null = null;
+    portadaUrl: string | null = null;
+    rutaImagen: string | null = null;
+    nombreImagen: string | null = null;
     editingIndex: number | null = null;
     selectedIndex!: number;
     @Input() tipoMaterialId!: number | null;
@@ -527,6 +533,12 @@ export class ModalTesisComponent implements OnInit {
         this.formOtro.reset();
         this.formDetalle.reset();
 
+        this.selectedFile = null;
+        this.portadaUrl = null;
+        this.rutaImagen = null;
+        this.nombreImagen = null;
+        this.formPortada.reset({ portada: false, adjunto: '' });
+
         const id = tipoId ?? this.tipoMaterialId ?? null;
         this.formOtro.patchValue({ tipoMaterialId: id });
         this.tipoMaterialId = id;
@@ -536,6 +548,11 @@ export class ModalTesisComponent implements OnInit {
         const id = tipoId ?? this.tipoMaterialId ?? null;
         this.formOtro.reset();
         this.objetoOtro.id = mat.id ?? 0;
+        this.rutaImagen = mat.rutaImagen ?? null;
+        this.nombreImagen = mat.nombreImagen ?? null;
+        this.portadaUrl = this.buildImageUrl(mat.rutaImagen, mat.nombreImagen);
+        this.selectedFile = null;
+        this.formPortada.patchValue({ portada: !!this.portadaUrl, adjunto: '' });
         this.formOtro.patchValue({
             id: mat.id ?? null,
             tipoMaterialId: id,
@@ -576,6 +593,7 @@ export class ModalTesisComponent implements OnInit {
         const t = this.formOtro.value;
         const decoded = this.authService.getUser();
         const parentTipo = t.tipoMaterialId ?? this.tipoMaterialId ?? null;
+        const keepPortada = this.formPortada.get('portada')?.value;
 
         const detalles: DetalleBibliotecaDTO[] = this.detalles.map(d => ({
             idDetalleBiblioteca: d.idDetalleBiblioteca ?? undefined,
@@ -607,6 +625,8 @@ export class ModalTesisComponent implements OnInit {
             notaContenido: t.notasTesis,
             notaGeneral: t.notasGeneral,
             numeroPaginas: t.cantidad,
+            rutaImagen: keepPortada ? (this.selectedFile ? undefined : this.rutaImagen ?? undefined) : null,
+            nombreImagen: keepPortada ? (this.selectedFile ? undefined : this.nombreImagen ?? undefined) : null,
             fladigitalizado: !!t.formatoDigital,
             linkPublicacion: t.urlPublicacion,
             estadoId: 1,
@@ -973,11 +993,26 @@ export class ModalTesisComponent implements OnInit {
             idToTipo(id: number | null) {
               return this.tipoAdquisicionLista.find(t => t.id === id);
             }
+            private buildImageUrl(path?: string | null, name?: string | null): string | null {
+              if (!path) { return null; }
+              const base = path.startsWith('http')
+                ? path
+                : `${environment.filesUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+              if (name) {
+                if (base.endsWith(name)) { return base; }
+                const sep = base.endsWith('/') ? '' : '/';
+                return base + sep + name;
+              }
+              return base;
+            }
             onFileSelect(event: any) {
                 const file = event.files[0]; // Obtiene el primer archivo seleccionado
                 if (file) {
                     this.selectedFile = file;
                     this.formPortada.patchValue({ adjunto: file });
+                    this.portadaUrl = URL.createObjectURL(file);
+                    this.rutaImagen = null;
+                    this.nombreImagen = null;
                 }
                 this.messageService.add({ severity: 'info', summary: 'Success', detail: 'Se adjunto archivo' });
             }
