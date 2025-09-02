@@ -219,7 +219,10 @@ registrarEspecialidad(especialidad: any): Observable<any> {
         return this.http.put<any>(`${this.apiUrl}/api/biblioteca/update/${id}`, formData);
       }
       delete(id: number): Observable<any> {
-        return this.http.delete<any>(`${this.apiUrl}/api/biblioteca/delete/${id}`);
+        return this.http.delete<any>(
+          `${this.apiUrl}/api/biblioteca/delete/${id}`,
+          { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
+        );
       }
       listCiudades(): Observable<Ciudad[]> {
         return this.http.get<any>(`${this.apiUrl}/ciudades`).pipe(map(r => r.data));
