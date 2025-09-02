@@ -197,10 +197,24 @@ registrarEspecialidad(especialidad: any): Observable<any> {
   }
 
       list(): Observable<BibliotecaDTO[]> {
-        return this.http.get<any>(`${this.apiUrl}/list`).pipe(map(r => r.data));
+        return this.http
+          .get<{ status: number; data: BibliotecaDTO[] }>(
+            `${this.apiUrl}/api/biblioteca/list`,
+            { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
+          )
+          .pipe(map(r => r.data));
       }
-      get(id: number): Observable<BibliotecaDTO> {
-        return this.http.get<any>(`${this.apiUrl}/${id}`).pipe(map(r => r.data));
+
+      get(id: number): Observable<BibliotecaDTO | undefined> {
+        return this.http
+          .get<{ status: number; data: BibliotecaDTO }>(
+            `${this.apiUrl}/api/biblioteca/${id}`,
+            { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
+          )
+          .pipe(
+            map(r => r.data),
+            catchError(() => of(undefined))
+          );
       }
       create(dto: BibliotecaDTO, file?: File): Observable<any> {
         const formData = new FormData();
@@ -239,10 +253,11 @@ registrarEspecialidad(especialidad: any): Observable<any> {
 
     listarMateriales(): Observable<BibliotecaDTO[]> {
       return this.http
-        .get<{ status: number; data: BibliotecaDTO[] }>('http://localhost:8080/auth/api/material-bibliografico/list')
-        .pipe(
-          map(resp => resp.data)    // extrae SOLO el array
-        );
+        .get<{ status: number; data: BibliotecaDTO[] }>(
+          `${this.apiUrl}/api/biblioteca/list`,
+          { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
+        )
+        .pipe(map(resp => resp.data));
     }
 
     /** Obtiene todos los registros de biblioteca en estado disponible */
