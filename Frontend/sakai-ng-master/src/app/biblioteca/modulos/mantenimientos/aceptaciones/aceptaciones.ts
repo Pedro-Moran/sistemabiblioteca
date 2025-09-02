@@ -83,7 +83,7 @@ import { ModalDetalleMaterial } from '../../portal/detalle-material';
                         [expandedRowKeys]="expandedRows" (onRowExpand)="onRowExpand($event)" (onRowCollapse)="onRowCollapse($event)"
                         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
                         [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true" styleClass="p-datatable-gridlines"
-                        [globalFilterFields]="['id','codigo','titulo','autor','anioPublicacion','estadoDescripcion','tipoMaterialDescripcion']" responsiveLayout="scroll">
+                        [globalFilterFields]="['id','codigoLocalizacion','titulo','autor','anioPublicacion','estadoDescripcion','tipoMaterialDescripcion']" responsiveLayout="scroll">
                         <ng-template pTemplate="caption">
 
                        <div class="flex items-center justify-between">
@@ -98,7 +98,7 @@ import { ModalDetalleMaterial } from '../../portal/detalle-material';
                                 <tr>
                                 <th style="width: 5rem"></th>
                                     <th  >Imagen</th>
-                                    <th pSortableColumn="codigo" style="width: 4rem">Codigo<p-sortIcon field="codigo"></p-sortIcon></th>
+                                    <th pSortableColumn="codigoLocalizacion" style="width: 4rem">Codigo<p-sortIcon field="codigoLocalizacion"></p-sortIcon></th>
                                     <th pSortableColumn="titulo" style="min-width:200px">Titulo<p-sortIcon field="titulo"></p-sortIcon></th>
                                     <th pSortableColumn="autor" style="min-width:200px">Autor<p-sortIcon field="autor"></p-sortIcon></th>
                                     <th pSortableColumn="anioPublicacion" style="width: 8rem">Año<p-sortIcon field="anioPublicacion"></p-sortIcon></th>
@@ -115,7 +115,7 @@ import { ModalDetalleMaterial } from '../../portal/detalle-material';
                                 <td>
                                 <img [src]="getImageUrl(objeto)" [alt]="objeto.titulo" width="50" class="shadow-lg" />
                                     </td>
-                                <td>{{ objeto.codigo || '-' }}
+                                <td>{{ objeto.codigoLocalizacion || '-' }}
                                     </td>
                                     <td>
                                         {{ objeto.titulo || '-' }}
@@ -408,6 +408,7 @@ export class Aceptaciones implements OnInit, AfterViewInit {
             }
             this.data = content.map((b: any) => ({
               ...b,
+              codigoLocalizacion: b.codigoLocalizacion ?? b.codigo ?? '',
               autor: b.autorPersonal || b.autorSecundario || b.autorInstitucional || '',
               tipoMaterialDescripcion: this.tipoMaterialLista.find(t => t.id === b.tipoMaterialId)?.descripcion || ''
             }));
@@ -465,7 +466,7 @@ aceptarDetalle(detalle: any) {
       estado = "Activar"
     }
     this.confirmationService.confirm({
-      message: '¿Estás seguro(a) de que quieres cambiar el estado: ' + objeto.codigo + ' a ' + estado + '?',
+      message: '¿Estás seguro(a) de que quieres cambiar el estado: ' + (objeto.codigoLocalizacion || objeto.codigo) + ' a ' + estado + '?',
       header: 'Confirmar',
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'SI',
