@@ -24,6 +24,7 @@ import { Pais } from '../../../interfaces/material-bibliografico/pais';
 import { Ciudad } from '../../../interfaces/material-bibliografico/ciudad';
 import { Idioma } from '../../../interfaces/material-bibliografico/idioma';
 import { AuthService } from '../../../services/auth.service';
+import { environment } from '../../../../../environments/environment';
 @Component({
     selector: 'app-modal-revista',
     standalone: true,
@@ -225,6 +226,8 @@ import { AuthService } from '../../../services/auth.service';
   </ng-template>
       </p-fileupload>
 
+      <img *ngIf="portadaUrl" [src]="portadaUrl" alt="Portada" class="h-48 w-auto object-contain mt-2" />
+
       <app-input-validation [form]="formPortada" modelo="adjunto" ver="adjunto"></app-input-validation>
     </div>
 </div>
@@ -418,6 +421,9 @@ export class ModalRevistaComponent implements OnInit {
     items!: MenuItem[];
     uploadedFiles: any[] = [];
     selectedFile: File | null = null;
+    portadaUrl: string | null = null;
+    rutaImagen: string | null = null;
+    nombreImagen: string | null = null;
     editingIndex: number | null = null;
     selectedIndex!: number;
     private id?: number;
@@ -613,6 +619,12 @@ export class ModalRevistaComponent implements OnInit {
           this.formDetalle.reset();
 
           this.detalles = [];
+
+          this.selectedFile = null;
+          this.portadaUrl = null;
+          this.rutaImagen = null;
+          this.nombreImagen = null;
+          this.formPortada.reset({ portada: false, adjunto: '' });
 
 
           const id = tipoId ?? this.tipoMaterialId ?? null;
@@ -958,6 +970,11 @@ export class ModalRevistaComponent implements OnInit {
         const id = tipoId ?? this.tipoMaterialId ?? null;
         this.formRevista.reset();
         this.objetoRevista.id = mat.id ?? 0;
+        this.rutaImagen = mat.rutaImagen ?? null;
+        this.nombreImagen = mat.nombreImagen ?? null;
+        this.portadaUrl = this.buildImageUrl(mat.rutaImagen, mat.nombreImagen);
+        this.selectedFile = null;
+        this.formPortada.patchValue({ portada: !!this.portadaUrl, adjunto: '' });
         this.formRevista.patchValue({
             id: mat.id ?? null,
             tipoMaterialId: id,
@@ -1034,6 +1051,9 @@ export class ModalRevistaComponent implements OnInit {
                 if (file) {
                     this.selectedFile = file;
                     this.formPortada.patchValue({ adjunto: file });
+                    this.portadaUrl = URL.createObjectURL(file);
+                    this.rutaImagen = null;
+                    this.nombreImagen = null;
                 }
                 this.messageService.add({ severity: 'info', summary: 'Success', detail: 'Se adjunto archivo' });
             }
@@ -1042,6 +1062,7 @@ export class ModalRevistaComponent implements OnInit {
 
           const revista     = this.formRevista.value;
           const decoded   = this.authService.getUser();
+          const keepPortada = this.formPortada.get('portada')?.value;
 
           const detalles: DetalleBibliotecaDTO[] = this.detalles.map(d => {
             return {
@@ -1084,6 +1105,8 @@ export class ModalRevistaComponent implements OnInit {
             descriptor         : revista.descriptores,
             notaGeneral        : revista.notaGeneral,
             numeroPaginas      : revista.cantidad,
+            rutaImagen         : keepPortada ? (this.selectedFile ? undefined : this.rutaImagen ?? undefined) : null,
+            nombreImagen       : keepPortada ? (this.selectedFile ? undefined : this.nombreImagen ?? undefined) : null,
             linkPublicacion : revista.urlPublicacion,
             periodicidadId: this.formRevista.value.periodicidad,
             usuarioCreacion   : decoded.sub,
@@ -1124,6 +1147,19 @@ export class ModalRevistaComponent implements OnInit {
     }
     idToTipo(id: number|null) {
       return this.tipoAdquisicionLista.find(t => t.id === id);
+    }
+
+    private buildImageUrl(path?: string | null, name?: string | null): string | null {
+        if (!path) { return null; }
+        const base = path.startsWith('http')
+            ? path
+            : `${environment.filesUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+        if (name) {
+            if (base.endsWith(name)) { return base; }
+            const sep = base.endsWith('/') ? '' : '/';
+            return base + sep + name;
+        }
+        return base;
     }
 
     public nextStepToDetalle(): void {

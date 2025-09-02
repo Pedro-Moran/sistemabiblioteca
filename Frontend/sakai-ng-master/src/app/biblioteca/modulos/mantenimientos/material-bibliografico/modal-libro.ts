@@ -29,6 +29,7 @@ import { skip } from 'rxjs/operators';
 import { AuthService } from '../../../services/auth.service';
 import { Input } from '@angular/core';
 import { Output, EventEmitter } from '@angular/core';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
     selector: 'app-modal-libro',
@@ -294,6 +295,8 @@ import { Output, EventEmitter } from '@angular/core';
                                 </ng-template>
                               </p-fileupload>
 
+                              <img *ngIf="portadaUrl" [src]="portadaUrl" alt="Portada" class="h-48 w-auto object-contain mt-2" />
+
                               <app-input-validation [form]="formPortada" modelo="adjunto" ver="adjunto"></app-input-validation>
                             </div>
                           </div>
@@ -495,6 +498,9 @@ export class ModalLibroComponent implements OnInit {
     items!: MenuItem[];
     uploadedFiles: any[] = [];
     selectedFile: File | null = null;
+    portadaUrl: string | null = null;
+    rutaImagen: string | null = null;
+    nombreImagen: string | null = null;
     ciclos = [
         { label: 'I', value: 1, formControl: 'cicloI' },
         { label: 'II', value: 2, formControl: 'cicloII' },
@@ -832,6 +838,11 @@ onSubmit() {
 
           this.detalles = [];
 
+          this.selectedFile = null;
+          this.portadaUrl = null;
+          this.rutaImagen = null;
+          this.nombreImagen = null;
+          this.formPortada.reset({ portada: false, adjunto: '' });
 
           const id = tipoId ?? this.tipoMaterialId ?? null;
         this.formLibro.patchValue({ tipoMaterialId: id });
@@ -867,6 +878,7 @@ private buildDto(): BibliotecaDTO {
   const libro     = this.formLibro.value;
   const editorial = this.formEditorial.value;
   const decoded   = this.authService.getUser();
+  const keepPortada = this.formPortada.get('portada')?.value;
 
   const opcion = editorial.autorOpcion?.id;
   let autorPersonal: string | undefined;
@@ -933,6 +945,8 @@ private buildDto(): BibliotecaDTO {
     notaContenido      : libro.notasContenido,
     notaGeneral        : libro.notaGeneral,
     numeroPaginas      : editorial.cantidad,
+    rutaImagen         : keepPortada ? (this.selectedFile ? undefined : this.rutaImagen ?? undefined) : null,
+    nombreImagen       : keepPortada ? (this.selectedFile ? undefined : this.nombreImagen ?? undefined) : null,
 
     flasyllabus     : !!libro.enSilabo,
     fladigitalizado : !!libro.formatoDigital,
@@ -1433,6 +1447,9 @@ idToTipo(id: number|null) {
                 if (file) {
                     this.selectedFile = file;
                     this.formPortada.patchValue({ adjunto: file });
+                    this.portadaUrl = URL.createObjectURL(file);
+                    this.rutaImagen = null;
+                    this.nombreImagen = null;
                 }
                 this.messageService.add({ severity: 'info', summary: 'Success', detail: 'Se adjunto archivo' });
             }
@@ -1443,6 +1460,12 @@ public setData(material: BibliotecaDTO, omitPaisCiudad = false): void {
 
   console.log('Material crudo:', material);
   const clone = JSON.parse(JSON.stringify(material));
+
+  this.rutaImagen = clone.rutaImagen ?? null;
+  this.nombreImagen = clone.nombreImagen ?? null;
+  this.portadaUrl = this.buildImageUrl(this.rutaImagen, this.nombreImagen);
+  this.selectedFile = null;
+  this.formPortada.patchValue({ portada: !!this.portadaUrl, adjunto: '' });
 
   /*-------------------------------------------------------
     1)  Formulario LIBRO
@@ -1565,5 +1588,18 @@ this.detalles = (clone.detalles ?? []).map((d: DetalleBibliotecaDTO) => {
         this.displayEditorial = false;
         this.displayDetalle   = true;
       }
+    }
+
+    private buildImageUrl(path?: string | null, name?: string | null): string | null {
+        if (!path) { return null; }
+        const base = path.startsWith('http')
+            ? path
+            : `${environment.filesUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+        if (name) {
+            if (base.endsWith(name)) { return base; }
+            const sep = base.endsWith('/') ? '' : '/';
+            return base + sep + name;
+        }
+        return base;
     }
 }
