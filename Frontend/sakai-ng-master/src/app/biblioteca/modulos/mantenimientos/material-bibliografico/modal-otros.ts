@@ -21,6 +21,7 @@ import { GenericoService } from '../../../services/generico.service';
 import { MaterialBibliograficoService } from '../../../services/material-bibliografico.service';
 import { TemplateModule } from '../../../template.module';
 import { AuthService } from '../../../services/auth.service';
+import { environment } from '../../../../../environments/environment';
 @Component({
     selector: 'app-modal-otros',
     standalone: true,
@@ -180,6 +181,8 @@ import { AuthService } from '../../../services/auth.service';
   </ng-template>
       </p-fileupload>
 
+      <img *ngIf="portadaUrl" [src]="portadaUrl" alt="Portada" class="h-48 w-auto object-contain mt-2" />
+
       <app-input-validation [form]="formPortada" modelo="adjunto" ver="adjunto"></app-input-validation>
     </div>
 </div>
@@ -218,7 +221,7 @@ import { AuthService } from '../../../services/auth.service';
 
                         </tr>
                     </ng-template>
-                    <ng-template pTemplate="body" let-objeto>
+                    <ng-template pTemplate="body" let-objeto let-rowIndex="rowIndex">
                         <tr>
                             <td>
                                 {{objeto.sede?.descripcion}}
@@ -230,7 +233,7 @@ import { AuthService } from '../../../services/auth.service';
                                 <div style="position: relative;">
                                     <button pButton type="button" icon="pi pi-ellipsis-v"
                                         class="p-button-rounded p-button-text p-button-plain"
-                                        (click)="showMenu($event, objeto)"></button>
+                                        (click)="showMenu($event, objeto, rowIndex)"></button>
                                     <p-menu #menu [popup]="true" [model]="items" appendTo="body"></p-menu>
                                 </div>
 
@@ -320,6 +323,8 @@ export class ModalOtrosComponent implements OnInit {
     detalles: DetalleDisplay[] = [];
     @ViewChild('filter') filter!: ElementRef;
     selectedItem: any;
+    selectedIndex!: number;
+    editingIndex: number | null = null;
     @ViewChild('menu') menu!: Menu;
     especialidadLista: Especialidad[] = [];
     paisLista: Especialidad[] = [];
@@ -335,6 +340,9 @@ export class ModalOtrosComponent implements OnInit {
     items!: MenuItem[];
     uploadedFiles: any[] = [];
     selectedFile: File | null = null;
+    portadaUrl: string | null = null;
+    rutaImagen: string | null = null;
+    nombreImagen: string | null = null;
     @Input() tipoMaterialId!: number | null;
     @Output() saved = new EventEmitter<void>();
     constructor(private fb: FormBuilder,
@@ -413,12 +421,12 @@ export class ModalOtrosComponent implements OnInit {
         {
           label: 'Actualizar',
           icon: 'pi pi-pencil',
-          command: (event) => this.editarRegistro(this.selectedItem)
+          command: () => this.editarDetalle(this.selectedItem, this.selectedIndex)
         },
         {
           label: 'Eliminar',
           icon: 'pi pi-trash',
-          command: (event) => this.deleteRegistro(this.selectedItem)
+          command: () => this.deleteRegistro(this.selectedItem)
         }
       ];
       this.formValidarDetalle();
@@ -468,9 +476,14 @@ export class ModalOtrosComponent implements OnInit {
         this.objetoOtro = new Otro();
         this.objetoDetalle = new Detalle();
         this.detalles = [];
+        this.selectedFile = null;
+        this.portadaUrl = null;
+        this.rutaImagen = null;
+        this.nombreImagen = null;
 
         this.formOtro.reset();
         this.formDetalle.reset();
+        this.formPortada.reset({ portada: false, adjunto: '' });
 
         const id = tipoId ?? this.tipoMaterialId ?? null;
         this.formOtro.patchValue({ tipoMaterialId: id });
@@ -482,6 +495,11 @@ export class ModalOtrosComponent implements OnInit {
         this.formOtro.reset();
         this.objetoOtro.id = mat.id ?? 0;
         this.objetoOtro.codigo = mat.codigoLocalizacion ?? '';
+        this.rutaImagen = mat.rutaImagen ?? null;
+        this.nombreImagen = mat.nombreImagen ?? null;
+        this.portadaUrl = this.buildImageUrl(mat.rutaImagen, mat.nombreImagen);
+        this.selectedFile = null;
+        this.formPortada.patchValue({ portada: !!this.portadaUrl, adjunto: '' });
         this.formOtro.patchValue({
             id: mat.id ?? null,
             tipoMaterialId: id,
@@ -519,6 +537,7 @@ export class ModalOtrosComponent implements OnInit {
         const otro = this.formOtro.value;
         const decoded = this.authService.getUser();
         const parentTipo = otro.tipoMaterialId ?? this.tipoMaterialId ?? null;
+        const keepPortada = this.formPortada.get('portada')?.value;
 
         const detalles: DetalleBibliotecaDTO[] = this.detalles.map(d => ({
             idDetalleBiblioteca: d.idDetalleBiblioteca ?? undefined,
@@ -548,6 +567,8 @@ export class ModalOtrosComponent implements OnInit {
             fladigitalizado: !!otro.formatoDigital,
             linkPublicacion: otro.urlPublicacion,
             numeroPaginas: otro.cantidad,
+            rutaImagen: keepPortada ? (this.selectedFile ? undefined : this.rutaImagen ?? undefined) : null,
+            nombreImagen: keepPortada ? (this.selectedFile ? undefined : this.nombreImagen ?? undefined) : null,
             estadoId: 1,
             usuarioCreacion: decoded.sub,
             fechaCreacion: new Date().toISOString(),
@@ -775,16 +796,26 @@ export class ModalOtrosComponent implements OnInit {
           onGlobalFilter(table: Table, event: Event) {
             table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
         }
-        showMenu(event: MouseEvent, selectedItem: any) {
-          this.selectedItem = selectedItem;
-          this.menu.toggle(event);
+        showMenu(ev: MouseEvent, det: DetalleDisplay, idx: number) {
+          this.selectedItem  = det;
+          this.selectedIndex = idx;
+          this.menu.toggle(ev);
         }
 
-          editarRegistro(objeto:Detalle){
-            this.objetoDetalle = JSON.parse(JSON.stringify(objeto));
-            this.formValidarDetalle();
-            this.displayDetalle = true;
-          }
+        editarDetalle(det: DetalleDisplay, idx: number) {
+          this.editingIndex = idx;
+          this.formDetalle.reset();
+          this.formDetalle.patchValue({
+            sede: det.sede ?? this.sedesLista.find(s => s.id === det.codigoSede) ?? null,
+            tipoMaterial: det.tipoMaterialId ?? this.tipoMaterialId,
+            fechaIngreso: det.fechaIngreso ? new Date(det.fechaIngreso) : null,
+            horaInicio: det.horaInicio ? this.stringToDate(det.horaInicio) : null,
+            horaFin: det.horaFin ? this.stringToDate(det.horaFin) : null,
+            maxHoras: det.maxHoras ?? null,
+            tipoAdquisicion: det.tipoAdquisicionId ?? null
+          });
+          this.displayEjemplar = true;
+        }
 
 
             deleteRegistro(objeto: Detalle) {
@@ -815,6 +846,7 @@ export class ModalOtrosComponent implements OnInit {
                 });
             }
             nuevoEjemplar(){
+                this.editingIndex = null;
                 this.formValidarDetalle();
                 if (this.tipoMaterialId) {
                     const tipoObj = this.tipoMaterialLista.find(t => t.id === this.tipoMaterialId) ?? null;
@@ -840,7 +872,9 @@ export class ModalOtrosComponent implements OnInit {
                   const tipoAdq =
                     typeof tipoAdqVal === 'object' ? tipoAdqVal?.id : (tipoAdqVal ?? null);
 
+                  const oldDet = this.editingIndex != null ? this.detalles[this.editingIndex] : null;
                   const detalle: DetalleDisplay = {
+                    idDetalleBiblioteca: oldDet?.idDetalleBiblioteca ?? null,
                     codigoSede:        sedeId,
                     tipoMaterialId:    tipoMat ?? null,
                     tipoAdquisicionId: tipoAdq ?? null,
@@ -857,10 +891,16 @@ export class ModalOtrosComponent implements OnInit {
                     idEstado: 1
                   };
 
-                  this.detalles = [...this.detalles, detalle];
+                  if (this.editingIndex == null) {
+                    this.detalles = [...this.detalles, detalle];
+                  } else {
+                    this.detalles[this.editingIndex] = detalle;
+                    this.detalles = [...this.detalles];
+                  }
 
                   this.formDetalle.reset();
                   this.displayEjemplar = false;
+                  this.editingIndex = null;
                 }
             });
 
@@ -896,12 +936,28 @@ export class ModalOtrosComponent implements OnInit {
             idToTipo(id: number | null) {
               return this.tipoAdquisicionLista.find(t => t.id === id);
             }
-            onFileSelect(event: any) {
-                const file = event.files[0]; // Obtiene el primer archivo seleccionado
-                if (file) {
-                    this.selectedFile = file;
-                    this.formPortada.patchValue({ adjunto: file });
-                }
-                this.messageService.add({ severity: 'info', summary: 'Success', detail: 'Se adjunto archivo' });
-            }
+    onFileSelect(event: any) {
+        const file = event.files[0]; // Obtiene el primer archivo seleccionado
+        if (file) {
+            this.selectedFile = file;
+            this.formPortada.patchValue({ adjunto: file });
+            this.portadaUrl = URL.createObjectURL(file);
+            this.rutaImagen = null;
+            this.nombreImagen = null;
+        }
+        this.messageService.add({ severity: 'info', summary: 'Success', detail: 'Se adjunto archivo' });
+    }
+
+    private buildImageUrl(path?: string | null, name?: string | null): string | null {
+        if (!path) { return null; }
+        const base = path.startsWith('http')
+            ? path
+            : `${environment.filesUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+        if (name) {
+            if (base.endsWith(name)) { return base; }
+            const sep = base.endsWith('/') ? '' : '/';
+            return base + sep + name;
+        }
+        return base;
+    }
 }

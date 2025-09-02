@@ -51,8 +51,8 @@ export interface BibliotecaDTO {
     observacion?: string;
     demandado?: string;
     demandante?: string;
-    rutaImagen?: string;
-    nombreImagen?: string;
+    rutaImagen?: string | null;
+    nombreImagen?: string | null;
     tituloRevistaFuente?: string;
     estadoId?: number;
     estadoDescripcion?: string | null;
