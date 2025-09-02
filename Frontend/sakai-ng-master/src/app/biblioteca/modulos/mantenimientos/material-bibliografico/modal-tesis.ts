@@ -861,7 +861,7 @@ export class ModalTesisComponent implements OnInit {
           }
 
 
-            deleteRegistro(objeto: Detalle) {
+            deleteRegistro(objeto: DetalleDisplay) {
                 this.confirmationService.confirm({
                     message: '¿Estás seguro(a) de que quieres eliminar?',
                     header: 'Confirmar',
@@ -869,22 +869,23 @@ export class ModalTesisComponent implements OnInit {
                     acceptLabel: 'SI',
                     rejectLabel: 'NO',
                     accept: () => {
-                      this.loading=true;
-                      const data = { id: objeto.id};
-                      this.materialBibliograficoService.conf_event_delete(data,'/eliminar')
-                      .subscribe(result => {
-                        if (result.p_status == 0) {
-                          this.messageService.add({severity:'success', summary: 'Satisfactorio', detail: 'Registro eliminado.'});
-
-                        } else {
-                          this.messageService.add({severity:'error', summary: 'Error', detail: 'No se puedo realizar el proceso.'});
-                        }
-                        this.loading=false;
+                      const id = objeto.idDetalleBiblioteca ?? (objeto as any).id;
+                      if (!id) {
+                        this.detalles = this.detalles.filter(d => d !== objeto);
+                        return;
                       }
-                        , (error: HttpErrorResponse) => {
-                          this.messageService.add({severity:'error', summary: 'Error', detail: 'Ocurrio un error. Intentelo más tarde'});
-                          this.loading=false;
-                        });
+                      this.loading = true;
+                      this.materialBibliograficoService.delete(id).subscribe({
+                        next: () => {
+                          this.detalles = this.detalles.filter(d => (d.idDetalleBiblioteca ?? (d as any).id) !== id);
+                          this.messageService.add({severity:'success', summary:'Satisfactorio', detail:'Registro eliminado.'});
+                          this.loading = false;
+                        },
+                        error: () => {
+                          this.messageService.add({severity:'error', summary:'Error', detail:'Ocurrió un error. Intentelo más tarde'});
+                          this.loading = false;
+                        }
+                      });
                     }
                 });
             }
