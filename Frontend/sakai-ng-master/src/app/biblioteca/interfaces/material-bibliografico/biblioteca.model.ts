@@ -115,6 +115,12 @@ export interface DetalleBibliotecaDTO {
     codigoUsuario?: string;
     /** Nombre del usuario que hizo la reserva */
     nombreUsuario?: string;
+    /** Nombre completo del usuario (apellidos y nombres) */
+    usuarioPrestamo?: string;
+    /** Número de documento del usuario */
+    documentoUsuario?: string | null;
+    /** Correo electrónico del usuario */
+    correoUsuario?: string | null;
     /** Tipo de préstamo de la reserva */
     tipoPrestamo?: string | null;
     /** Fecha de la reserva */
