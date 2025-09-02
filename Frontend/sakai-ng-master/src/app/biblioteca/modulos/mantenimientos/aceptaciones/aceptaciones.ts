@@ -23,6 +23,7 @@ import { TipoAdquisicion } from '../../../interfaces/material-bibliografico/tipo
 import { ModalNuevoOcurencia } from '../../laboratorio-computo/modal-nuevo-ocurrencia';
 import { OcurrenciaEventService } from '../../../services/ocurrencia-event.service';
 import { environment } from '../../../../../environments/environment';
+import { ModalDetalleMaterial } from '../../portal/detalle-material';
 
 @Component({
   selector: 'app-aceptaciones',
@@ -220,9 +221,10 @@ import { environment } from '../../../../../environments/environment';
             </div>
 
             <app-modal-nuevo-ocurrencia #modalOcurrencia></app-modal-nuevo-ocurrencia>
+            <app-modal-detalle-material #modalDetalle></app-modal-detalle-material>
             <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
             <p-toast></p-toast>`,
-  imports: [TemplateModule,TooltipModule, ModalNuevoOcurencia],
+  imports: [TemplateModule,TooltipModule, ModalNuevoOcurencia, ModalDetalleMaterial],
   providers: [MessageService, ConfirmationService]
 })
 export class Aceptaciones implements OnInit, AfterViewInit {
@@ -241,12 +243,12 @@ export class Aceptaciones implements OnInit, AfterViewInit {
   @ViewChild('filter') filter!: ElementRef;
   @ViewChild('modalOcurrencia') modal!: ModalNuevoOcurencia;
   @ViewChild('dt1') dt1!: Table;
+  @ViewChild('modalDetalle') modalDetalle!: ModalDetalleMaterial;
   dataSede: Sedes[] = [];
   sedeFiltro: Sedes = new Sedes();
   filtros: ClaseGeneral[] = [];
   opcionFiltro: ClaseGeneral = new ClaseGeneral();
-  palabra: any;
-  palabraClave:string="";
+  palabraClave: string = "";
   expandedRows = {};
   tipoAdquisicionLista: TipoAdquisicion[] = [];
   tipoMaterialLista: TipoMaterial[]     = [];
@@ -300,6 +302,7 @@ export class Aceptaciones implements OnInit, AfterViewInit {
     this.palabraClave = "";  // Resetea el campo de búsqueda
     this.sedeFiltro = this.dataSede[0];
     this.opcionFiltro = this.filtros[0];
+    this.listar();
 }
 
   onGlobalFilter(table: Table, event: Event) {
@@ -315,19 +318,19 @@ export class Aceptaciones implements OnInit, AfterViewInit {
 
   async ListaSede() {
     try {
-      const result: any = await this.genericoService.sedes_get('api/equipos/sedes').toPromise();
-      if (result.status === 0) {
-        this.dataSede = result.data;
-        let sedes = [{ id: 0, descripcion: 'TODAS LAS SEDES', activo: true, estado: 1 }, ...this.dataSede];
+      const res: any = await this.genericoService.sedes_get('api/equipos/sedes').toPromise();
+      const raw: any[] = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
 
-        this.dataSede = sedes;
-        this.sedeFiltro = this.dataSede[0];
-      }
+      this.dataSede = [
+        new Sedes({ id: 0, descripcion: 'TODAS LAS SEDES', activo: true }),
+        ...raw.map((s) => new Sedes(s))
+      ];
+
+      this.sedeFiltro = this.dataSede[0];
     } catch (error) {
       console.log(error);
       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrió un error. No se pudo cargar roles' });
     }
-
   }
   listaFiltros() {
     this.loading = true;
@@ -350,34 +353,21 @@ export class Aceptaciones implements OnInit, AfterViewInit {
       const opcion = this.opcionFiltro?.valor;
       const valor  = this.palabraClave?.trim() || '';
 
-      if (opcion === 'codigoLocalizacion') {
-        if (valor && !/^\d+$/.test(valor)) {
-          this.messageService.add({
-            severity: 'warn',
-            summary: 'Código inválido',
-            detail: 'Ingrese solo números para buscar por código'
-          });
-          return;
-        }
-      }
-
-      if (opcion && !valor) {
+      if (opcion === 'codigoLocalizacion' && valor && !/^\d+$/.test(valor)) {
         this.messageService.add({
           severity: 'warn',
-          summary: 'Valor requerido',
-          detail: 'Ingrese un valor para realizar la búsqueda'
+          summary: 'Código inválido',
+          detail: 'Ingrese solo números para buscar por código'
         });
         return;
       }
 
       const params: string[] = [];
       if (this.sedeFiltro?.id) {
-        params.push(`sedeId=${this.sedeFiltro.id}`);
+        params.push(`codigoSede=${this.sedeFiltro.id}`);
       }
-      if (opcion) {
+      if (opcion && valor) {
         params.push(`opcion=${encodeURIComponent(opcion)}`);
-      }
-      if (valor) {
         params.push(`valor=${encodeURIComponent(valor)}`);
       }
       params.push('soloEnProceso=true');
@@ -385,7 +375,13 @@ export class Aceptaciones implements OnInit, AfterViewInit {
       this.totalRecords = 0;
       this.data = [];
       this.first = 0;
-      this.loadData({ first: 0, rows: this.size });
+      this.detallePorId = {};
+      this.expandedRows = {};
+      if (this.dt1) {
+        this.dt1.reset();
+      } else {
+        this.loadData({ first: 0, rows: this.size });
+      }
     }
 
     loadData(event: TableLazyLoadEvent) {
@@ -397,27 +393,35 @@ export class Aceptaciones implements OnInit, AfterViewInit {
       this.page  = this.first / (event.rows ?? this.size);
       this.size  = event.rows ?? this.size;
       const endpoint = `${this.baseEndpoint}&page=${this.page}&size=${this.size}`;
+
       this.materialBibliograficoService.search_get(endpoint)
-        .subscribe(
-          (res: any) => {
+        .subscribe({
+          next: (res: any) => {
             const pageData = res?.data ?? res;
-            const content  = Array.isArray(pageData?.content) ? pageData.content : [];
-            this.data = content
-              .filter((b: any) => (b.estadoDescripcion || '').toUpperCase() === 'EN PROCESO')
-              .map((b: any) => ({
-                ...b,
-                autor: b.autorPersonal || b.autorSecundario || b.autorInstitucional || '',
-                tipoMaterialDescripcion: this.tipoMaterialLista.find(t => t.id === b.tipoMaterialId)?.descripcion || ''
-              }));
-            this.totalRecords = pageData?.page?.totalElements ?? pageData?.totalElements ?? pageData?.total ?? content.length;
+            let content = Array.isArray(pageData?.content) ? pageData.content : [];
+            const sedeId = this.sedeFiltro?.id;
+            if (sedeId) {
+              content = content.filter((b: any) =>
+                Array.isArray(b.detalles) &&
+                b.detalles.some((d: any) => d.codigoSede == sedeId || d.sede?.id == sedeId)
+              );
+            }
+            this.data = content.map((b: any) => ({
+              ...b,
+              autor: b.autorPersonal || b.autorSecundario || b.autorInstitucional || '',
+              tipoMaterialDescripcion: this.tipoMaterialLista.find(t => t.id === b.tipoMaterialId)?.descripcion || ''
+            }));
+            this.totalRecords = sedeId
+              ? content.length
+              : pageData?.page?.totalElements ?? pageData?.totalElements ?? pageData?.total ?? this.data.length;
           },
-          (err: HttpErrorResponse) => {
+          error: (err: HttpErrorResponse) => {
             console.error(err);
           },
-          () => {
+          complete: () => {
             this.loading = false;
           }
-        );
+        });
     }
 
 aceptarDetalle(detalle: any) {
@@ -492,13 +496,13 @@ aceptarDetalle(detalle: any) {
     this.menu.toggle(event);
   }
 
-    onAbrirOcurrencia(item: any) {
+  onAbrirOcurrencia(item: any) {
     this.selectedDetalleOcurrencia = item;
       this.modal.openModal(item);
     }
 
   verDetalle(objeto:any){
-
+    this.modalDetalle.openModal();
   }
 
   irAutorizacion(detalle: any): void {
@@ -633,15 +637,19 @@ onRowExpand(event: TableRowExpandEvent) {
         console.log('→ catálogo adquisiciones:', this.tipoAdquisicionLista);
         console.log('→ catálogo materiales:', this.tipoMaterialLista);
 
-        this.detallePorId[lib.id] = res.data.map((d: any) => ({
-          ...d,
-          sede: this.dataSede.find(s => s.id == d.codigoSede),
-          tipoAdquisicion: this.tipoAdquisicionLista.find(t => t.id == d.tipoAdquisicionId),
-          tipoMaterial:    this.tipoMaterialLista.find(m => m.id == d.tipoMaterialId),
-          estado: this.estadoLista.find(e => e.id === Number(d.idEstado)),
-          tieneOcurrencia: this.ocurrenciaEvents.tieneOcurrencia(d.idDetalleBiblioteca),
-          highlight: false
-        }));
+        const sedeId = this.sedeFiltro?.id;
+        const raw = Array.isArray(res.data) ? res.data : [];
+        this.detallePorId[lib.id] = raw
+          .filter((d: any) => !sedeId || d.codigoSede == sedeId || d.sede?.id == sedeId)
+          .map((d: any) => ({
+            ...d,
+            sede: this.dataSede.find(s => s.id == d.codigoSede),
+            tipoAdquisicion: this.tipoAdquisicionLista.find(t => t.id == d.tipoAdquisicionId),
+            tipoMaterial:    this.tipoMaterialLista.find(m => m.id == d.tipoMaterialId),
+            estado: this.estadoLista.find(e => e.id === Number(d.idEstado)),
+            tieneOcurrencia: this.ocurrenciaEvents.tieneOcurrencia(d.idDetalleBiblioteca),
+            highlight: false
+          }));
         console.log('→ mapeados:', this.detallePorId[lib.id]);
       });
   }
