@@ -418,11 +418,12 @@ registrarEspecialidad(especialidad: any): Observable<any> {
   private mapToOtro(b: BibliotecaDTO): Otro {
     return new Otro({
       id: b.id ?? 0,
-        tituloArticulo: b.titulo ?? '',
-        tituloRevista: b.editorialPublicacion ?? '',
-        autorPrincipal: b.autorPersonal ?? '',
-        descripcionRevista: b.tituloAnterior ?? '',
-        descripcionFisica: (b as any).descripcionFisica ?? null,
+      codigo: b.codigoLocalizacion ?? '',
+      tituloArticulo: b.titulo ?? '',
+      tituloRevista: b.editorialPublicacion ?? '',
+      autorPrincipal: b.autorPersonal ?? '',
+      descripcionRevista: b.tituloAnterior ?? '',
+      descripcionFisica: (b as any).descripcionFisica ?? null,
         cantidad: b.existencias ?? 0,
         formatoDigital: b.fladigitalizado ?? false,
         urlPublicacion: b.linkPublicacion ?? '',
