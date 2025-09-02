@@ -123,7 +123,7 @@ interface ReservaUsuario {
                                 <td>{{detalle.nombreUsuario}}
                                     </td>
                                     <td>
-                                        {{detalle.tipoPrestamo}}
+                                        {{ getTipoPrestamoDescripcion(detalle.tipoPrestamo) }}
 
                                     </td>
                                     <td>
@@ -226,29 +226,16 @@ export class PrestamoMaterialBibliografico implements OnInit {
     constructor(private prestamosService: PrestamosService,private materialBibliograficoService: MaterialBibliograficoService, private genericoService: GenericoService, private fb: FormBuilder,
         private router: Router, private authService: AuthService, private confirmationService: ConfirmationService, private messageService: MessageService) { }
     ngOnInit(): void {
-//         // this.user = this.authService.getUser();
-//         this.user = {
-//             "idusuario": 0
-//         }
-//         this.ListaSede();
-//         this.ListaTipo();
-//         this.listar();
-//         this.detalle = [
-//             {
-//                 "coleccion": { "id": 1, "descripcion": "Libro", "activo": true },
-//                 "codigo": "344.2/M/4",
-//                 "numeroIngreso": "39819",
-//                 "titulo": "Titulo",
-//                 "fechaReserva": "14/11/2025 17:40:10"
-//             }
-//         ]
+        this.ListaSede();
+        this.ListaTipo();
         this.cargarTodosDetallesReservados();
     }
   private cargarTodosDetallesReservados(): void {
     this.loading = true;
     this.materialBibliograficoService.listarTodosDetallesReservados().subscribe({
       next: (lista: DetalleBibliotecaDTO[]) => {
-        this.reservadosDetalle = this.agruparPorUsuario(lista);
+        this.todosDetallesReservados = lista;
+        this.aplicarFiltros();
         this.loading = false;
       },
       error: () => {
@@ -357,7 +344,7 @@ private agruparPorBiblioteca(
 
     detalles.forEach(det => {
       const codigo = det.codigoUsuario ?? 'DESCONOCIDO';
-      const nombre = det.nombreUsuario ?? det.codigoUsuario ?? 'DESCONOCIDO';
+      const nombre = det.usuarioPrestamo ?? det.nombreUsuario ?? det.codigoUsuario ?? 'DESCONOCIDO';
       if (!mapa.has(codigo)) {
         mapa.set(codigo, {
           codigoUsuario: codigo,
@@ -401,7 +388,8 @@ private agruparPorBiblioteca(
     limpiar() {
         this.palabraClave = "";  // Resetea el campo de búsqueda
         this.sedeFiltro = this.dataSede[0];
-        this.opcionFiltro = this.filtros[0];
+        this.tipoFiltro = this.dataTipo[0];
+        this.aplicarFiltros();
     }
 
   onGlobalFilter(table: Table, event: Event) {
@@ -413,21 +401,63 @@ private agruparPorBiblioteca(
     this.globalFilter.nativeElement.value = '';
   }
 
+  private aplicarFiltros(): void {
+    const sedeId = this.sedeFiltro?.id && this.sedeFiltro.id !== 0 ? this.sedeFiltro.id : null;
+    const tipoDesc = this.tipoFiltro?.id && this.tipoFiltro.id !== 0 ? this.tipoFiltro.descripcion : null;
+    const termino = this.palabraClave?.trim().toLowerCase() || '';
+
+    const filtrados = this.todosDetallesReservados.filter((det) => {
+      const sedeOk = !sedeId || det.codigoSede === sedeId;
+      const tipoOk = !tipoDesc || this.getTipoPrestamoDescripcion(det.tipoPrestamo) === tipoDesc;
+      const termOk =
+        !termino ||
+        [
+          det.usuarioPrestamo,
+          det.nombreUsuario,
+          det.codigoUsuario,
+          det.documentoUsuario,
+          det.correoUsuario,
+        ].some((v) => v?.toLowerCase().includes(termino));
+      return sedeOk && tipoOk && termOk;
+    });
+
+    this.reservadosDetalle = this.agruparPorUsuario(filtrados);
+  }
+
+  getTipoPrestamoDescripcion(tipo?: string | null): string {
+    switch (tipo) {
+      case 'PRESTAMO_EN_SALA':
+      case 'EN_SALA':
+        return 'En sala';
+      case 'PRESTAMO_A_DOMICILIO':
+      case 'A_DOMICILIO':
+        return 'A domicilio';
+      case 'PRESTAMO_SALA_DOMICILIO':
+      case 'EN_SALA_DOMICILIO':
+      case 'SALAYDOMICILIO':
+      case 'SALA_Y_DOMICILIO':
+        return 'En sala y a domicilio';
+      default:
+        return tipo ?? '';
+    }
+  }
+
 
 
     async ListaSede() {
         try {
-            const result: any = await this.genericoService.sedes_get('conf/tipo-lista').toPromise();
-            if (result.status === "0") {
-                this.dataSede = result.data;
-                let sedes = [{ id: 0, descripcion: 'TODOS', activo: true, estado: 1 }, ...this.dataSede];
-
-                this.dataSede = sedes;
-                this.sedeFiltro = this.dataSede[0];
-            }
+            const result: any = await this.genericoService
+                .sedes_get('api/equipos/sedes')
+                .toPromise();
+            const sedes = [
+                { id: 0, descripcion: 'TODOS', activo: true, estado: 1 },
+                ...((Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : []))
+            ];
+            this.dataSede = sedes;
+            this.sedeFiltro = this.dataSede[0];
         } catch (error) {
             console.log(error);
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrió un error. No se pudo cargar roles' });
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrió un error. No se pudieron cargar sedes' });
         }
 
     }
@@ -448,24 +478,8 @@ private agruparPorBiblioteca(
                 }
             );
     }
-    async listar() {
-        this.loading = true;
-        this.data = [];
-
-        this.prestamosService.api_prestamos_material_bibliografico(this.modulo + '/lista')
-            .subscribe(
-                (result: any) => {
-                    this.loading = false;
-                    if (result.status == "0") {
-                        this.data = result.data;
-                    }
-                }
-                , (error: HttpErrorResponse) => {
-                    this.loading = false;
-                }
-            );
-
-        this.loading = false;
+    listar() {
+        this.aplicarFiltros();
     }
     cambiarEstadoRegistro(objeto: Ejemplar) {
         let estado = "";
