@@ -1289,20 +1289,36 @@ finalizar(): void {
         }
 
     async editarRegistro(mat: BibliotecaDTO, tipoId?: number | null): Promise<void> {
-        await this.ListaPais();          // llena paisLista
+        // Obtenemos el material completo desde el backend para contar con todos los campos
+        const full = await this.materialBibliograficoService
+            .get(mat.id!)
+            .toPromise();
+
+        // Si no obtenemos el material, abortamos la edición
+        if (!full) {
+            console.error('No se pudo recuperar el material bibliográfico');
+            return;
+        }
+
+        // Cargamos listas necesarias
+        await this.ListaPais();
         await this.ListaEspecialidad();
         await this.ListaIdioma();
 
-        // 1) parcheamos el país sin disparar valueChanges
-        this.formEditorial.patchValue({ pais: mat.paisId }, { emitEvent: false });
+        // Parcheamos país antes de cargar ciudades para evitar valueChanges innecesarios
+        const paisId = full.paisId ?? (full as any).pais?.paisId ?? (full as any).editorial?.paisId;
+        const ciudadCodigo = full.ciudadCodigo ?? (full as any).ciudad?.ciudadCodigo ?? (full as any).editorial?.ciudadCodigo;
 
-        // 2) cargamos las ciudades y, cuando lleguen,
-        //    ListaCiudad pondrá el valor "BUE"
-        await this.ListaCiudad(mat.paisId!, mat.ciudadCodigo);
-        console.table(this.ciudadLista.map(c => c.ciudadCodigo));
+        if (paisId) {
+            this.formEditorial.patchValue({ pais: paisId }, { emitEvent: false });
+            await this.ListaCiudad(paisId, ciudadCodigo);
+        } else {
+            this.formEditorial.patchValue({ pais: null, ciudad: null }, { emitEvent: false });
+            this.ciudadLista = [];
+        }
 
-        // 3) resto de datos
-        this.setData(mat, true);
+        // Resto de datos del formulario
+        this.setData(full!, true);
         this.formLibro.patchValue({ tipoMaterialId: tipoId ?? this.tipoMaterialId });
         await this.ListaEjemplares();
         this.display = true;
@@ -1489,22 +1505,23 @@ public setData(material: BibliotecaDTO, omitPaisCiudad = false): void {
         — construimos el objeto y solo añadimos
           pais/ciudad cuando omitPaisCiudad = false —
   -------------------------------------------------------*/
+  const e: any = (clone as any).editorial ?? {};
   const patchEditorial: any = {
-    autorPrincipal:     clone.autorPersonal,
-    autorSecundario:    clone.autorSecundario,
-    autorInstitucional: clone.autorInstitucional,
-    editorial:          clone.editorialPublicacion,
-    coordinador:        clone.coordinador,
-    director:           clone.director,
-    compilador:         clone.compilador,
-    idioma:             clone.idioma,
-    serie:              clone.serie,
-    descripcionFisica:  clone.descripcionFisica,
-    cantidad:           clone.numeroPaginas,
-    anioPublicacion:    clone.anioPublicacion,
-    edicion:            clone.edicion,
-    reimpresion:        clone.reimpresion,
-    isbn:               clone.isbn
+    autorPrincipal:     clone.autorPersonal     ?? e.autorPrincipal     ?? null,
+    autorSecundario:    clone.autorSecundario   ?? e.autorSecundario    ?? null,
+    autorInstitucional: clone.autorInstitucional?? e.autorInstitucional ?? null,
+    editorial:          clone.editorialPublicacion ?? e.editorial       ?? null,
+    coordinador:        clone.coordinador       ?? e.coordinador       ?? null,
+    director:           clone.director          ?? e.director          ?? null,
+    compilador:         clone.compilador        ?? e.compilador        ?? null,
+    idioma:             clone.idioma            ?? e.idioma            ?? null,
+    serie:              clone.serie             ?? e.serie             ?? null,
+    descripcionFisica:  clone.descripcionFisica ?? e.descripcionFisica ?? null,
+    cantidad:           clone.numeroPaginas     ?? e.cantidad          ?? null,
+    anioPublicacion:    clone.anioPublicacion   ?? e.anioPublicacion   ?? null,
+    edicion:            clone.edicion           ?? e.edicion           ?? null,
+    reimpresion:        clone.reimpresion       ?? e.reimpresion       ?? null,
+    isbn:               clone.isbn              ?? e.isbn              ?? null,
   };
 
   const opcionId = clone.autorInstitucional
@@ -1514,11 +1531,13 @@ public setData(material: BibliotecaDTO, omitPaisCiudad = false): void {
                         : this.opcionesLista[0]?.id);
   patchEditorial.autorOpcion = this.opcionesLista.find(o => o.id === opcionId) ?? null;
 
+  const paisId   = clone.paisId   ?? e.paisId   ?? (clone.pais   as any)?.paisId;
+  const ciudadCd = clone.ciudadCodigo ?? e.ciudadCodigo ?? (clone.ciudad as any)?.ciudadCodigo;
   if (!omitPaisCiudad) {
-    patchEditorial.pais   = clone.paisId;
-    patchEditorial.ciudad = clone.ciudadCodigo;   // ← nombre correcto
+    patchEditorial.pais   = paisId;
+    patchEditorial.ciudad = ciudadCd;   // ← nombre correcto
   }
-    patchEditorial.idioma = clone.idiomaId ?? clone.idioma ?? null;
+  patchEditorial.idioma = clone.idiomaId ?? (clone.idioma as any)?.idIdioma ?? e.idiomaId ?? patchEditorial.idioma;
 
   this.formEditorial.patchValue(patchEditorial);
 
