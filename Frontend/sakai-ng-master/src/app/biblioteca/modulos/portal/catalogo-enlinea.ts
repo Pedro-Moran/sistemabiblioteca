@@ -667,7 +667,8 @@ export class CatalogoEnLineaComponent {
             const payload = {
                 idDetalleBiblioteca: it.idDetalleBiblioteca ?? it.id,
                 idEstado: 3,
-                idUsuario: this.user?.sub ?? this.user?.idusuario ?? 0
+                idUsuario: this.user?.sub ?? this.user?.idusuario ?? 0,
+                tipoPrestamo: this.selectedTipo
             };
             return this.genericoService.conf_event_put(payload, 'api/biblioteca/detalles/estado');
         });

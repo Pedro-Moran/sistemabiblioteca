@@ -7,4 +7,5 @@ public class CambioEstadoDetalleRequest {
     private Long idDetalleBiblioteca;
     private Long idEstado;
     private String idUsuario;
+    private String tipoPrestamo;
 }
