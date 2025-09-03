@@ -222,62 +222,93 @@ export class MaterialBibliografico {
 
   constructor(private materialBibliograficoService: MaterialBibliograficoService, private genericoService: GenericoService, private fb: FormBuilder,
     private router: Router, private authService: AuthService, private confirmationService: ConfirmationService, private messageService: MessageService) { }
+  private readonly columnConfig: Record<number, Column[]> = {
+    1: [
+      { field: 'codigoLocalizacion', header: 'Codigo' },
+      { field: 'titulo', header: 'Titulo' },
+      { field: 'autorPersonal', header: 'Autor' },
+      { field: 'ciudadCodigo', header: 'Ciudad' },
+      { field: 'editorialPublicacion', header: 'Editorial' },
+      { field: 'anioPublicacion', header: 'Año' }
+    ],
+    2: [
+      { field: 'codigoLocalizacion', header: 'Codigo' },
+      { field: 'titulo', header: 'Titulo' },
+      { field: 'autorInstitucional', header: 'Institución' },
+      { field: 'director', header: 'Director' },
+      { field: 'editorialPublicacion', header: 'Editorial' },
+      { field: 'anioPublicacion', header: 'Año' }
+    ],
+    3: [
+      { field: 'codigoLocalizacion', header: 'Codigo' },
+      { field: 'titulo', header: 'Titulo' },
+      { field: 'autorPersonal', header: 'Autor' },
+      { field: 'director', header: 'Director' },
+      { field: 'paisId', header: 'País' },
+      { field: 'anioPublicacion', header: 'Año' }
+    ],
+    4: [
+      { field: 'codigoLocalizacion', header: 'Codigo' },
+      { field: 'titulo', header: 'Título' },
+      { field: 'autorPersonal', header: 'Autor' },
+      { field: 'editorialPublicacion', header: 'Revista' },
+      { field: 'numeroPaginas', header: 'Páginas' },
+      { field: 'linkPublicacion', header: 'Link' }
+    ]
+  };
 
-  private setColumns(): void {
-    const tipo = this.tipoRecursoFiltro?.tipo?.id;
-    switch (tipo) {
-      case 1: // Libro
-        this.columns = [
-          { field: 'codigoLocalizacion', header: 'Codigo' },
-          { field: 'titulo', header: 'Titulo' },
-          { field: 'autorPersonal', header: 'Autor' },
-          { field: 'ciudadCodigo', header: 'Ciudad' },
-          { field: 'editorialPublicacion', header: 'Editorial' },
-          { field: 'anioPublicacion', header: 'Año' }
-        ];
-        break;
-      case 2: // Revista
-        this.columns = [
-          { field: 'codigoLocalizacion', header: 'Codigo' },
-          { field: 'titulo', header: 'Titulo' },
-          { field: 'autorInstitucional', header: 'Institución' },
-          { field: 'director', header: 'Director' },
-          { field: 'editorialPublicacion', header: 'Editorial' },
-          { field: 'anioPublicacion', header: 'Año' }
-        ];
-        break;
-      case 3: // Tesis
-        this.columns = [
-          { field: 'codigoLocalizacion', header: 'Codigo' },
-          { field: 'titulo', header: 'Titulo' },
-          { field: 'autorPersonal', header: 'Autor' },
-          { field: 'director', header: 'Director' },
-          { field: 'paisId', header: 'País' },
-          { field: 'anioPublicacion', header: 'Año' }
-        ];
-        break;
-      case 4: // Artículo
-        this.columns = [
-          { field: 'codigoLocalizacion', header: 'Codigo' },
-          { field: 'titulo', header: 'Título' },
-          { field: 'autorPersonal', header: 'Autor' },
-          { field: 'editorialPublicacion', header: 'Revista' },
-          { field: 'numeroPaginas', header: 'Páginas' },
-          { field: 'anioPublicacion', header: 'Año' }
-        ];
-        break;
-      default: // Otros
-        this.columns = [
-          { field: 'codigoLocalizacion', header: 'Codigo' },
-          { field: 'titulo', header: 'Título' },
-          { field: 'autorPersonal', header: 'Autor' },
-          { field: 'editorialPublicacion', header: 'Revista' },
-          { field: 'numeroPaginas', header: 'Páginas' },
-          { field: 'anioPublicacion', header: 'Año' }
-        ];
-        break;
+  private readonly customHeaders: Record<string, string> = {
+    tipoMaterialDescripcion: 'Tipo de material'
+  };
+
+  private setColumns(data: any[] = []): void {
+    const tipo = this.tipoRecursoFiltro?.tipo?.id ?? 0;
+    const base = this.columnConfig[tipo] ?? [
+      { field: 'codigoLocalizacion', header: 'Codigo' },
+      { field: 'titulo', header: 'Título' },
+      { field: 'autorPersonal', header: 'Autor' },
+      { field: 'editorialPublicacion', header: 'Editorial' },
+      { field: 'numeroPaginas', header: 'Páginas' },
+      { field: 'anioPublicacion', header: 'Año' }
+    ];
+
+    if (data.length) {
+      const available = Object.keys(data[0]).filter(f => f !== 'id');
+      let cols: Column[] = base.filter(
+        col =>
+          available.includes(col.field) &&
+          data.some(item => this.hasValue(item[col.field]))
+      );
+      const used = new Set(cols.map(c => c.field));
+
+      for (const field of available) {
+        if (cols.length >= base.length) break;
+        if (
+          !used.has(field) &&
+          !field.toLowerCase().endsWith('id') &&
+          data.some(item => this.hasValue(item[field]))
+        ) {
+          const header = this.customHeaders[field] ?? this.toHeader(field);
+          cols.push({ field, header });
+        }
+      }
+
+      this.columns = cols;
+    } else {
+      this.columns = base;
     }
+
     this.filterFields = this.columns.map(col => col.field);
+  }
+
+  private toHeader(field: string): string {
+    return field
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, c => c.toUpperCase());
+  }
+
+  private hasValue(value: any): boolean {
+    return value !== null && value !== undefined && value !== '';
   }
 
   async ngOnInit() {
@@ -580,6 +611,7 @@ async listar() {
           ? result
           : [];
         this.data = lista.filter((b: any) => Number(b.estadoId) === 2);
+        this.setColumns(this.data);
         this.loading = false;
       },
       (error: HttpErrorResponse) => {
@@ -607,6 +639,7 @@ async listar() {
           ? result
           : [];
         this.data = lista.filter((b: any) => Number(b.estadoId) === 2);
+        this.setColumns(this.data);
         this.loading = false;
       },
       () => (this.loading = false)
