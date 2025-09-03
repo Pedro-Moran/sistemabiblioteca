@@ -43,7 +43,7 @@ import { Estado } from '../../../interfaces/biblioteca-virtual/estado';
 
                         <label for="discapacidad" class="block text-sm font-medium">&nbsp;</label>
                         <div class="col-span-2 flex items-center gap-2">
-                        <p-checkbox id="checkDiscapacidad" name="option"  [(ngModel)]="discapacidadFiltro" [binary]="true"></p-checkbox>
+                        <p-checkbox id="checkDiscapacidad" name="option" [(ngModel)]="discapacidadFiltro" [binary]="true" (onChange)="filtrarPorSede()"></p-checkbox>
                         <label for="checkDiscapacidad" class="text-sm">¿Equipos con discapacidad?</label>
       </div>
                 </div>
@@ -255,7 +255,7 @@ export class BibliotecaVirtual implements OnInit {
     }
     await this.cargarEstados();
     await this.ListaSede();
-    await this.listar();
+    this.filtrarPorSede();
     this.formValidar();
   }
 
@@ -500,7 +500,7 @@ private mapToEquipo(obj: any): Equipo {
         if (result.p_status == 0) {
           this.objetoDialog = false;
           this.messageService.add({ severity: 'success', summary: 'Satisfactorio', detail: 'Registro guardado.' });
-          this.listar();
+          this.filtrarPorSede();
         } else {
           this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se puedo realizar el proceso.' });
         }
@@ -529,25 +529,6 @@ private mapToEquipo(obj: any): Equipo {
     }
 
   }
-  async listar() {
-    this.loading = true;
-    this.data = [];
-
-    this.bibliotecaVirtualService.listarEquipos()
-      .subscribe(
-        (result: any) => {
-          this.loading = false;
-          if (result.status == "0") {
-            this.data = result.data;
-          }
-        }
-        , (error: HttpErrorResponse) => {
-          this.loading = false;
-        }
-      );
-
-    this.loading = false;
-  }
   cambiarEstadoRegistro(objeto: Ejemplar) {
     let estado = "";
     if (objeto.activo) {
@@ -569,7 +550,7 @@ private mapToEquipo(obj: any): Equipo {
             if (result.p_status == 0) {
               this.objetoDialog = false;
               this.messageService.add({ severity: 'success', summary: 'Satisfactorio', detail: 'Estado de registro satisfactorio.' });
-              this.listar();
+              this.filtrarPorSede();
             } else {
               this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se puedo realizar el proceso.' });
             }
@@ -587,23 +568,27 @@ private mapToEquipo(obj: any): Equipo {
     this.menu.toggle(event);
   }
 
-    // Filtrar equipos por sede
+    // Filtrar equipos por sede o por discapacidad cuando se elige "todas las sedes"
     filtrarPorSede() {
-      if (this.sedeFiltro && this.sedeFiltro.id) {
-    this.bibliotecaVirtualService.filtrarPorSede(this.sedeFiltro.id).subscribe(
-            (result: any) => {
-              this.loading = false;
-              if (result.status == "0") {
-                this.data = result.data;
-              }
-            }
-            , (error: HttpErrorResponse) => {
-              this.loading = false;
-            }
-          );
-      } else {
-        this.listar();
-      }
+      this.loading = true;
+      const sedeId = this.sedeFiltro?.id ?? 0;
+      const discapacidad = this.discapacidadFiltro;
+
+      const obs = sedeId === 0
+        ? this.bibliotecaVirtualService.listarEquipos(discapacidad)
+        : this.bibliotecaVirtualService.filtrarPorSede(sedeId, discapacidad);
+
+      obs.subscribe(
+        (result: any) => {
+          this.loading = false;
+          if (result.status == "0") {
+            this.data = result.data;
+          }
+        },
+        (error: HttpErrorResponse) => {
+          this.loading = false;
+        }
+      );
     }
 
 

@@ -43,16 +43,24 @@ export class BibliotecaVirtualService {
     return this.http.post<any>(`${this.apisUrl}/delete-bulk`, ids);
   }
 
-    listarEquipos(): Observable<any> {
-      return this.http.get<any>(`${this.apisUrl}/listWithoutEnProceso`);
+    listarEquipos(discapacidad?: boolean): Observable<any> {
+      let params = new HttpParams();
+      if (discapacidad !== undefined) {
+        params = params.set('discapacidad', discapacidad);
+      }
+      return this.http.get<any>(`${this.apisUrl}/list`, { params });
     }
 
     listarEquiposEnProceso(): Observable<any> {
       return this.http.get<any>(`${this.apisUrl}/listEnProceso`);
     }
 
-    filtrarPorSede(sedeId: number): Observable<any> {
-      return this.http.get<any>(`${this.apisUrl}/filter?sedeId=${sedeId}`);
+    filtrarPorSede(sedeId: number, discapacidad?: boolean): Observable<any> {
+      let params = new HttpParams().set('sedeId', sedeId);
+      if (discapacidad !== undefined) {
+        params = params.set('discapacidad', discapacidad);
+      }
+      return this.http.get<any>(`${this.apisUrl}/filter`, { params });
     }
     filtrarPorSedeEnProcesp(sedeId: number): Observable<any> {
       return this.http.get<any>(`${this.apisUrl}/filter/onlyEnProceso?sedeId=${sedeId}`);
