@@ -406,15 +406,26 @@ export class Aceptaciones implements OnInit, AfterViewInit {
                 b.detalles.some((d: any) => d.codigoSede == sedeId || d.sede?.id == sedeId)
               );
             }
-            this.data = content.map((b: any) => ({
+
+            const mapped = content.map((b: any) => ({
               ...b,
               codigoLocalizacion: b.codigoLocalizacion ?? b.codigo ?? '',
               autor: b.autorPersonal || b.autorSecundario || b.autorInstitucional || '',
               tipoMaterialDescripcion: this.tipoMaterialLista.find(t => t.id === b.tipoMaterialId)?.descripcion || ''
             }));
-            this.totalRecords = sedeId
-              ? content.length
-              : pageData?.page?.totalElements ?? pageData?.totalElements ?? pageData?.total ?? this.data.length;
+
+            const globalFilter = (event.globalFilter as string || '').toLowerCase();
+            const fields = ['codigoLocalizacion', 'titulo', 'autor', 'anioPublicacion', 'estadoDescripcion', 'tipoMaterialDescripcion'];
+            const filtered = globalFilter
+              ? mapped.filter((b: any) =>
+                  fields.some(field => (b[field] ?? '').toString().toLowerCase().includes(globalFilter))
+                )
+              : mapped;
+
+            this.data = filtered;
+            this.totalRecords = (sedeId || globalFilter)
+              ? filtered.length
+              : pageData?.page?.totalElements ?? pageData?.totalElements ?? pageData?.total ?? filtered.length;
           },
           error: (err: HttpErrorResponse) => {
             console.error(err);
