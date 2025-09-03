@@ -31,6 +31,9 @@ public class DetalleBibliotecaService {
         return detalleBibliotecaRepository.findById(req.getIdDetalleBiblioteca())
                 .map(det -> {
                     det.setIdEstado(req.getIdEstado());
+                    if (req.getTipoPrestamo() != null) {
+                        det.setTipoPrestamo(req.getTipoPrestamo());
+                    }
                     det.setUsuarioModificacion(req.getIdUsuario());
                     detalleBibliotecaRepository.save(det);
                     return new ResponseDTO(0, "Estado de detalle actualizado",null);

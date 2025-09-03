@@ -417,6 +417,9 @@ public class BibliotecaServiceImpl implements BibliotecaService {
         Long estadoAnterior = detalle.getIdEstado();
         detalle.setIdEstado(req.getIdEstado());
         detalle.setCodigoUsuario(req.getIdUsuario());
+        if (req.getTipoPrestamo() != null) {
+            detalle.setTipoPrestamo(req.getTipoPrestamo());
+        }
         if (req.getIdEstado() != null && req.getIdEstado() == 3L) {
             // Al reservar registramos la fecha de solicitud/reserva
             detalle.setFechaSolicitud(
