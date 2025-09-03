@@ -51,6 +51,11 @@ import { ModalRegularizarComponent } from './modal-regularizar';
             </div>
 
             <div class="flex flex-col grow basis-0 gap-2">
+                <label for="tipo-busqueda" class="block text-sm font-medium">Buscar por</label>
+                <p-select [(ngModel)]="campoBusqueda" [options]="opcionesBusqueda" optionLabel="label" optionValue="value" placeholder="Seleccionar" />
+            </div>
+
+            <div class="flex flex-col grow basis-0 gap-2">
                 <label for="palabra-clave" class="block text-sm font-medium">Palabra clave</label>
                 <input [(ngModel)]="palabraClave" pInputText id="palabra-clave" type="text" placeholder="Palabra clave" />
             </div>
@@ -206,7 +211,14 @@ export class PrestamoBibliotecaVirtual implements OnInit{
     opcionFiltro: ClaseGeneral = new ClaseGeneral();
     palabra: any;
     palabraClave: string = "";
+    opcionesBusqueda = [
+      { label: 'Nombres', value: 'nombre' },
+      { label: 'Email', value: 'email' },
+      { label: 'N° Documento', value: 'documento' }
+    ];
+    campoBusqueda: string = 'nombre';
     expandedRows = {};
+    todosPendientes: any[] = [];
 
     sedeFilt?: number;
      prestamos: any[] = [];
@@ -244,7 +256,8 @@ export class PrestamoBibliotecaVirtual implements OnInit{
           .listarPendientes(id)
           .subscribe({
             next: resp => {
-              this.data = resp.data;
+              this.todosPendientes = resp.data;
+              this.aplicarFiltros();
               this.loading = false;
             },
             error: () => {
@@ -291,9 +304,10 @@ export class PrestamoBibliotecaVirtual implements OnInit{
       }
 
     limpiar() {
-        this.palabraClave = "";  // Resetea el campo de búsqueda
-        this.sedeFiltro = this.dataSede[0];
-        this.opcionFiltro = this.filtros[0];
+        this.palabraClave = '';
+        this.tipoFiltro = this.dataTipo[0];
+        this.campoBusqueda = 'nombre';
+        this.aplicarFiltros();
     }
 
     onGlobalFilter(table: Table, event: Event) {
@@ -303,6 +317,26 @@ export class PrestamoBibliotecaVirtual implements OnInit{
     clear(table: Table) {
         table.clear();
         this.filter.nativeElement.value = '';
+    }
+
+    aplicarFiltros() {
+        const termino = this.palabraClave?.trim().toLowerCase() || '';
+        const tipoId = this.tipoFiltro?.id ?? 0;
+        this.data = this.todosPendientes.filter(item => {
+            const coincideTipo = !tipoId || item.tipo?.id === tipoId || item.tipoId === tipoId;
+            const valorBusqueda = (() => {
+                switch (this.campoBusqueda) {
+                    case 'email':
+                        return item.correoUsuario || item.email || '';
+                    case 'documento':
+                        return item.documentoUsuario || item.numeroDocumento || '';
+                    default:
+                        return item.usuarioPrestamo || item.usuario || '';
+                }
+            })()?.toLowerCase() || '';
+            const coincideTexto = !termino || valorBusqueda.includes(termino);
+            return coincideTipo && coincideTexto;
+        });
     }
 
 
@@ -339,33 +373,9 @@ export class PrestamoBibliotecaVirtual implements OnInit{
                 }
             );
     }
-      cargarPendientes() {
-        this.loading = true;
-        this.prestamosService.getPendientes()
-          .subscribe({
-            next: (res: any) => {
-              if (res.status === "0") {
-                this.data = res.data;
-              } else {
-                this.messageService.add({
-                  severity: 'warn',
-                  detail: 'No hay préstamos por aprobar.'
-                });
-              }
-            },
-            error: err => {
-              this.messageService.add({
-                severity: 'error',
-                detail: 'Error al cargar pendientes.'
-              });
-            }
-          })
-          .add(() => this.loading = false);
-      }
 
-      /** Opcional: renombra el botón para que llame a cargarPendientes() */
       listar() {
-        this.cargarPendientes();
+        this.aplicarFiltros();
       }
     cambiarEstadoRegistro(objeto: Ejemplar) {
         let estado = "";
