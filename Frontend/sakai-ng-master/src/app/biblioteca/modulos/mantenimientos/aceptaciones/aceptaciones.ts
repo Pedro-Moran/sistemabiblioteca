@@ -502,8 +502,49 @@ aceptarDetalle(detalle: any) {
       this.modal.openModal(item);
     }
 
-  verDetalle(objeto:any){
-    this.modalDetalle.openModal(objeto);
+  verDetalle(objeto: any) {
+    if (!objeto?.id) {
+      this.modalDetalle.openModal(objeto);
+      return;
+    }
+
+    this.loading = true;
+    this.materialBibliograficoService.get(objeto.id).subscribe({
+      next: (res: any) => {
+        const detalle = {
+          ...res,
+          codigoLocalizacion: res?.codigoLocalizacion || res?.codigo,
+          autor:
+            res?.autorPersonal ||
+            res?.autorSecundario ||
+            res?.autorInstitucional ||
+            '',
+          editorial:
+            res?.editorialPublicacion || res?.editorial?.descripcion || '',
+          paginas: res?.numeroPaginas,
+          paisCiudad: [res?.pais?.descripcion, res?.ciudad?.descripcion]
+            .filter(Boolean)
+            .join(' / '),
+          anioPublicacion: res?.anioPublicacion,
+          isbn: res?.isbn,
+          edicion: res?.edicion,
+          reimpresion: res?.reimpresion,
+          temas: res?.descriptor,
+          notaContenido: res?.notaContenido,
+          notaGeneral: res?.notaGeneral,
+        };
+        this.modalDetalle.openModal(detalle);
+        this.loading = false;
+      },
+      error: () => {
+        this.loading = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo obtener la ficha bibliográfica',
+        });
+      },
+    });
   }
 
   irAutorizacion(detalle: any): void {
