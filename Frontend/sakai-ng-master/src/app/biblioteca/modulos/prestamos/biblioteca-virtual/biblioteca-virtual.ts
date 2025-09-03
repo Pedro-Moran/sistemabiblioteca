@@ -107,7 +107,7 @@ import { ModalRegularizarComponent } from './modal-regularizar';
                         [expandedRowKeys]="expandedRows" (onRowExpand)="onRowExpand($event)" (onRowCollapse)="onRowCollapse($event)"
                         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
                         [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [rowHover]="true" styleClass="p-datatable-gridlines" [paginator]="true"
-                        [globalFilterFields]="['id','usuario','nombreEquipo','numeroEquipo','ip','estado.descripcion','fechaPrestamo']" responsiveLayout="scroll">
+                        [globalFilterFields]="['id','nombreUsuario','usuario','codigoUsuario','nombreEquipo','numeroEquipo','ip','estado.descripcion','fechaPrestamo']" responsiveLayout="scroll">
                         <ng-template pTemplate="caption">
 
                        <div class="flex items-center justify-between">
@@ -121,7 +121,7 @@ import { ModalRegularizarComponent } from './modal-regularizar';
                             <ng-template pTemplate="header">
                                 <tr>
                                  <th ></th>
-                                    <th pSortableColumn="nombres" style="min-width:200px">Usuario<p-sortIcon field="nombres"></p-sortIcon></th>
+                                    <th pSortableColumn="nombreUsuario" style="min-width:200px">Usuario<p-sortIcon field="nombreUsuario"></p-sortIcon></th>
                                     <th pSortableColumn="nombreEquipo"  style="width: 4rem">Equipo<p-sortIcon field="nombreEquipo"></p-sortIcon></th>
                                     <th pSortableColumn="numeroEquipo"   style="width: 4rem">N&uacute;mero<p-sortIcon field="numeroEquipo"></p-sortIcon></th>
                                     <th pSortableColumn="ip" style="width: 8rem">Dirección IP<p-sortIcon field="ip"></p-sortIcon></th>
@@ -139,7 +139,7 @@ import { ModalRegularizarComponent } from './modal-regularizar';
                                 <!--<img [src]="objeto.foto" [alt]="objeto.nombres" width="50" class="shadow-lg" />-->
 
                                     </td>
-                                <td>{{objeto.usuarioPrestamo}}
+                                <td>{{objeto.nombreUsuario || objeto.usuario}}
                                     </td>
                                     <td>
                                         {{objeto.equipo?.nombreEquipo}}
@@ -219,6 +219,7 @@ export class PrestamoBibliotecaVirtual implements OnInit{
     campoBusqueda: string = 'nombre';
     expandedRows = {};
     todosPendientes: any[] = [];
+    usuarioCache = new Map<string, string>();
 
     sedeFilt?: number;
      prestamos: any[] = [];
@@ -257,8 +258,11 @@ export class PrestamoBibliotecaVirtual implements OnInit{
           .subscribe({
             next: resp => {
               this.todosPendientes = resp.data;
-              this.aplicarFiltros();
-              this.loading = false;
+              this.completarNombres(this.todosPendientes)
+                .finally(() => {
+                  this.aplicarFiltros();
+                  this.loading = false;
+                });
             },
             error: () => {
               this.messageService.add({
@@ -269,6 +273,31 @@ export class PrestamoBibliotecaVirtual implements OnInit{
             }
           });
       }
+
+    private async completarNombres(prestamos: any[]): Promise<void> {
+        const codigos = Array.from(new Set(
+            prestamos.map((p: any) => p.codigoUsuario).filter((c: string) => c && !this.usuarioCache.has(c))
+        ));
+        const promesas = codigos.map(async codigo => {
+            const usuarios = await this.materialBibliograficoService.listarUsuarios(codigo).toPromise();
+            const u = usuarios?.[0];
+            const nombre = u
+                ? (
+                    [u.apellidoPaterno, u.apellidoMaterno, u.nombreUsuario || u.nombres]
+                        .filter(Boolean)
+                        .join(' ')
+                        .trim() || u.displayname || ''
+                  )
+                : '';
+            this.usuarioCache.set(codigo, nombre);
+        });
+        await Promise.all(promesas);
+        prestamos.forEach(p => {
+            if (!p.nombreUsuario) {
+                p.nombreUsuario = this.usuarioCache.get(p.codigoUsuario) || '';
+            }
+        });
+    }
     async ListaTipo() {
         try {
           const result: any = await this.prestamosService.api_prestamos_tipos('conf/tipo-lista').toPromise();
@@ -331,7 +360,7 @@ export class PrestamoBibliotecaVirtual implements OnInit{
                     case 'documento':
                         return item.documentoUsuario || item.numeroDocumento || '';
                     default:
-                        return item.usuarioPrestamo || item.usuario || '';
+                        return item.nombreUsuario || item.usuario || item.codigoUsuario || '';
                 }
             })()?.toLowerCase() || '';
             const coincideTexto = !termino || valorBusqueda.includes(termino);
