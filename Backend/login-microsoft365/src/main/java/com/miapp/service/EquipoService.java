@@ -50,9 +50,9 @@ public class EquipoService {
         equipoRepository.deleteById(id);
     }
 
-    // Listado completo
-    public List<Equipo> listarEquipos() {
-        return equipoRepository.findAll();
+    // Listado completo excluyendo equipos "EN PROCESO" con opción a filtrar por discapacidad
+    public List<Equipo> listarEquipos(Boolean discapacidad) {
+        return listWithoutEnProceso(discapacidad);
     }
 
     // Filtrado por sede
@@ -78,7 +78,13 @@ public class EquipoService {
         return equipoRepository.findById(id);
     }
 
-    public List<Equipo> filtrarPorSedeExcluyendoEnProceso(Long idSede) {
+    public List<Equipo> filtrarPorSedeExcluyendoEnProceso(Long idSede, Boolean discapacidad) {
+        if (Boolean.TRUE.equals(discapacidad)) {
+            return equipoRepository.findBySede_IdAndEstado_DescripcionNotIgnoreCaseAndEquipoDiscapacidad(idSede, "EN PROCESO", true);
+        }
+        if (Boolean.FALSE.equals(discapacidad)) {
+            return equipoRepository.findBySedeIdAndEstadoDescripcionNotIgnoreCaseAndEquipoDiscapacidadFalseOrNull(idSede, "EN PROCESO");
+        }
         return equipoRepository.findBySede_IdAndEstado_DescripcionNotIgnoreCase(idSede, "EN PROCESO");
     }
 
@@ -87,8 +93,14 @@ public class EquipoService {
         return equipoRepository.findByEstado_DescripcionIgnoreCase("EN PROCESO");
     }
 
-    // Lista los equipos cuyo estado NO sea "EN PROCESO"
-    public List<Equipo> listWithoutEnProceso() {
+    // Lista los equipos cuyo estado NO sea "EN PROCESO", con opción a filtrar por discapacidad
+    public List<Equipo> listWithoutEnProceso(Boolean discapacidad) {
+        if (Boolean.TRUE.equals(discapacidad)) {
+            return equipoRepository.findByEstado_DescripcionNotIgnoreCaseAndEquipoDiscapacidad("EN PROCESO", true);
+        }
+        if (Boolean.FALSE.equals(discapacidad)) {
+            return equipoRepository.findByEstadoDescripcionNotIgnoreCaseAndEquipoDiscapacidadFalseOrNull("EN PROCESO");
+        }
         return equipoRepository.findByEstado_DescripcionNotIgnoreCase("EN PROCESO");
     }
 

@@ -274,11 +274,23 @@ export class FormEquipo implements OnInit, OnChanges {
             maxHoras: equipo.maxHoras ?? null
         });
     }
-    /** Convierte un string "HH:mm" a un objeto Date (solo para p-calendar timeOnly) */
-    private stringToDate(hhmm: string): Date {
-        const parts = hhmm.split(':');
+    /** Convierte un valor de hora a objeto Date (soporta "HH:mm", "HH:mm:ss" o número) */
+    private stringToDate(time: string | number): Date | null {
+        if (time === null || time === undefined) {
+            return null;
+        }
         const d = new Date();
-        d.setHours(+parts[0], +parts[1], 0, 0);
+        if (typeof time === 'number') {
+            d.setHours(time, 0, 0, 0);
+            return d;
+        }
+        const parts = time.split(':');
+        const hours = parseInt(parts[0], 10);
+        const minutes = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+        if (isNaN(hours) || isNaN(minutes)) {
+            return null;
+        }
+        d.setHours(hours, minutes, 0, 0);
         return d;
     }
 }

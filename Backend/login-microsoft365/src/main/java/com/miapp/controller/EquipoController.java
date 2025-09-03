@@ -69,14 +69,14 @@ public class EquipoController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<?> listarEquipos() {
-        List<Equipo> lista = equipoService.listarEquipos();
+    public ResponseEntity<?> listarEquipos(@RequestParam(required = false) Boolean discapacidad) {
+        List<Equipo> lista = equipoService.listarEquipos(discapacidad);
         return ResponseEntity.ok(Map.of("status", 0, "data", lista));
     }
 
     @GetMapping("/filter")
-    public ResponseEntity<?> filtrarPorSede(@RequestParam Long sedeId) {
-        List<Equipo> lista = equipoService.filtrarPorSedeExcluyendoEnProceso(sedeId);
+    public ResponseEntity<?> filtrarPorSede(@RequestParam Long sedeId, @RequestParam(required = false) Boolean discapacidad) {
+        List<Equipo> lista = equipoService.filtrarPorSedeExcluyendoEnProceso(sedeId, discapacidad);
         return ResponseEntity.ok(Map.of("status", 0, "data", lista));
     }
 
@@ -120,8 +120,8 @@ public class EquipoController {
 
     // Endpoint que lista equipos sin el estado "EN PROCESO"
     @GetMapping("/listWithoutEnProceso")
-    public ResponseEntity<?> listWithoutEnProceso() {
-        List<Equipo> lista = equipoService.listWithoutEnProceso();
+    public ResponseEntity<?> listWithoutEnProceso(@RequestParam(required = false) Boolean discapacidad) {
+        List<Equipo> lista = equipoService.listWithoutEnProceso(discapacidad);
         return ResponseEntity.ok(Map.of("status", 0, "data", lista));
     }
 
