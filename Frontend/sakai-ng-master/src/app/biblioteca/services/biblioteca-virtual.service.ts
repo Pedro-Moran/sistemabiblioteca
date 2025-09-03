@@ -87,12 +87,18 @@ export class BibliotecaVirtualService {
         );
     }
 
-  listarPendientes(sedeId?: number) {
-    let url = `${environment.apiUrl}/api/prestamos/pendientes`;
-      if (sedeId && sedeId > 0) {
-        url += `?sedeId=${sedeId}`;
-      }
-      return this.http.get<{status:string,data:any[]}>(url);
+  listarPendientes(sedeId?: number, discapacidad?: boolean) {
+    let params = new HttpParams();
+    if (sedeId && sedeId > 0) {
+      params = params.set('sedeId', sedeId);
+    }
+    if (discapacidad !== undefined) {
+      params = params.set('discapacidad', discapacidad);
+    }
+    return this.http.get<{status:string,data:any[]}>(
+      `${environment.apiUrl}/api/prestamos/pendientes`,
+      { params }
+    );
   }
 
   listarDevoluciones(sedeId?: number) {
