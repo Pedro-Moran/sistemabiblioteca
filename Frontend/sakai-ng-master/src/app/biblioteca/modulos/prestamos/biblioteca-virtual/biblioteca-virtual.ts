@@ -47,7 +47,7 @@ import { ModalRegularizarComponent } from './modal-regularizar';
 
             <div class="flex flex-col grow basis-0 gap-2">
                 <label for="tipo" class="block text-sm font-medium">Tipo</label>
-                <p-select [(ngModel)]="tipoFiltro" [options]="dataTipo" optionLabel="descripcion" placeholder="Seleccionar" />
+                <p-select [(ngModel)]="tipoFiltro" [options]="dataTipo" optionLabel="descripcion" placeholder="Seleccionar" (ngModelChange)="listar()" />
             </div>
 
             <div class="flex flex-col grow basis-0 gap-2">
@@ -60,11 +60,17 @@ import { ModalRegularizarComponent } from './modal-regularizar';
                 <input [(ngModel)]="palabraClave" pInputText id="palabra-clave" type="text" placeholder="Palabra clave" />
             </div>
 
-            <!-- Contenedor del Checkbox alineado -->
+            <!-- Filtro por discapacidad -->
             <div class="flex flex-col grow basis-0 gap-2">
                 <label class="block text-sm font-medium invisible">Placeholder</label>
                 <div class="flex items-center gap-2">
-                    <p-checkbox id="checkDiscapacidad" name="option" value="1"></p-checkbox>
+                    <p-checkbox
+                        id="checkDiscapacidad"
+                        name="option"
+                        [(ngModel)]="discapacidadFiltro"
+                        [binary]="true"
+                        (onChange)="listar()"
+                    ></p-checkbox>
                     <label for="checkDiscapacidad" class="text-sm">¿Equipos con discapacidad?</label>
                 </div>
             </div>
@@ -211,15 +217,16 @@ export class PrestamoBibliotecaVirtual implements OnInit{
     opcionFiltro: ClaseGeneral = new ClaseGeneral();
     palabra: any;
     palabraClave: string = "";
-    opcionesBusqueda = [
+    opcionesBusqueda: { label: string; value: string }[] = [
       { label: 'Nombres', value: 'nombre' },
       { label: 'Email', value: 'email' },
       { label: 'N° Documento', value: 'documento' }
     ];
-    campoBusqueda: string = 'nombre';
+    public campoBusqueda: string = 'nombre';
+    discapacidadFiltro: boolean = false;
     expandedRows = {};
     todosPendientes: any[] = [];
-    usuarioCache = new Map<string, string>();
+    usuarioCache = new Map<string, { nombre: string; correo: string; documento: string }>();
 
     sedeFilt?: number;
      prestamos: any[] = [];
@@ -252,9 +259,10 @@ export class PrestamoBibliotecaVirtual implements OnInit{
 
     loadPendientes() {
         const id = this.sedeFiltro?.id ?? 0;
+        const disc = this.discapacidadFiltro ? true : undefined;
         this.loading = true;
         this.bibliotecaVirtualService
-          .listarPendientes(id)
+          .listarPendientes(id, disc)
           .subscribe({
             next: resp => {
               this.todosPendientes = resp.data;
@@ -275,26 +283,47 @@ export class PrestamoBibliotecaVirtual implements OnInit{
       }
 
     private async completarNombres(prestamos: any[]): Promise<void> {
-        const codigos = Array.from(new Set(
-            prestamos.map((p: any) => p.codigoUsuario).filter((c: string) => c && !this.usuarioCache.has(c))
-        ));
+        const codigos = Array.from(
+            new Set(
+                prestamos
+                    .map((p: any) => p.codigoUsuario)
+                    .filter((c: string) => c && !this.usuarioCache.has(c))
+            )
+        );
+
         const promesas = codigos.map(async codigo => {
-            const usuarios = await this.materialBibliograficoService.listarUsuarios(codigo).toPromise();
+            const usuarios = await this.materialBibliograficoService
+                .listarUsuarios(codigo)
+                .toPromise();
             const u = usuarios?.[0];
             const nombre = u
                 ? (
-                    [u.apellidoPaterno, u.apellidoMaterno, u.nombreUsuario || u.nombres]
-                        .filter(Boolean)
-                        .join(' ')
-                        .trim() || u.displayname || ''
+                      [u.apellidoPaterno, u.apellidoMaterno, u.nombreUsuario || u.nombres]
+                          .filter(Boolean)
+                          .join(' ')
+                          .trim() || u.displayname || ''
                   )
                 : '';
-            this.usuarioCache.set(codigo, nombre);
+            const correo = u?.email || '';
+            const documento = String(
+                u?.numerodocumento || u?.numDocumento || u?.numeroDocumento || ''
+            );
+            this.usuarioCache.set(codigo, { nombre, correo, documento });
         });
         await Promise.all(promesas);
+
         prestamos.forEach(p => {
-            if (!p.nombreUsuario) {
-                p.nombreUsuario = this.usuarioCache.get(p.codigoUsuario) || '';
+            const info = this.usuarioCache.get(p.codigoUsuario);
+            if (info) {
+                if (!p.nombreUsuario) {
+                    p.nombreUsuario = info.nombre;
+                }
+                if (!p.correoUsuario) {
+                    p.correoUsuario = info.correo;
+                }
+                if (!p.documentoUsuario && info.documento) {
+                    p.documentoUsuario = info.documento;
+                }
             }
         });
     }
@@ -302,10 +331,11 @@ export class PrestamoBibliotecaVirtual implements OnInit{
         try {
           const result: any = await this.prestamosService.api_prestamos_tipos('conf/tipo-lista').toPromise();
           if (result.status === "0") {
-            this.dataTipo = result.data;
-            let tipos = [{ id: 0, descripcion: 'TODOS', activo: true, estado: 1 }, ...this.dataTipo];
-
-            this.dataTipo = tipos;
+            this.dataTipo = result.data.map((t: any) => ({
+              ...t,
+              codigo: this.mapDescripcionTipoToCodigo(t.descripcion)
+            }));
+            this.dataTipo = [{ id: 0, descripcion: 'TODOS', activo: true, codigo: null }, ...this.dataTipo];
             this.tipoFiltro = this.dataTipo[0];
           }
         } catch (error) {
@@ -336,7 +366,8 @@ export class PrestamoBibliotecaVirtual implements OnInit{
         this.palabraClave = '';
         this.tipoFiltro = this.dataTipo[0];
         this.campoBusqueda = 'nombre';
-        this.aplicarFiltros();
+        this.discapacidadFiltro = false;
+        this.listar();
     }
 
     onGlobalFilter(table: Table, event: Event) {
@@ -350,22 +381,63 @@ export class PrestamoBibliotecaVirtual implements OnInit{
 
     aplicarFiltros() {
         const termino = this.palabraClave?.trim().toLowerCase() || '';
-        const tipoId = this.tipoFiltro?.id ?? 0;
+        const tipoCodigo = this.tipoFiltro?.codigo || null;
+        const requiereDiscapacidad = this.discapacidadFiltro;
         this.data = this.todosPendientes.filter(item => {
-            const coincideTipo = !tipoId || item.tipo?.id === tipoId || item.tipoId === tipoId;
+            const itemCodigo = this.mapDescripcionTipoToCodigo(item.tipoPrestamo);
+            const coincideTipo = !tipoCodigo || itemCodigo === tipoCodigo;
             const valorBusqueda = (() => {
                 switch (this.campoBusqueda) {
                     case 'email':
-                        return item.correoUsuario || item.email || '';
+                        return String(item.correoUsuario || item.email || '');
                     case 'documento':
-                        return item.documentoUsuario || item.numeroDocumento || '';
+                        return String(item.documentoUsuario || item.numeroDocumento || '');
                     default:
-                        return item.nombreUsuario || item.usuario || item.codigoUsuario || '';
+                        return String(item.nombreUsuario || item.usuario || item.codigoUsuario || '');
                 }
-            })()?.toLowerCase() || '';
+            })().toLowerCase();
             const coincideTexto = !termino || valorBusqueda.includes(termino);
-            return coincideTipo && coincideTexto;
+            const coincideDiscapacidad = !requiereDiscapacidad || this.tieneDiscapacidad(item);
+            return coincideTipo && coincideTexto && coincideDiscapacidad;
         });
+    }
+
+    private tieneDiscapacidad(item: any): boolean {
+        const val =
+            item?.equipo?.equipoDiscapacidad ??
+            item?.equipo?.discapacidad ??
+            item?.equipoDiscapacidad ??
+            item?.discapacidad;
+        if (typeof val === 'boolean') {
+            return val;
+        }
+        if (val === undefined || val === null) {
+            return false;
+        }
+        const texto = String(val).trim().toUpperCase();
+        return ['1', 'S', 'SI', 'TRUE'].includes(texto);
+    }
+
+    private mapDescripcionTipoToCodigo(desc?: string | null): string | null {
+        if (!desc) return null;
+        const normalized = desc
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .trim().toUpperCase().replace(/\s+/g, '_');
+        switch (normalized) {
+            case 'EN_SALA':
+            case 'PRESTAMO_EN_SALA':
+                return 'PRESTAMO_EN_SALA';
+            case 'A_DOMICILIO':
+            case 'PRESTAMO_A_DOMICILIO':
+                return 'PRESTAMO_A_DOMICILIO';
+            case 'SALA_Y_DOMICILIO':
+            case 'EN_SALA_DOMICILIO':
+            case 'PRESTAMO_SALA_DOMICILIO':
+            case 'SALAYDOMICILIO':
+                return 'PRESTAMO_SALA_DOMICILIO';
+            default:
+                return normalized;
+        }
     }
 
 
@@ -404,7 +476,7 @@ export class PrestamoBibliotecaVirtual implements OnInit{
     }
 
       listar() {
-        this.aplicarFiltros();
+        this.loadPendientes();
       }
     cambiarEstadoRegistro(objeto: Ejemplar) {
         let estado = "";

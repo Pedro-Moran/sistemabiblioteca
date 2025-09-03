@@ -16,6 +16,7 @@ export class Usuario {
     tipodocumento?: ClaseGeneral;
     idtipodocumento?: number;
     numerodocumento?: string;
+    numeroDocumento?: string;
     nombres?: string;
     email?: string;
     login?: string;
@@ -38,6 +39,7 @@ export class Usuario {
         this.sede=new ClaseGeneral();
         this.tipodocumento=new ClaseGeneral();
         this.numerodocumento='';
+        this.numeroDocumento='';
         this.nombres='';
         this.apellidoPaterno='';
         this.apellidoMaterno='';
