@@ -503,7 +503,7 @@ aceptarDetalle(detalle: any) {
     }
 
   verDetalle(objeto:any){
-    this.modalDetalle.openModal();
+    this.modalDetalle.openModal(objeto);
   }
 
   irAutorizacion(detalle: any): void {
