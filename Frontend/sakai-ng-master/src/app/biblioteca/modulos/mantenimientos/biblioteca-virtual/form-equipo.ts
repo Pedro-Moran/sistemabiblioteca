@@ -189,11 +189,13 @@ export class FormEquipo implements OnInit, OnChanges {
     }
     guardar(): void {
         this.loading = true;
-        const equipo: Equipo = this.form.value; // Extraemos los datos del formulario
-        const materialCompleto = {
-            equipo: this.form.value
+        const valores = this.form.value;
+        const equipo: Equipo = {
+            ...valores,
+            horaInicio: this.formatTime(valores.horaInicio as Date),
+            horaFin: this.formatTime(valores.horaFin as Date)
         };
-        console.log('ver equipo: ' + materialCompleto.equipo.id);
+        console.log('ver equipo: ' + equipo.id);
         // Verificamos si el id existe y es mayor a 0
         if (equipo.id && equipo.id > 0) {
             // Actualizar: Llamamos al método de actualización
@@ -256,6 +258,12 @@ export class FormEquipo implements OnInit, OnChanges {
                 }
             );
         }
+    }
+
+    private formatTime(date: Date): string {
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
     }
 
     setData(equipo: Equipo): void {
