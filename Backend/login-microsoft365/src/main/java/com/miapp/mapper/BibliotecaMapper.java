@@ -23,6 +23,7 @@ public class BibliotecaMapper {
         b.setTraductor(dto.getTraductor());
         b.setDirector(dto.getDirector());
         b.setCompilador(dto.getCompilador());
+        b.setCoordinador(dto.getCoordinador());
         b.setProductor(dto.getProductor());
         b.setTitulo(dto.getTitulo());
         b.setTituloAnterior(dto.getTituloAnterior());
@@ -80,7 +81,7 @@ public class BibliotecaMapper {
         }
         if (dto.getPaisId() != null) {
             Pais pais = new Pais();
-            pais.setCodigoPais(dto.getPaisId());
+            pais.setPaisId(dto.getPaisId());
             b.setPais(pais);
         }
         if (dto.getCiudadCodigo() != null) {
@@ -117,6 +118,7 @@ public class BibliotecaMapper {
         dto.setTraductor(b.getTraductor());
         dto.setDirector(b.getDirector());
         dto.setCompilador(b.getCompilador());
+        dto.setCoordinador(b.getCoordinador());
         dto.setProductor(b.getProductor());
         dto.setTitulo(b.getTitulo());
         dto.setTituloAnterior(b.getTituloAnterior());
@@ -169,7 +171,7 @@ public class BibliotecaMapper {
         if (b.getTipoBiblioteca() != null) dto.setTipoBibliotecaId(b.getTipoBiblioteca().getId());
         if (b.getIdioma()         != null) dto.setIdiomaId(b.getIdioma().getId());
         if (b.getPais() != null) {
-            dto.setPaisId(b.getPais().getCodigoPais());
+            dto.setPaisId(b.getPais().getPaisId());
             dto.setPais(new com.miapp.model.dto.PaisDTO(
                     b.getPais().getCodigoPais(),
                     b.getPais().getNombrePais()
