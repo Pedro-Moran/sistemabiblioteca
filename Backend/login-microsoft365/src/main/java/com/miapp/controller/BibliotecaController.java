@@ -177,8 +177,11 @@ public class BibliotecaController {
     }
 
     @GetMapping("/detalles/reservados")
-    public ResponseEntity<?> listDetallesReservados() {
-        List<DetalleBibliotecaDTO> dtos = detalleService.findDetallesReservados();
+    public ResponseEntity<?> listDetallesReservados(
+            @RequestParam(value = "sede", required = false) Long sedeId,
+            @RequestParam(value = "tipo", required = false) String tipoPrestamo
+    ) {
+        List<DetalleBibliotecaDTO> dtos = detalleService.findDetallesReservados(sedeId, tipoPrestamo);
         return ResponseEntity.ok(Map.of("status", 0, "data", dtos));
     }
 

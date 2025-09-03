@@ -622,17 +622,6 @@ listarUsuariosOcurrencia(id: number): Observable<OcurrenciaUsuario[]> {
     );
   }
 
-    listarDetallesReservados(): Observable<DetalleBibliotecaDTO[]> {
-      const headers = new HttpHeaders()
-        .set('Authorization', `Bearer ${this.authService.getToken()}`);
-      return this.http
-        .get<{ status: number; data: DetalleBibliotecaDTO[] }>(
-          `${this.apiUrl}/api/biblioteca/detalles/reservados`,
-          { headers }
-        )
-        .pipe(map(resp => resp.data));
-    }
-
   listarDetallesPorBiblioteca(
     bibliotecaId: number,
     soloEnProceso: boolean = false
@@ -667,18 +656,29 @@ listarUsuariosOcurrencia(id: number): Observable<OcurrenciaUsuario[]> {
       .pipe(map(resp => resp.data));
   }
 
-  listarTodosDetallesReservados(): Observable<DetalleBibliotecaDTO[]> {
-      const headers = new HttpHeaders().set(
-        'Authorization',
-        `Bearer ${this.authService.getToken()}`
-      );
+  listarDetallesReservados(
+    sedeId?: number,
+    tipoPrestamo?: string
+  ): Observable<DetalleBibliotecaDTO[]> {
+    const headers = new HttpHeaders().set(
+      'Authorization',
+      `Bearer ${this.authService.getToken()}`
+    );
 
-      return this.http
-        .get<{ status: number; data: DetalleBibliotecaDTO[] }>(
-          `${this.apiUrl}/api/biblioteca/detalles/reservados`,
-          { headers }
-        )
-        .pipe(map(resp => resp.data));
+    let params = new HttpParams();
+    if (sedeId != null) {
+      params = params.set('sede', sedeId.toString());
+    }
+    if (tipoPrestamo) {
+      params = params.set('tipo', tipoPrestamo);
+    }
+
+    return this.http
+      .get<{ status: number; data: DetalleBibliotecaDTO[] }>(
+        `${this.apiUrl}/api/biblioteca/detalles/reservados`,
+        { headers, params }
+      )
+      .pipe(map(resp => resp.data));
   }
 
   /** Lista los ejemplares prestados (pendientes de devolución) */

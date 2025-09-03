@@ -3,6 +3,7 @@ package com.miapp.service;
 
 import com.miapp.mapper.BibliotecaMapper;
 import com.miapp.model.DetalleBiblioteca;
+import com.miapp.model.Usuario;
 import com.miapp.model.dto.CambioEstadoDetalleRequest;
 import com.miapp.model.dto.DetalleBibliotecaDTO;
 import com.miapp.model.dto.ResponseDTO;
@@ -12,7 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.AbstractMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,24 +38,66 @@ public class DetalleBibliotecaService {
                 .orElseGet(() -> new ResponseDTO(1, "Detalle no encontrado",null));
     }
 
-    public List<DetalleBibliotecaDTO> findDetallesReservados() {
+    public List<DetalleBibliotecaDTO> findDetallesReservados(Long sedeId, String tipoPrestamo) {
         List<DetalleBiblioteca> lista = detalleBibliotecaRepository.findByIdEstado(3L);
+
         return lista.stream()
-                .map(detalle -> {
-                    DetalleBibliotecaDTO dto = mapper.toDetalleDto(detalle);
-                    usuarioRepository.findByLoginIgnoreCase(detalle.getCodigoUsuario())
-                            .ifPresent(u -> {
-                                String nombres = String.format("%s %s %s",
-                                        u.getApellidoPaterno() != null ? u.getApellidoPaterno() : "",
-                                        u.getApellidoMaterno() != null ? u.getApellidoMaterno() : "",
-                                        u.getNombreUsuario() != null ? u.getNombreUsuario() : "").trim();
-                                dto.setNombreUsuario(nombres);
-                                dto.setDocumentoUsuario(u.getNumDocumento() != null ? String.valueOf(u.getNumDocumento()) : null);
-                                dto.setCorreoUsuario(u.getEmail());
-                            });
+                .map(detalle -> new AbstractMap.SimpleEntry<>(
+                        detalle,
+                        usuarioRepository.findByLoginIgnoreCase(detalle.getCodigoUsuario())
+                ))
+                .filter(entry -> {
+                    DetalleBiblioteca det = entry.getKey();
+                    Optional<Usuario> userOpt = entry.getValue();
+
+                    if (sedeId != null) {
+                        if (userOpt.isEmpty() || userOpt.get().getIdSede() == null || !userOpt.get().getIdSede().equals(sedeId)) {
+                            return false;
+                        }
+                    }
+
+                    if (tipoPrestamo != null) {
+                        String detalleTipo = normalizeTipoPrestamo(det.getTipoPrestamo());
+                        String filtroTipo = normalizeTipoPrestamo(tipoPrestamo);
+                        if (detalleTipo == null || !detalleTipo.equalsIgnoreCase(filtroTipo)) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                })
+                .map(entry -> {
+                    DetalleBiblioteca det = entry.getKey();
+                    Optional<Usuario> userOpt = entry.getValue();
+                    DetalleBibliotecaDTO dto = mapper.toDetalleDto(det);
+                    userOpt.ifPresent(u -> {
+                        String nombres = String.format("%s %s %s",
+                                u.getApellidoPaterno() != null ? u.getApellidoPaterno() : "",
+                                u.getApellidoMaterno() != null ? u.getApellidoMaterno() : "",
+                                u.getNombreUsuario() != null ? u.getNombreUsuario() : "").trim();
+                        dto.setNombreUsuario(nombres);
+                        dto.setDocumentoUsuario(u.getNumDocumento() != null ? String.valueOf(u.getNumDocumento()) : null);
+                        dto.setCorreoUsuario(u.getEmail());
+                    });
                     return dto;
                 })
                 .collect(Collectors.toList());
+    }
+
+    private String normalizeTipoPrestamo(String tipo) {
+        if (tipo == null) {
+            return null;
+        }
+
+        // Normalizamos el texto para evitar discrepancias por espacios o mayúsculas
+        String normalized = tipo.trim().toUpperCase().replace(' ', '_');
+
+        return switch (normalized) {
+            case "PRESTAMO_EN_SALA", "EN_SALA" -> "PRESTAMO_EN_SALA";
+            case "PRESTAMO_A_DOMICILIO", "A_DOMICILIO" -> "PRESTAMO_A_DOMICILIO";
+            case "PRESTAMO_SALA_DOMICILIO", "EN_SALA_DOMICILIO", "SALAYDOMICILIO", "SALA_Y_DOMICILIO" -> "PRESTAMO_SALA_DOMICILIO";
+            default -> normalized;
+        };
     }
 
     /** Devuelve los detalles en estado prestado (idEstado = 4) */
