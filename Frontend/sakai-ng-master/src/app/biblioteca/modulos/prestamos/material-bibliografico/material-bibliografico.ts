@@ -50,13 +50,13 @@ interface ReservaUsuario {
 
                         <div class="flex flex-col grow basis-0 gap-2">
                         <label for="sede" class="block text-sm font-medium">Sede</label>
-                        <p-select [(ngModel)]="sedeFiltro" [options]="dataSede" optionLabel="descripcion" placeholder="Seleccionar" />
+                        <p-select [(ngModel)]="sedeFiltro" [options]="dataSede" optionLabel="descripcion" placeholder="Seleccionar" (ngModelChange)="listar()" />
 
                         </div>
                         <div class="flex flex-col grow basis-0 gap-2">
 
                         <label for="sede" class="block text-sm font-medium">Tipo</label>
-                        <p-select [(ngModel)]="tipoFiltro" [options]="dataTipo" optionLabel="descripcion" placeholder="Seleccionar" />
+                        <p-select [(ngModel)]="tipoFiltro" [options]="dataTipo" optionLabel="descripcion" placeholder="Seleccionar" (ngModelChange)="listar()" />
 
                         </div>
                         <div class="flex flex-col grow basis-0 gap-2">
@@ -243,11 +243,13 @@ export class PrestamoMaterialBibliografico implements OnInit {
     ngOnInit(): void {
         this.ListaSede();
         this.ListaTipo();
-        this.cargarTodosDetallesReservados();
+        this.listar();
     }
   private cargarTodosDetallesReservados(): void {
+    const sedeId = this.sedeFiltro?.id && this.sedeFiltro.id !== 0 ? this.sedeFiltro.id : undefined;
+    const tipoCodigo = this.tipoFiltro?.codigo ? this.tipoFiltro.codigo : undefined;
     this.loading = true;
-    this.materialBibliograficoService.listarTodosDetallesReservados().subscribe({
+    this.materialBibliograficoService.listarDetallesReservados(sedeId, tipoCodigo).subscribe({
       next: (lista: DetalleBibliotecaDTO[]) => {
         this.todosDetallesReservados = lista;
         this.aplicarFiltros();
@@ -395,10 +397,13 @@ private agruparPorBiblioteca(
         try {
           const result: any = await this.prestamosService.api_prestamos_tipos('conf/tipo-lista').toPromise();
           if (result.status === "0") {
-            this.dataTipo = result.data;
-            let tipos = [{ id: 0, descripcion: 'TODOS', activo: true, estado: 1 }, ...this.dataTipo];
+            // Mapear las descripciones a los códigos usados por el backend
+            this.dataTipo = result.data.map((t: any) => ({
+              ...t,
+              codigo: this.mapDescripcionTipoToCodigo(t.descripcion)
+            }));
 
-            this.dataTipo = tipos;
+            this.dataTipo = [{ id: 0, descripcion: 'TODOS', activo: true, codigo: null }, ...this.dataTipo];
             this.tipoFiltro = this.dataTipo[0];
           }
         } catch (error) {
@@ -413,7 +418,7 @@ private agruparPorBiblioteca(
         this.sedeFiltro = this.dataSede[0];
         this.tipoFiltro = this.dataTipo[0];
         this.campoBusqueda = 'nombre';
-        this.aplicarFiltros();
+        this.listar();
     }
 
   onGlobalFilter(table: Table, event: Event) {
@@ -426,13 +431,9 @@ private agruparPorBiblioteca(
   }
 
   private aplicarFiltros(): void {
-    const sedeId = this.sedeFiltro?.id && this.sedeFiltro.id !== 0 ? this.sedeFiltro.id : null;
-    const tipoDesc = this.tipoFiltro?.id && this.tipoFiltro.id !== 0 ? this.tipoFiltro.descripcion : null;
     const termino = this.palabraClave?.trim().toLowerCase() || '';
 
     const filtrados = this.todosDetallesReservados.filter((det) => {
-      const sedeOk = !sedeId || det.codigoSede === sedeId;
-      const tipoOk = !tipoDesc || this.getTipoPrestamoDescripcion(det.tipoPrestamo) === tipoDesc;
       const valorBusqueda = (() => {
         switch (this.campoBusqueda) {
           case 'documento':
@@ -444,15 +445,15 @@ private agruparPorBiblioteca(
             return det.usuarioPrestamo ?? det.nombreUsuario;
         }
       })()?.toLowerCase() || '';
-      const termOk = !termino || valorBusqueda.includes(termino);
-      return sedeOk && tipoOk && termOk;
+      return !termino || valorBusqueda.includes(termino);
     });
 
     this.reservadosDetalle = this.agruparPorUsuario(filtrados);
   }
 
   getTipoPrestamoDescripcion(tipo?: string | null): string {
-    switch (tipo) {
+    const normalized = tipo ? tipo.trim().toUpperCase().replace(/\s+/g, '_') : '';
+    switch (normalized) {
       case 'PRESTAMO_EN_SALA':
       case 'EN_SALA':
         return 'En sala';
@@ -463,9 +464,30 @@ private agruparPorBiblioteca(
       case 'EN_SALA_DOMICILIO':
       case 'SALAYDOMICILIO':
       case 'SALA_Y_DOMICILIO':
-        return 'En sala y a domicilio';
+        return 'Sala y domicilio';
       default:
         return tipo ?? '';
+    }
+  }
+
+  private mapDescripcionTipoToCodigo(desc: string): string {
+    const normalized = desc
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .trim().toUpperCase().replace(/\s+/g, '_');
+    switch (normalized) {
+      case 'EN_SALA':
+      case 'PRESTAMO_EN_SALA':
+        return 'PRESTAMO_EN_SALA';
+      case 'A_DOMICILIO':
+      case 'PRESTAMO_A_DOMICILIO':
+        return 'PRESTAMO_A_DOMICILIO';
+      case 'SALA_Y_DOMICILIO':
+      case 'EN_SALA_DOMICILIO':
+      case 'PRESTAMO_SALA_DOMICILIO':
+      case 'SALAYDOMICILIO':
+        return 'PRESTAMO_SALA_DOMICILIO';
+      default:
+        return normalized;
     }
   }
 
@@ -506,7 +528,7 @@ private agruparPorBiblioteca(
             );
     }
     listar() {
-        this.aplicarFiltros();
+        this.cargarTodosDetallesReservados();
     }
     cambiarEstadoRegistro(objeto: Ejemplar) {
         let estado = "";
