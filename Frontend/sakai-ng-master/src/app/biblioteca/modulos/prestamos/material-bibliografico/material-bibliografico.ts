@@ -27,7 +27,12 @@ import { GrupoBiblioteca, BibliotecaResumen } from '../../../interfaces/material
 
 interface ReservaUsuario {
   codigoUsuario: string;
+  /** Apellidos y nombres del usuario */
   nombreUsuario: string;
+  /** Número de documento del usuario */
+  documentoUsuario?: string | null;
+  /** Correo electrónico del usuario */
+  correoUsuario?: string | null;
   tipoPrestamo: string | null;
   cantidad: number;
   detalles: DetalleBibliotecaDTO[];
@@ -55,8 +60,12 @@ interface ReservaUsuario {
 
                         </div>
                         <div class="flex flex-col grow basis-0 gap-2">
+                        <label for="tipo-busqueda" class="block text-sm font-medium">Buscar por</label>
+                        <p-select [(ngModel)]="campoBusqueda" [options]="opcionesBusqueda" optionLabel="label" optionValue="value" placeholder="Seleccionar" />
+                        </div>
+                        <div class="flex flex-col grow basis-0 gap-2">
                         <label for="palabra-clave" class="block text-sm font-medium">Palabra clave</label>
-                                <input [(ngModel)]="palabraClave"pInputText id="palabra-clave" type="text" placeholder="Palabra clave"/>
+                                <input [(ngModel)]="palabraClave" pInputText id="palabra-clave" type="text" placeholder="Palabra clave"/>
                         </div>
                         <div class="flex items-end">
             <button
@@ -215,6 +224,12 @@ export class PrestamoMaterialBibliografico implements OnInit {
     opcionFiltro: ClaseGeneral = new ClaseGeneral();
     palabra: any;
     palabraClave: string = "";
+    opcionesBusqueda = [
+      { label: 'Nombres', value: 'nombre' },
+      { label: 'N° Documento', value: 'documento' },
+      { label: 'Email', value: 'email' },
+    ];
+    campoBusqueda: string = 'nombre';
     expandedRows: { [key: string]: boolean } = {};
     reservadosDetalle: ReservaUsuario[] = [];
     grupos: GrupoBiblioteca[] = [];
@@ -344,11 +359,15 @@ private agruparPorBiblioteca(
 
     detalles.forEach(det => {
       const codigo = det.codigoUsuario ?? 'DESCONOCIDO';
-      const nombre = det.usuarioPrestamo ?? det.nombreUsuario ?? det.codigoUsuario ?? 'DESCONOCIDO';
+      const nombre = det.usuarioPrestamo ?? det.nombreUsuario ?? '';
+      const documento = det.documentoUsuario ?? null;
+      const correo = det.correoUsuario ?? null;
       if (!mapa.has(codigo)) {
         mapa.set(codigo, {
           codigoUsuario: codigo,
           nombreUsuario: nombre,
+          documentoUsuario: documento,
+          correoUsuario: correo,
           tipoPrestamo: det.tipoPrestamo ?? null,
           cantidad: 0,
           detalles: []
@@ -357,11 +376,15 @@ private agruparPorBiblioteca(
       const entry = mapa.get(codigo)!;
       entry.detalles.push(det);
       entry.cantidad = entry.detalles.length;
-      if (!entry.tipoPrestamo) {
-        entry.tipoPrestamo = det.tipoPrestamo ?? null;
-      }
-      if (!entry.nombreUsuario) {
+      entry.tipoPrestamo ??= det.tipoPrestamo ?? null;
+      if (!entry.nombreUsuario && nombre) {
         entry.nombreUsuario = nombre;
+      }
+      if (!entry.documentoUsuario && documento) {
+        entry.documentoUsuario = documento;
+      }
+      if (!entry.correoUsuario && correo) {
+        entry.correoUsuario = correo;
       }
     });
 
@@ -389,6 +412,7 @@ private agruparPorBiblioteca(
         this.palabraClave = "";  // Resetea el campo de búsqueda
         this.sedeFiltro = this.dataSede[0];
         this.tipoFiltro = this.dataTipo[0];
+        this.campoBusqueda = 'nombre';
         this.aplicarFiltros();
     }
 
@@ -409,15 +433,18 @@ private agruparPorBiblioteca(
     const filtrados = this.todosDetallesReservados.filter((det) => {
       const sedeOk = !sedeId || det.codigoSede === sedeId;
       const tipoOk = !tipoDesc || this.getTipoPrestamoDescripcion(det.tipoPrestamo) === tipoDesc;
-      const termOk =
-        !termino ||
-        [
-          det.usuarioPrestamo,
-          det.nombreUsuario,
-          det.codigoUsuario,
-          det.documentoUsuario,
-          det.correoUsuario,
-        ].some((v) => v?.toLowerCase().includes(termino));
+      const valorBusqueda = (() => {
+        switch (this.campoBusqueda) {
+          case 'documento':
+            return det.documentoUsuario;
+          case 'email':
+            return det.correoUsuario;
+          case 'nombre':
+          default:
+            return det.usuarioPrestamo ?? det.nombreUsuario;
+        }
+      })()?.toLowerCase() || '';
+      const termOk = !termino || valorBusqueda.includes(termino);
       return sedeOk && tipoOk && termOk;
     });
 

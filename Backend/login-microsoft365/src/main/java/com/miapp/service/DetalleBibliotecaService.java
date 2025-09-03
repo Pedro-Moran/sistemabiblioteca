@@ -7,6 +7,7 @@ import com.miapp.model.dto.CambioEstadoDetalleRequest;
 import com.miapp.model.dto.DetalleBibliotecaDTO;
 import com.miapp.model.dto.ResponseDTO;
 import com.miapp.repository.DetalleBibliotecaRepository;
+import com.miapp.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ public class DetalleBibliotecaService {
 
     private final DetalleBibliotecaRepository detalleBibliotecaRepository;
     private final BibliotecaMapper mapper;
+    private final UsuarioRepository usuarioRepository;
 
     @Transactional
     public ResponseDTO cambiarEstado(CambioEstadoDetalleRequest req) {
@@ -36,7 +38,20 @@ public class DetalleBibliotecaService {
     public List<DetalleBibliotecaDTO> findDetallesReservados() {
         List<DetalleBiblioteca> lista = detalleBibliotecaRepository.findByIdEstado(3L);
         return lista.stream()
-                .map(detalle -> mapper.toDetalleDto(detalle))
+                .map(detalle -> {
+                    DetalleBibliotecaDTO dto = mapper.toDetalleDto(detalle);
+                    usuarioRepository.findByLoginIgnoreCase(detalle.getCodigoUsuario())
+                            .ifPresent(u -> {
+                                String nombres = String.format("%s %s %s",
+                                        u.getApellidoPaterno() != null ? u.getApellidoPaterno() : "",
+                                        u.getApellidoMaterno() != null ? u.getApellidoMaterno() : "",
+                                        u.getNombreUsuario() != null ? u.getNombreUsuario() : "").trim();
+                                dto.setNombreUsuario(nombres);
+                                dto.setDocumentoUsuario(u.getNumDocumento() != null ? String.valueOf(u.getNumDocumento()) : null);
+                                dto.setCorreoUsuario(u.getEmail());
+                            });
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 

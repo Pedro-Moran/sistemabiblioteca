@@ -102,6 +102,12 @@ public class DetalleBibliotecaDTO {
     /** Nombre del usuario que reservó */
     private String nombreUsuario;
 
+    /** Número de documento del usuario */
+    private String documentoUsuario;
+
+    /** Correo electrónico del usuario */
+    private String correoUsuario;
+
     /** Fecha de la reserva */
     private String fechaReserva;
 }
