@@ -1,0 +1,29 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"tipo":{"id":1,"descripcion": "Base de datos virtual", "activo": true},
+        "titulo":"Titulo A",
+        "descripcion": "descripcion...", 
+        "link":"https://www.elsevier.com/connect/coronavirus-information-center?dgcid=_SD_banner",
+        "urlPortada":"https://upcover-shreethemes.vercel.app/static/media/02.4f217e19830043f478ff.jpg",
+        "activo": true}, 
+        {"id":2,"tipo":{"id":1,"descripcion": "Base de datos virtual", "activo": true},
+        "titulo":"Titulo B",
+        "descripcion": "descripcion...", 
+        "link":"https://www.elsevier.com/connect/coronavirus-information-center?dgcid=_SD_banner",
+        "urlPortada":"https://upcover-shreethemes.vercel.app/static/media/02.4f217e19830043f478ff.jpg",
+        "activo": true}, 
+        {"id":3,"tipo":{"id":2,"descripcion": "Libros electronicos", "activo": true},
+        "titulo":"Titulo C",
+        "descripcion": "descripcion...", 
+        "link":"https://www.elsevier.com/connect/coronavirus-information-center?dgcid=_SD_banner",
+        "urlPortada":"https://upcover-shreethemes.vercel.app/static/media/02.4f217e19830043f478ff.jpg",
+        "activo": true}, 
+        {"id":4,"tipo":{"id":2,"descripcion": "Libros electronicos", "activo": true},
+        "titulo":"Titulo D",
+        "descripcion": "descripcion...", 
+        "link":"https://www.elsevier.com/connect/coronavirus-information-center?dgcid=_SD_banner",
+        "urlPortada":"https://upcover-shreethemes.vercel.app/static/media/02.4f217e19830043f478ff.jpg",
+        "activo": true}
+    ]
+}

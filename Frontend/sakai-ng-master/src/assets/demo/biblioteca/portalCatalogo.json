@@ -1,0 +1,41 @@
+{
+    "status":"0",
+    "data": [ 
+        {
+        "id":1,
+        "portada":true,
+        "urlPortada":"https://biblioteca.upsjb.edu.pe/lan/Imagenes/Uploads/UPSJB_1_30112024_133774580434692598_469.jpg",
+        "codigo":"341.4/G27/2016",
+        "titulo":"Libro A",
+        "editorial":{
+            "autorPersonal":"Autor A",
+            "autorSecundario":"Autor B",
+            "anio":"2020"
+        }
+        },
+        {
+            "id":2,
+            "portada":true,
+            "urlPortada":"https://biblioteca.upsjb.edu.pe/lan/Imagenes/Uploads/UPSJB_1_10122024_133783384315421057_542.jpg",
+            "codigo":"341.4/G27/2016",
+            "titulo":"Libro A",
+            "editorial":{
+                "autorPersonal":"Autor A",
+                "autorSecundario":"Autor B",
+                "anio":"2021"
+            }
+        },
+        {
+            "id":3,
+            "portada":true,
+            "urlPortada":"https://biblioteca.upsjb.edu.pe/lan/Imagenes/Uploads/UPSJB_1_1392024_133707226988935881_893.jpg",
+            "codigo":"341.4/G27/2016",
+            "titulo":"Libro A",
+            "editorial":{
+                "autorPersonal":"Autor A",
+                "autorSecundario":"Autor B",
+                "anio":"2022"
+            }
+        }
+    ]
+}

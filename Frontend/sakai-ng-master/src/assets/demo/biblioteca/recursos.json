@@ -1,0 +1,17 @@
+{
+    "status":"0",
+    "data": [ 
+        {
+        "id":1,
+        "tipoRecurso":{"id":1,"tipo":{"id":1,"descripcion": "Material", "activo": true},"descripcion": "Libro", "activo": true}, 
+        "nombre":"Nombre A","descripcion":"-a","sede":{"id":1,"descripcion": "Sede A", "activo": true},
+        "estado":{"id":1,"descripcion": "Disponible", "activo": true},"codigo":"00001","capacidad":50,"ubicacion":"","caracteristicas":"","activo":true
+        },
+        {
+            "id":2,
+            "tipoRecurso":{"id":2,"tipo":{"id":1,"descripcion": "Material", "activo": true},"descripcion": "Revista", "activo": true}, 
+            "nombre":"Nombre B","descripcion":"-b","sede":{"id":2,"descripcion": "Sede B", "activo": true},
+            "estado":{"id":1,"descripcion": "Disponible", "activo": true},"codigo":"00002","capacidad":150,"ubicacion":"L-101","caracteristicas":"CAA","activo":true
+            }
+    ]
+}

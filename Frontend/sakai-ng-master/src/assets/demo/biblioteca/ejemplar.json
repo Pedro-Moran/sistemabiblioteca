@@ -1,0 +1,71 @@
+{
+    "status":"0",
+    "data": [ 
+        {
+        "id":1,
+        "material":{
+            "id":2,
+            "tipoRecurso":{"id":1,"tipo":{"id":1,"descripcion": "Material", "activo": true},"descripcion": "Libro", "activo": true}, 
+            "titulo":"Libro A",
+            "descripcion":"breve descripcion de libro A v1",
+            "autorPrincipal":"Autor A",
+            "autorSecundario": "Autor B",
+            "editorial":"Editorial",
+            "ciudad":"Ciudad",
+            "genero":"genero A",
+            
+            "anioPublicacion":"2020","numPaginas":230,"img":"","url":"https://biblioteca.upsjb.edu.pe/lan/Imagenes/Uploads/UPSJB_1_30112024_133774580434692598_469.jpg",
+            "tipoActivo":{"id":1,"descripcion": "En Sede", "activo": true}
+        },
+        "sede":{"id":1,"descripcion": "Sede A", "activo": true},
+        "estado":{"id":1,"descripcion": "Disponible", "activo": true},
+        "tipoEjemplar":{"id":1,"descripcion": "Original", "activo": true},
+        "fechaRegistro":"23/02/2025 10:34",
+        "codigo":"341.4/G27/2016","nroingreso":"LD-00001"
+        },
+        {
+        "id":2,
+        "material":{
+            "id":2,
+            "tipoRecurso":{"id":1,"tipo":{"id":1,"descripcion": "Material", "activo": true},"descripcion": "Libro", "activo": true}, 
+            "titulo":"Libro B",
+            "descripcion":"breve descripcion de libro B v1",
+            "autorPrincipal":"Autor A",
+            "autorSecundario": "Autor B",
+            "editorial":"Editorial",
+            "ciudad":"Ciudad",
+            "genero":"genero A",
+            
+            "anioPublicacion":"2022","numPaginas":230,"img":"","url":"https://biblioteca.upsjb.edu.pe/lan/Imagenes/Uploads/UPSJB_1_30112024_133774580434692598_469.jpg",
+            "tipoActivo":{"id":1,"descripcion": "En Sede", "activo": true}
+        },
+        "sede":{"id":2,"descripcion": "Sede B", "activo": true},
+        "estado":{"id":1,"descripcion": "Disponible", "activo": true},
+        "tipoEjemplar":{"id":1,"descripcion": "Original", "activo": true},
+        "fechaRegistro":"23/02/2025 10:34",
+        "codigo":"00002","nroingreso":"LD-00002"
+        },
+        {
+        "id":2,
+        "material":{
+            "id":2,
+            "tipoRecurso":{"id":2,"tipo":{"id":1,"descripcion": "Material", "activo": true},"descripcion": "Revista", "activo": true}, 
+            "titulo":"Revista C",
+            "descripcion":"breve descripcion de libro C v1",
+            "autorPrincipal":"Autor A",
+            "autorSecundario": "Autor B",
+            "editorial":"Editorial",
+            "ciudad":"Ciudad",
+            "genero":"genero A",
+            
+            "anioPublicacion":"2020","numPaginas":230,"img":"","url":"https://biblioteca.upsjb.edu.pe/lan/Imagenes/Uploads/UPSJB_1_30112024_133774580434692598_469.jpg",
+            "tipoActivo":{"id":1,"descripcion": "En Sede", "activo": true}
+        },
+        "sede":{"id":1,"descripcion": "Sede A", "activo": true},
+        "estado":{"id":1,"descripcion": "Disponible", "activo": true},
+        "tipoEjemplar":{"id":1,"descripcion": "Original", "activo": true},
+        "fechaRegistro":"23/02/2025 10:34",
+        "codigo":"00003","nroingreso":"LD-00001"
+        }
+    ]
+}

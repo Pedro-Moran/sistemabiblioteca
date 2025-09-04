@@ -1,0 +1,10 @@
+{
+    "status":"0",
+    "data": [
+        {"id":0,"descripcion": "Todos", "valor": "", "activo": true},
+        {"id":1,"descripcion": "Tema", "valor": "descriptor", "activo": true},
+        {"id":2,"descripcion": "Autor", "valor": "autorPersonal", "activo": true},
+        {"id":3,"descripcion": "Título", "valor": "titulo", "activo": true},
+        {"id":4,"descripcion": "Código", "valor": "codigoLocalizacion", "activo": true}
+    ]
+}

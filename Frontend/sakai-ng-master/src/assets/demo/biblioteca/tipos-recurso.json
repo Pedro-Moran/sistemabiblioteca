@@ -1,0 +1,9 @@
+{
+    "status":"0",
+    "data": [
+        {"id":1,"tipo":{"id":1,"descripcion": "Material", "activo": true},"descripcion": "Libro", "activo": true},
+        {"id":2,"tipo":{"id":1,"descripcion": "Material", "activo": true},"descripcion": "Revista", "activo": true},
+        {"id":3,"tipo":{"id":1,"descripcion": "Material", "activo": true},"descripcion": "Tesis", "activo": true},
+        {"id":4,"tipo":{"id":1,"descripcion": "Material", "activo": true},"descripcion": "Artículo", "activo": true}
+    ]
+}
