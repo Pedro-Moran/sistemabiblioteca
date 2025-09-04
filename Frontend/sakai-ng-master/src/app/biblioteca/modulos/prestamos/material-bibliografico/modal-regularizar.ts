@@ -131,7 +131,7 @@ import { TemplateModule } from '../../../template.module';
     <app-input-validation [form]="formOtroUsuario" modelo="tipoUsuario" ver="Tipo Usuario"></app-input-validation>
 </div><div class="flex flex-col gap-2 w-full">
                       <label for="tipoDocumento">Tipo de documento</label>
-    <p-select appendTo="body" id="tipoDocumento" formControlName="tipoDocumento" [options]="tipoDocumentoLista" optionLabel="descripcion" placeholder="Seleccionar" class="w-full"></p-select>
+    <p-select appendTo="body" id="tipoDocumento" formControlName="tipoDocumento" [options]="tipoDocumentoLista" optionLabel="descripcion" optionValue="codigo" placeholder="Seleccionar" class="w-full"></p-select>
     <app-input-validation [form]="formOtroUsuario" modelo="tipoDocumento" ver="Tipo Documento"></app-input-validation>
 </div>
 <div class="flex flex-col gap-2 w-full">
@@ -306,17 +306,22 @@ export class ModalRegularizarComponent implements OnInit {
   async listarTiposDocumento() {
     this.loading = true;
     this.tipoDocumentoLista = [];
-    this.genericoService.tipodocumento_get('')
+    this.genericoService.tipodocumento_get('lista-activo')
       .subscribe(
         (result: any) => {
           this.loading = false;
           if (result.status == "0") {
             this.tipoDocumentoLista = result.data;
-            this.formOtroUsuario.get('tipoDocumento')?.setValue(this.tipoDocumentoLista[0]);
+            this.formOtroUsuario.get('tipoDocumento')?.setValue(this.tipoDocumentoLista[0]?.codigo);
           }
         }
         , (error: HttpErrorResponse) => {
           this.loading = false;
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo obtener los tipos de documento'
+          });
         }
       );
   }
@@ -396,7 +401,36 @@ export class ModalRegularizarComponent implements OnInit {
         });
     }
     buscar() {
-        this.filtrarUsuarios();
+        if (this.activeTab === '0') {
+            this.filtrarUsuarios();
+        } else {
+            this.buscarPorDocumento();
+        }
+    }
+
+    private buscarPorDocumento() {
+        const tipo = this.formOtroUsuario.get('tipoDocumento')?.value;
+        const numero = (this.formOtroUsuario.get('nummeroDocumento')?.value || '').trim();
+        if (!tipo || !numero) {
+            return;
+        }
+        this.loading = true;
+        this.genericoService.consultarDocumento(tipo, numero).subscribe({
+            next: (resp: any) => {
+                this.loading = false;
+                const data = resp?.SJB_CONSULTA_DNI_RESP;
+                if (data && data.CodigoRespuesta === 1) {
+                    const nombre = data.NombreCompleto || `${data.Nombres || ''} ${data.ApellidoPaterno || ''} ${data.ApellidoMaterno || ''}`.trim();
+                    this.formOtroUsuario.get('nombreCompleto')?.setValue(nombre);
+                } else {
+                    this.formOtroUsuario.get('nombreCompleto')?.setValue('');
+                }
+            },
+            error: () => {
+                this.loading = false;
+                this.formOtroUsuario.get('nombreCompleto')?.setValue('');
+            }
+        });
     }
 
     private cargarUsuarios(codigoSeleccionado: string) {

@@ -24,7 +24,7 @@ export class TipoDocumento {
     loading: boolean = true;
     constructor(private genericoService: GenericoService) { }
     ngOnInit() {
-      this.genericoService.tipodocumento_get(this.modulo+'/lista')
+      this.genericoService.tipodocumento_get('lista-activo')
       .subscribe(
         (result: any) => {
           this.loading=false;
