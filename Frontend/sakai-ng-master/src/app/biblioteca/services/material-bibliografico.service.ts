@@ -735,15 +735,27 @@ listarUsuariosOcurrencia(id: number): Observable<OcurrenciaUsuario[]> {
   }
 
   /** Lista los ejemplares prestados (pendientes de devolución) */
-  listarDetallesPrestados(): Observable<DetalleBibliotecaDTO[]> {
+  listarDetallesPrestados(
+    sedeId?: number,
+    tipoPrestamo?: string
+  ): Observable<DetalleBibliotecaDTO[]> {
     const headers = new HttpHeaders().set(
       'Authorization',
       `Bearer ${this.authService.getToken()}`
     );
+
+    let params = new HttpParams();
+    if (sedeId != null) {
+      params = params.set('sede', sedeId.toString());
+    }
+    if (tipoPrestamo) {
+      params = params.set('tipo', tipoPrestamo);
+    }
+
     return this.http
       .get<{ status: number; data: DetalleBibliotecaDTO[] }>(
         `${this.apiUrl}/api/biblioteca/prestados`,
-        { headers }
+        { headers, params }
       )
       .pipe(map(resp => resp.data));
   }
