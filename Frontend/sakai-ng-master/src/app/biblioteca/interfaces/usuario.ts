@@ -33,6 +33,8 @@ export class Usuario {
     codigo?: string;
     foto?: string;
     registrado?:number;
+    tipoUsuario?: string;
+    tipoUsuarioCodigo?: string;
     constructor(init?: Partial<Usuario>) {
         this.id = 0;
         this.rol=new ClaseGeneral();
@@ -58,6 +60,8 @@ export class Usuario {
         this.codigo='';
         this.foto='';
         this.registrado=0;
+        this.tipoUsuario='';
+        this.tipoUsuarioCodigo='';
         // Inicialización opcional si se pasa un objeto
         Object.assign(this, init);
     }

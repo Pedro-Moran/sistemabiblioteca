@@ -563,7 +563,38 @@ crearOcurrencia(dto: OcurrenciaDTO): Observable<OcurrenciaDTO> {
           `${this.apiUrl}/api/prestamos/usuarios`,
           { headers: this.headers, params }
         )
-        .pipe(map(resp => resp.data));
+        .pipe(
+          map(resp => {
+            const tipoMap: Record<string, string> = {
+              '1': 'Administrador',
+              '2': 'Ejecutivo',
+              '3': 'Usuario',
+              '4': 'Otro'
+            };
+            return resp.data.map(u => {
+              const rawObj = (u as any).tipoUsuario ?? (u as any).rol;
+              let codigo: string;
+              let descRaw: any;
+              if (rawObj && typeof rawObj === 'object') {
+                codigo = String(
+                  rawObj.idRol ?? rawObj.id ?? rawObj.codigo ??
+                  (u as any).tipo ?? (u as any).tipoUsuarioCodigo ?? ''
+                );
+                descRaw = rawObj.descripcion ?? rawObj.nombre ?? rawObj;
+              } else {
+                codigo = String(
+                  rawObj ?? (u as any).tipo ?? (u as any).tipoUsuarioCodigo ?? ''
+                );
+                descRaw = rawObj;
+              }
+              return {
+                ...u,
+                tipoUsuario: tipoMap[codigo] ?? String(descRaw ?? ''),
+                tipoUsuarioCodigo: codigo
+              } as Usuario;
+            });
+          })
+        );
     }
 
     /** Lista equipos; si pasas `search` filtra por id, nombre o ip */

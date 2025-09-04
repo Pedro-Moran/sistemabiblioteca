@@ -157,6 +157,7 @@ interface ReservaUsuario {
                 <th>N.I</th>
                 <th>Fecha de reserva</th>
                 <th>Prestar</th>
+                <th>Regularizar</th>
                 <th>Cancelar</th>
             </tr>
         </ng-template>
@@ -169,6 +170,9 @@ interface ReservaUsuario {
                 <td>
                    <p-button icon="pi pi-check" rounded outlined (click)="prestar(bib)"pTooltip="Prestar" tooltipPosition="bottom"/>
 
+                </td>
+                <td>
+                <p-button icon="pi pi-refresh" rounded outlined (click)="regularizarPrestamo(bib)" pTooltip="Regularizar" tooltipPosition="bottom"/>
                 </td>
                 <td>
                 <p-button icon="pi pi-times" rounded outlined (click)="cancelar(bib)"pTooltip="Cancelar" tooltipPosition="bottom"/>
@@ -661,8 +665,8 @@ private agruparPorBiblioteca(
     // Si quisieras limpiar algo al colapsar, aquí va
   }
 
-  regularizarPrestamo() {
-    this.modalRegularizar.openModal();
+  regularizarPrestamo(detalle: DetalleBibliotecaDTO) {
+    this.modalRegularizar.openModal(detalle);
   }
 
 }
