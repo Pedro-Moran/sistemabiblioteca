@@ -309,31 +309,60 @@ public class UsuarioService {
     }
 
     public List<Usuario> listar(String q) {
-        return listar(q, null);
+        return listar(q, null, null);
     }
 
     public List<Usuario> listar(String q, Long idRol) {
+        return listar(q, idRol, null);
+    }
+
+    public List<Usuario> listar(String q, Long idRol, Integer tipo) {
         List<Usuario> base;
         if (idRol != null) {
             base = usuarioRepository.findByRoles_IdRol(idRol);
-        } else if (q == null || q.isBlank()) {
-            return usuarioRepository.findAll();
+            base.forEach(u -> u.getRoles().removeIf(r -> !r.getIdRol().equals(idRol)));
         } else {
-            return usuarioRepository.findByLoginContainingIgnoreCaseOrEmailContainingIgnoreCase(q, q);
+            base = usuarioRepository.findAll();
         }
 
         if (q == null || q.isBlank()) {
             return base;
         }
+
         String qLower = q.toLowerCase();
         List<Usuario> filtrados = new ArrayList<>();
+
         for (Usuario u : base) {
-            String login = u.getLogin() != null ? u.getLogin().toLowerCase() : "";
-            String email = u.getEmail() != null ? u.getEmail().toLowerCase() : "";
-            if (login.contains(qLower) || email.contains(qLower)) {
+            boolean matches = false;
+            if (tipo == null) {
+                String login = u.getLogin() != null ? u.getLogin().toLowerCase() : "";
+                String email = u.getEmail() != null ? u.getEmail().toLowerCase() : "";
+                String numDoc = u.getNumDocumento() != null ? u.getNumDocumento().toString() : "";
+                String nombres = u.getNombreUsuario() != null ? u.getNombreUsuario() : "";
+                String apPat = u.getApellidoPaterno() != null ? u.getApellidoPaterno() : "";
+                String apMat = u.getApellidoMaterno() != null ? u.getApellidoMaterno() : "";
+                String nombreCompleto = (nombres + " " + apPat + " " + apMat).toLowerCase();
+                matches = login.contains(qLower) || email.contains(qLower) || numDoc.contains(q) || nombreCompleto.contains(qLower);
+            } else if (tipo == 1) {
+                String numDoc = u.getNumDocumento() != null ? u.getNumDocumento().toString() : "";
+                matches = numDoc.contains(q);
+            } else if (tipo == 2) {
+                String nombres = u.getNombreUsuario() != null ? u.getNombreUsuario() : "";
+                String apPat = u.getApellidoPaterno() != null ? u.getApellidoPaterno() : "";
+                String apMat = u.getApellidoMaterno() != null ? u.getApellidoMaterno() : "";
+                String nombreCompleto = (nombres + " " + apPat + " " + apMat).toLowerCase();
+                matches = nombreCompleto.contains(qLower);
+            } else if (tipo == 3) {
+                String login = u.getLogin() != null ? u.getLogin().toLowerCase() : "";
+                String email = u.getEmail() != null ? u.getEmail().toLowerCase() : "";
+                matches = login.contains(qLower) || email.contains(qLower);
+            }
+
+            if (matches) {
                 filtrados.add(u);
             }
         }
+
         return filtrados;
     }
     /** Incrementa el contador de logeos del usuario. */

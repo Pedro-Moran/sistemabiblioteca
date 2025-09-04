@@ -173,8 +173,9 @@ public class PrestamoController {
     @GetMapping("/usuarios")
     public ResponseEntity<?> listarUsuarios(
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) Long rol) {
-        List<Usuario> lista = usuarioService.listar(search, rol);
+            @RequestParam(required = false) Long rol,
+            @RequestParam(required = false, name = "tipo") Integer tipoBusqueda) {
+        List<Usuario> lista = usuarioService.listar(search, rol, tipoBusqueda);
         return ResponseEntity.ok(Map.of("status","0","data", lista));
     }
 
