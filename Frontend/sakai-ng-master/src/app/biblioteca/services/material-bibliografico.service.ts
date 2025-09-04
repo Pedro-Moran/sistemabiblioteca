@@ -552,11 +552,14 @@ crearOcurrencia(dto: OcurrenciaDTO): Observable<OcurrenciaDTO> {
     );
   }
 
-    /** Lista usuarios; si pasas `search` filtra por código o email */
-    listarUsuarios(search?: string): Observable<Usuario[]> {
+    /** Lista usuarios; permite filtrar por código/email y tipo de usuario */
+    listarUsuarios(search?: string, tipoUsuario?: string): Observable<Usuario[]> {
       let params = new HttpParams();
       if (search && search.trim().length) {
         params = params.set('search', search.trim());
+      }
+      if (tipoUsuario && tipoUsuario.trim().length) {
+        params = params.set('rol', tipoUsuario.trim());
       }
       return this.http
         .get<{ status: string; data: Usuario[] }>(

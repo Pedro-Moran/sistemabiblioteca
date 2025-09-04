@@ -248,7 +248,6 @@ export class ModalRegularizarComponent implements OnInit {
     usuariosLista: any[] = [];
     tipoMaterialLista: any[] = [];
     usuariosPRLista: any[] = [];
-    usuariosTodos: Usuario[] = [];
     objeto: any = null;
     radioValue: any = null;
     palabraClave: string = "";
@@ -267,7 +266,10 @@ export class ModalRegularizarComponent implements OnInit {
             usuarioPrestamo: ['', [Validators.required]],
             usuarioRecepcion: ['', [Validators.required]]
         });
-        this.form.get('tipoUsuario')?.valueChanges.subscribe(() => this.filtrarUsuarios());
+        this.form.get('tipoUsuario')?.valueChanges.subscribe(() => {
+            this.form.patchValue({ palabraBuscar: '', usuario: null });
+            this.filtrarUsuarios();
+        });
         this.formOtroUsuario = this.fb.group({
 
             tipoUsuario: ['', [Validators.required]],
@@ -361,77 +363,61 @@ export class ModalRegularizarComponent implements OnInit {
     }
 
     private cargarUsuarios(codigoSeleccionado: string) {
-        this.loading = true;
-        this.materialBibliograficoService.listarUsuarios().subscribe({
-            next: (usuarios: Usuario[]) => {
-                this.loading = false;
-                this.usuariosTodos = usuarios;
-                let tipoInicial = this.tipoUsuarioLista[0];
-                if (codigoSeleccionado) {
-                    const uSel = usuarios.find(
-                        u => u.codigo === codigoSeleccionado || u.login === codigoSeleccionado
-                    );
-                    if (uSel) {
-                        tipoInicial = this.tipoUsuarioLista.find(t => t.descripcion === uSel.tipoUsuario) || tipoInicial;
-                    }
-                }
-                if (tipoInicial) {
-                    this.form.get('tipoUsuario')?.setValue(tipoInicial);
+        const tipoInicial = this.tipoUsuarioLista[0];
+        if (codigoSeleccionado) {
+            this.loading = true;
+            this.materialBibliograficoService.listarUsuarios(codigoSeleccionado).subscribe({
+                next: (usuarios: Usuario[]) => {
+                    this.loading = false;
+                    const uSel = usuarios.find(u => u.codigo === codigoSeleccionado || u.login === codigoSeleccionado);
+                    const tipoSel = uSel
+                        ? this.tipoUsuarioLista.find(t => String(t.id) === String(uSel.tipoUsuarioCodigo) || t.descripcion === uSel.tipoUsuario)
+                        : tipoInicial;
+                    this.form.get('tipoUsuario')?.setValue(tipoSel || tipoInicial);
                     this.filtrarUsuarios(codigoSeleccionado);
+                },
+                error: () => {
+                    this.loading = false;
+                    this.form.get('tipoUsuario')?.setValue(tipoInicial);
+                    this.filtrarUsuarios();
                 }
-            },
-            error: () => {
-                this.loading = false;
-            }
-        });
+            });
+        } else {
+            this.form.get('tipoUsuario')?.setValue(tipoInicial);
+            this.filtrarUsuarios();
+        }
     }
 
     private filtrarUsuarios(codigoSeleccionado: string = '') {
         const tipoId = String(this.form.get('tipoUsuario')?.value?.id ?? '');
-        const tipoDesc = (this.form.get('tipoUsuario')?.value?.descripcion || '').toLowerCase();
-        const termino = (this.form.get('palabraBuscar')?.value || '').toLowerCase();
-        const tipoBuscar = this.form.get('tipoBuscar')?.value;
-
-        let lista = this.usuariosTodos.filter(
-            u =>
-                String(u.tipoUsuarioCodigo ?? '') === tipoId ||
-                (u.tipoUsuario || '').toLowerCase().includes(tipoDesc)
-        );
-
-        if (termino) {
-            lista = lista.filter(u => {
-                const documento = (u.numeroDocumento || u.numerodocumento || u.login || '').toLowerCase();
-                const nombre = `${u.nombres ?? ''} ${u.apellidoPaterno ?? ''} ${u.apellidoMaterno ?? ''}`.toLowerCase();
-                const correo = (u.email || '').toLowerCase();
-                switch (tipoBuscar) {
-                    case 1:
-                        return documento.includes(termino);
-                    case 2:
-                        return nombre.includes(termino);
-                    case 3:
-                        return correo.includes(termino);
-                    default:
-                        return false;
+        const termino = (this.form.get('palabraBuscar')?.value || '').trim();
+        this.loading = true;
+        this.materialBibliograficoService.listarUsuarios(termino, tipoId).subscribe({
+            next: (lista: Usuario[]) => {
+                this.loading = false;
+                this.usuariosLista = lista.map(u => ({
+                    descripcion:
+                        `${u.nombres ?? ''} ${u.apellidoPaterno ?? ''} ${u.apellidoMaterno ?? ''}`.trim() ||
+                        u.email ||
+                        u.login ||
+                        u.codigo,
+                    codigoUsuario: u.codigo ?? u.login ?? ''
+                }));
+                if (codigoSeleccionado) {
+                    const u = this.usuariosLista.find(us => us.codigoUsuario === codigoSeleccionado);
+                    if (u) {
+                        this.form.get('usuario')?.setValue(u);
+                    }
+                } else {
+                    this.form.get('usuario')?.setValue(null);
                 }
-            });
-        }
-
-        this.usuariosLista = lista.map(u => ({
-            descripcion:
-                `${u.nombres ?? ''} ${u.apellidoPaterno ?? ''} ${u.apellidoMaterno ?? ''}`.trim() ||
-                u.email ||
-                u.login ||
-                u.codigo,
-            codigoUsuario: u.codigo ?? u.login ?? ''
-        }));
-        if (codigoSeleccionado) {
-            const u = this.usuariosLista.find(us => us.codigoUsuario === codigoSeleccionado);
-            if (u) {
-                this.form.get('usuario')?.setValue(u);
+            },
+            error: () => {
+                this.loading = false;
+                this.usuariosLista = [];
+                this.form.get('usuario')?.setValue(null);
             }
-        } else {
-            this.form.get('usuario')?.setValue(null);
-        }
+        });
     }
 
 }
