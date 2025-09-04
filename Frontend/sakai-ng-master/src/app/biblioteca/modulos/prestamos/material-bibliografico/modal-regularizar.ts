@@ -391,8 +391,9 @@ export class ModalRegularizarComponent implements OnInit {
     private filtrarUsuarios(codigoSeleccionado: string = '') {
         const tipoId = String(this.form.get('tipoUsuario')?.value?.id ?? '');
         const termino = (this.form.get('palabraBuscar')?.value || '').trim();
+        const tipoFiltro = String(this.form.get('tipoBuscar')?.value ?? '');
         this.loading = true;
-        this.materialBibliograficoService.listarUsuarios(termino, tipoId).subscribe({
+        this.materialBibliograficoService.listarUsuarios(termino, tipoId, tipoFiltro).subscribe({
             next: (lista: Usuario[]) => {
                 this.loading = false;
                 this.usuariosLista = lista.map(u => ({
