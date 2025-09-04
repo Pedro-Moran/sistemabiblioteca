@@ -82,15 +82,6 @@ export class GenericoService {
     return this.http.get<any[]>(`${this.apiUrl}/${modulo}`, options);
   }
 
-  consultarDocumento(tipo: string, numero: string): Observable<any> {
-    const token = this.authService.getToken();
-    const options = token
-      ? { headers: new HttpHeaders().set('Authorization', `Bearer ${token}`) }
-      : {};
-    const url = `${this.apiUrl}/api/documento/consultar/${tipo}/${numero}`;
-    return this.http.get<any>(url, options);
-  }
-
   tipo_get(modulo: any): Observable<any> {
     return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
       { headers: this.authHeaders() }

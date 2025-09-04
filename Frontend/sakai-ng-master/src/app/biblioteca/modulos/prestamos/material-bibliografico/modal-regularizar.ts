@@ -6,6 +6,7 @@ import { DetalleBibliotecaDTO } from '../../../interfaces/material-bibliografico
 import { Usuario } from '../../../interfaces/usuario';
 import { InputValidation } from '../../../input-validation';
 import { GenericoService } from '../../../services/generico.service';
+import { DocumentoService } from '../../../services/documento.service';
 import { MaterialBibliograficoService } from '../../../services/material-bibliografico.service';
 import { TemplateModule } from '../../../template.module';
 @Component({
@@ -131,7 +132,7 @@ import { TemplateModule } from '../../../template.module';
     <app-input-validation [form]="formOtroUsuario" modelo="tipoUsuario" ver="Tipo Usuario"></app-input-validation>
 </div><div class="flex flex-col gap-2 w-full">
                       <label for="tipoDocumento">Tipo de documento</label>
-    <p-select appendTo="body" id="tipoDocumento" formControlName="tipoDocumento" [options]="tipoDocumentoLista" optionLabel="descripcion" optionValue="codigo" placeholder="Seleccionar" class="w-full"></p-select>
+    <p-select appendTo="body" id="tipoDocumento" formControlName="tipoDocumento" [options]="tipoDocumentoLista" optionLabel="descripcion" placeholder="Seleccionar" class="w-full"></p-select>
     <app-input-validation [form]="formOtroUsuario" modelo="tipoDocumento" ver="Tipo Documento"></app-input-validation>
 </div>
 <div class="flex flex-col gap-2 w-full">
@@ -257,7 +258,7 @@ export class ModalRegularizarComponent implements OnInit {
     activeTab: string = '0';
     @Output() saved = new EventEmitter<DetalleBibliotecaDTO>();
 
-    constructor(private fb: FormBuilder, private genericoService: GenericoService, private materialBibliograficoService: MaterialBibliograficoService, private confirmationService: ConfirmationService, private messageService: MessageService) {
+    constructor(private fb: FormBuilder, private genericoService: GenericoService, private materialBibliograficoService: MaterialBibliograficoService, private documentoService: DocumentoService, private confirmationService: ConfirmationService, private messageService: MessageService) {
 
         this.form = this.fb.group({
             tipoUsuario: ['', [Validators.required]],
@@ -283,7 +284,7 @@ export class ModalRegularizarComponent implements OnInit {
         this.formOtroUsuario = this.fb.group({
 
             tipoUsuario: ['', [Validators.required]],
-            tipoDocumento: ['', [Validators.required]],
+            tipoDocumento: [null, [Validators.required]],
             nummeroDocumento: ['', [Validators.required]],
             nombreCompleto: ['', [Validators.required]],
             numeroIngreso: ['', [Validators.required]],
@@ -312,7 +313,7 @@ export class ModalRegularizarComponent implements OnInit {
           this.loading = false;
           if (result.status == "0") {
             this.tipoDocumentoLista = result.data;
-            this.formOtroUsuario.get('tipoDocumento')?.setValue(this.tipoDocumentoLista[0]?.codigo);
+            this.formOtroUsuario.get('tipoDocumento')?.setValue(this.tipoDocumentoLista[0]);
           }
         }
         , (error: HttpErrorResponse) => {
@@ -373,7 +374,13 @@ export class ModalRegularizarComponent implements OnInit {
     }
     guardar() {
         this.loading = true;
-        const datos = this.activeTab === '0' ? this.form.getRawValue() : this.formOtroUsuario.getRawValue();
+        const datosRaw = this.activeTab === '0' ? this.form.getRawValue() : this.formOtroUsuario.getRawValue();
+        const datos = this.activeTab === '0'
+            ? datosRaw
+            : {
+                ...datosRaw,
+                tipoDocumento: this.obtenerCodigoDocumento(datosRaw.tipoDocumento)
+            };
         const id = this.objeto?.idDetalleBiblioteca;
         const payload = { ...datos, idDetalleBiblioteca: id };
         this.materialBibliograficoService.regularizarPrestamo(payload).subscribe({
@@ -409,28 +416,38 @@ export class ModalRegularizarComponent implements OnInit {
     }
 
     private buscarPorDocumento() {
-        const tipo = this.formOtroUsuario.get('tipoDocumento')?.value;
+        const doc = this.formOtroUsuario.get('tipoDocumento')?.value;
+        const tipo = this.obtenerCodigoDocumento(doc);
         const numero = (this.formOtroUsuario.get('nummeroDocumento')?.value || '').trim();
         if (!tipo || !numero) {
             return;
         }
         this.loading = true;
-        this.genericoService.consultarDocumento(tipo, numero).subscribe({
-            next: (resp: any) => {
-                this.loading = false;
-                const data = resp?.SJB_CONSULTA_DNI_RESP;
-                if (data && data.CodigoRespuesta === 1) {
-                    const nombre = data.NombreCompleto || `${data.Nombres || ''} ${data.ApellidoPaterno || ''} ${data.ApellidoMaterno || ''}`.trim();
-                    this.formOtroUsuario.get('nombreCompleto')?.setValue(nombre);
-                } else {
-                    this.formOtroUsuario.get('nombreCompleto')?.setValue('');
+        this.documentoService.consultar(tipo, numero).subscribe((data: any) => {
+            this.loading = false;
+            if (data) {
+                let nombre =
+                    data.NombreCompleto ||
+                    data.NAME ||
+                    `${data.Nombres ?? ''} ${data.ApellidoPaterno ?? ''} ${data.ApellidoMaterno ?? ''}`.trim();
+                if (typeof nombre === 'string') {
+                    nombre = nombre.replace(',', ' ').trim();
                 }
-            },
-            error: () => {
-                this.loading = false;
+                this.formOtroUsuario.get('nombreCompleto')?.setValue(nombre);
+            } else {
                 this.formOtroUsuario.get('nombreCompleto')?.setValue('');
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'No encontrado',
+                    detail: 'No se encontró el documento'
+                });
             }
         });
+    }
+
+    private obtenerCodigoDocumento(doc: any): string | null {
+        const tipo = doc?.codigo ?? doc?.code ?? doc?.idTipoDocumento ?? doc?.id;
+        return tipo != null ? String(tipo).padStart(2, '0') : null;
     }
 
     private cargarUsuarios(codigoSeleccionado: string) {
