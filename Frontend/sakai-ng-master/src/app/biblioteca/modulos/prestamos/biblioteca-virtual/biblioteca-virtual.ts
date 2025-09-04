@@ -117,7 +117,10 @@ import { ModalRegularizarComponent } from './modal-regularizar';
                         <ng-template pTemplate="caption">
 
                        <div class="flex items-center justify-between">
-               <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt1)" />
+               <div class="flex gap-2">
+                   <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt1)" />
+                   <p-button icon="pi pi-refresh" label="Regularizar" (click)="regularizarPrestamo()" />
+               </div>
 
                <p-iconfield>
                    <input pInputText type="text" placeholder="Filtrar" #filter (input)="onGlobalFilter(dt1, $event)"/>
