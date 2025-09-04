@@ -288,7 +288,7 @@ export class ModalRegularizarComponent implements OnInit {
   async listarTiposDocumento() {
     this.loading = true;
     this.tipoDocumentoLista = [];
-    this.genericoService.tipodocumento_get('')
+    this.genericoService.tipodocumento_get('lista-activo')
       .subscribe(
         (result: any) => {
           this.loading = false;
