@@ -156,7 +156,6 @@ interface ReservaUsuario {
                 <th>Código</th>
                 <th>N.I</th>
                 <th>Fecha de reserva</th>
-                <th>Prestar</th>
                 <th>Regularizar</th>
                 <th>Cancelar</th>
             </tr>
@@ -167,9 +166,6 @@ interface ReservaUsuario {
                 <td>{{ bib.biblioteca?.id }}</td>
                 <td>{{ bib.numeroIngreso }}</td>
                 <td>{{ bib.fechaReserva }}</td>
-                <td>
-                   <p-button icon="pi pi-check" rounded outlined (click)="prestar(bib)"pTooltip="Prestar" tooltipPosition="bottom"/>
-                </td>
                 <td>
                 <p-button icon="pi pi-refresh" rounded outlined (click)="regularizarPrestamo(bib)" pTooltip="Regularizar" tooltipPosition="bottom"/>
                 </td>
@@ -576,49 +572,9 @@ private agruparPorBiblioteca(
     grupo.expandido = !grupo.expandido;
   }
 
-  prestar(detalle: DetalleBibliotecaDTO) {
-    this.confirmationService.confirm({
-      message: '¿Estás seguro(a) de prestar el ejemplar?',
-      header: 'Confirmar',
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'SI',
-      rejectLabel: 'NO',
-      accept: () => {
-        this.loading = true;
-        this.materialBibliograficoService.prestarDetalle(detalle.idDetalleBiblioteca!).subscribe({
-          next: (resp: any) => {
-            this.loading = false;
-            if (resp.p_status === 0) {
-              this.messageService.add({
-                severity: 'success',
-                summary: 'Listo',
-                detail: 'Ejemplar prestado.'
-              });
-              this.cargarTodosDetallesReservados();
-            } else {
-              this.messageService.add({
-                severity: 'warn',
-                summary: 'No se pudo prestar',
-                detail: 'El servidor devolvió un estado distinto a 0.'
-              });
-            }
-          },
-          error: () => {
-            this.loading = false;
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'Ocurrió un error al comunicarse con el servidor.'
-            });
-          }
-        });
-      }
-    });
-  }
-
-  cancelar(detalle: DetalleBibliotecaDTO) {
-    this.confirmationService.confirm({
-      message: '¿Estás seguro(a) de cancelar la reserva del ejemplar?',
+    cancelar(detalle: DetalleBibliotecaDTO) {
+      this.confirmationService.confirm({
+        message: '¿Estás seguro(a) de cancelar la reserva del ejemplar?',
       header: 'Confirmar',
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'SI',
