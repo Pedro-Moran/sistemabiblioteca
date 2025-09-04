@@ -115,6 +115,7 @@ import { TemplateModule } from '../../../template.module';
                       <label for="usuarioRecepcion">Usuario de recepci&oacute;n</label>
     <p-select appendTo="body" id="usuarioRecepcion" formControlName="usuarioRecepcion" [options]="usuariosPRLista" optionLabel="descripcion" placeholder="Seleccionar" class="w-full"></p-select>
     <app-input-validation [form]="form" modelo="usuarioRecepcion" ver="Usuario Recepcion"></app-input-validation>
+    <small class="text-xs text-gray-500">Para registrar usuario de recepción debe ir al módulo devoluciones</small>
 </div>
 </div>
 
@@ -218,6 +219,7 @@ import { TemplateModule } from '../../../template.module';
                       <label for="usuarioRecepcion">Usuario de recepci&oacute;n</label>
     <p-select appendTo="body" id="usuarioRecepcion" formControlName="usuarioRecepcion" [options]="usuariosPRLista" optionLabel="descripcion" placeholder="Seleccionar" class="w-full"></p-select>
     <app-input-validation [form]="formOtroUsuario" modelo="usuarioRecepcion" ver="Usuario Recepcion"></app-input-validation>
+    <small class="text-xs text-gray-500">Para registrar usuario de recepción debe ir al módulo devoluciones</small>
 </div>
 </div>
 
@@ -266,9 +268,14 @@ export class ModalRegularizarComponent implements OnInit {
             usuarioPrestamo: ['', [Validators.required]],
             usuarioRecepcion: ['', [Validators.required]]
         });
+        ['numeroIngreso', 'tipoMaterial', 'fechaPrestamo', 'fechaDevolucion', 'usuarioPrestamo', 'usuarioRecepcion']
+            .forEach(campo => this.form.get(campo)?.disable());
         this.form.get('tipoUsuario')?.valueChanges.subscribe(() => {
             this.form.patchValue({ palabraBuscar: '', usuario: null });
             this.filtrarUsuarios();
+        });
+        this.form.get('usuario')?.valueChanges.subscribe((u) => {
+            this.form.get('usuarioPrestamo')?.setValue(u);
         });
         this.formOtroUsuario = this.fb.group({
 
@@ -284,6 +291,8 @@ export class ModalRegularizarComponent implements OnInit {
             usuarioPrestamo: ['', [Validators.required]],
             usuarioRecepcion: ['', [Validators.required]]
         });
+        ['numeroIngreso', 'tipoMaterial', 'fechaPrestamo', 'fechaDevolucion', 'usuarioPrestamo', 'usuarioRecepcion']
+            .forEach(campo => this.formOtroUsuario.get(campo)?.disable());
     }
     async ngOnInit() {
 
@@ -404,6 +413,7 @@ export class ModalRegularizarComponent implements OnInit {
                         u.codigo,
                     codigoUsuario: u.codigo ?? u.login ?? ''
                 }));
+                this.usuariosPRLista = [...this.usuariosLista];
                 if (codigoSeleccionado) {
                     const u = this.usuariosLista.find(us => us.codigoUsuario === codigoSeleccionado);
                     if (u) {
@@ -416,6 +426,7 @@ export class ModalRegularizarComponent implements OnInit {
             error: () => {
                 this.loading = false;
                 this.usuariosLista = [];
+                this.usuariosPRLista = [];
                 this.form.get('usuario')?.setValue(null);
             }
         });
