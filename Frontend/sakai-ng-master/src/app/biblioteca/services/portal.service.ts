@@ -139,9 +139,10 @@ export class PortalService {
         );
       }
 
-listarHorarios(): Observable<{ p_status: number; message: string; data: PortalHorario[] }> {
+listarHorarios(sedeId?: number): Observable<{ p_status: number; message: string; data: PortalHorario[] }> {
+  const params = sedeId && sedeId > 0 ? `?sedeId=${sedeId}` : '';
   return this.http.get<{ p_status: number; message: string; data: PortalHorario[] }>(
-    `${this.apiUrl}/api/horarios/listar`,
+    `${this.apiUrl}/api/horarios/listar${params}`,
     { headers: this.authHeaders() }
   );
 }

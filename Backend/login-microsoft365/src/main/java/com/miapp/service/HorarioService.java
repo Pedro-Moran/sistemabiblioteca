@@ -23,8 +23,11 @@ public class HorarioService {
     private final SedeRepository sedeRepo;
     private final EstadoRepository estadoRepo;
 
-    public List<HorarioDTO> listar() {
-        return repo.findAll()
+    public List<HorarioDTO> listar(Long sedeId) {
+        List<Horario> horarios = (sedeId != null && sedeId > 0)
+                ? repo.findBySedeId(sedeId)
+                : repo.findAll();
+        return horarios
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
