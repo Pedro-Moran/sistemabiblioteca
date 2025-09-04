@@ -216,7 +216,9 @@ export class HorariosComponent implements OnInit {
         if (res.status === 0) {
           const sedes = (res.data as Sedes[]).filter(s => s.id !== 0);
           this.dataSede = sedes;
-          this.dataSedesFiltro = sedes;
+          const todas = new Sedes({ id: 0, descripcion: 'Todas las sedes' });
+          this.dataSedesFiltro = [todas, ...sedes];
+          this.sedeFiltro = todas;
         }
       }
         formValidar(){
@@ -360,7 +362,8 @@ export class HorariosComponent implements OnInit {
   }
       listar() {
         this.loading = true;
-        this.portalService.listarHorarios()
+        const sedeId = this.sedeFiltro?.id;
+        this.portalService.listarHorarios(sedeId && sedeId > 0 ? sedeId : undefined)
           .subscribe({
             next: res => {
               if (res.p_status === 0) {

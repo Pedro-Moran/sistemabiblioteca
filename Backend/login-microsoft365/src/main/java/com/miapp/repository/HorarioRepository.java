@@ -9,5 +9,6 @@ import java.util.List;
 public interface HorarioRepository extends JpaRepository<Horario, Long> {
     // para filtrar si algún día lo necesitas
     List<Horario> findByFechaCreacionBetween(LocalDateTime start, LocalDateTime end);
+    List<Horario> findBySedeId(Long sedeId);
 }
 

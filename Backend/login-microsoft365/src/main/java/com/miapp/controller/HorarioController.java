@@ -20,8 +20,8 @@
         private final HorarioRepository repo;
 
         @GetMapping("/listar")
-        public ResponseDTO<List<HorarioDTO>> listar() {
-            List<HorarioDTO> list = srv.listar();   // <— aquí toma el List<HorarioDTO>
+        public ResponseDTO<List<HorarioDTO>> listar(@RequestParam(value = "sedeId", required = false) Long sedeId) {
+            List<HorarioDTO> list = srv.listar(sedeId);
             return new ResponseDTO<>(0, "OK", list);
         }
 
