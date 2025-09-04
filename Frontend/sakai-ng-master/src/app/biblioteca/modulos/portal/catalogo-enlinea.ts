@@ -75,7 +75,6 @@ import { map } from 'rxjs/operators';
             <p-tabs value="0">
                 <p-tablist>
                     <p-tab value="0">Busqueda Básica</p-tab>
-                    <p-tab value="1">Busqueda avanzada</p-tab>
                 </p-tablist>
                 <p-tabpanels>
                     <p-tabpanel value="0">
@@ -214,7 +213,6 @@ import { map } from 'rxjs/operators';
                             </ng-template>
                         </p-table>
                     </p-tabpanel>
-                    <p-tabpanel value="1">ww </p-tabpanel>
                 </p-tabpanels>
             </p-tabs>
         </div>
@@ -229,23 +227,23 @@ import { map } from 'rxjs/operators';
                     <div class="grid grid-cols-2 gap-4">
                         <div class="flex flex-col">
                             <label>Fecha de inicio</label>
-                            <p-calendar name="fechaInicioDate" [minDate]="minDate" [(ngModel)]="prestamo.fechaInicioDate" dateFormat="yy-mm-dd" [showTime]="false" (ngModelChange)="onDateRangeChange()"> </p-calendar>
+                            <p-calendar appendTo="body" name="fechaInicioDate" [minDate]="minDate" [(ngModel)]="prestamo.fechaInicioDate" dateFormat="yy-mm-dd" [showTime]="false" (ngModelChange)="onDateRangeChange()"> </p-calendar>
                         </div>
 
                         <div class="flex flex-col">
                             <label>Hora de inicio</label>
-                            <p-calendar name="fechaInicioTime" [(ngModel)]="prestamo.fechaInicioTime" timeOnly="true" hourFormat="24" [minDate]="minHora" [maxDate]="maxHora" (ngModelChange)="onDateRangeChange()"> </p-calendar>
+                            <p-calendar appendTo="body" name="fechaInicioTime" [(ngModel)]="prestamo.fechaInicioTime" timeOnly="true" hourFormat="24" [minDate]="minHora" [maxDate]="maxHora" (ngModelChange)="onDateRangeChange()"> </p-calendar>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4 mt-4">
                         <div class="flex flex-col">
                             <label>Fecha de devolución</label>
-                            <p-calendar name="fechaFinDate" [minDate]="minDate" [(ngModel)]="prestamo.fechaFinDate" dateFormat="yy-mm-dd" [showTime]="false" (ngModelChange)="onDateRangeChange()"> </p-calendar>
+                            <p-calendar appendTo="body" name="fechaFinDate" [minDate]="minDate" [(ngModel)]="prestamo.fechaFinDate" dateFormat="yy-mm-dd" [showTime]="false" (ngModelChange)="onDateRangeChange()"> </p-calendar>
                         </div>
 
                         <div class="flex flex-col">
                             <label>Hora de devolución</label>
-                            <p-calendar name="fechaFinTime" [(ngModel)]="prestamo.fechaFinTime" timeOnly="true" hourFormat="24" [minDate]="minHora" [maxDate]="maxHora" (ngModelChange)="onDateRangeChange()"> </p-calendar>
+                            <p-calendar appendTo="body" name="fechaFinTime" [(ngModel)]="prestamo.fechaFinTime" timeOnly="true" hourFormat="24" [minDate]="minHora" [maxDate]="maxHora" (ngModelChange)="onDateRangeChange()"> </p-calendar>
                         </div>
                     </div>
                 </div>
@@ -304,8 +302,7 @@ export class CatalogoEnLineaComponent {
 
     tiposPrestamo = [
         { label: 'En sala', value: 'EN_SALA' },
-        { label: 'A domicilio', value: 'PRESTAMO_A_DOMICILIO' },
-        { label: 'Sala y domicilio', value: 'SALA_Y_DOMICILIO' }
+        { label: 'A domicilio', value: 'PRESTAMO_A_DOMICILIO' }
     ];
 
     showTerms: boolean = false;
