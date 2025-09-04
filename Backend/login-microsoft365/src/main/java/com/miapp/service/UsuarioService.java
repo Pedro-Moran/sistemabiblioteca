@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ArrayList;
 
 @Service
 public class UsuarioService {
@@ -308,10 +309,32 @@ public class UsuarioService {
     }
 
     public List<Usuario> listar(String q) {
-        if (q == null || q.isBlank()) {
+        return listar(q, null);
+    }
+
+    public List<Usuario> listar(String q, Long idRol) {
+        List<Usuario> base;
+        if (idRol != null) {
+            base = usuarioRepository.findByRoles_IdRol(idRol);
+        } else if (q == null || q.isBlank()) {
             return usuarioRepository.findAll();
+        } else {
+            return usuarioRepository.findByLoginContainingIgnoreCaseOrEmailContainingIgnoreCase(q, q);
         }
-        return usuarioRepository.findByLoginContainingIgnoreCaseOrEmailContainingIgnoreCase(q, q);
+
+        if (q == null || q.isBlank()) {
+            return base;
+        }
+        String qLower = q.toLowerCase();
+        List<Usuario> filtrados = new ArrayList<>();
+        for (Usuario u : base) {
+            String login = u.getLogin() != null ? u.getLogin().toLowerCase() : "";
+            String email = u.getEmail() != null ? u.getEmail().toLowerCase() : "";
+            if (login.contains(qLower) || email.contains(qLower)) {
+                filtrados.add(u);
+            }
+        }
+        return filtrados;
     }
     /** Incrementa el contador de logeos del usuario. */
     public void incrementarContadorLogins(String login) {
