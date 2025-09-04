@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -13,7 +13,7 @@ import { TemplateModule } from '../../../template.module';
     standalone: true,
     template: ` <p-dialog [(visible)]="display" [style]="{width: '80vw'}"  header="Regularizar" [modal]="true" [closable]="true" styleClass="p-fluid">
     <ng-template pTemplate="content">
-    <p-tabs value="0">
+    <p-tabs [(value)]="activeTab">
                             <p-tablist>
                                 <p-tab value="0">Datos de Usuario</p-tab>
                                 <p-tab value="1">Otros Usuarios</p-tab>
@@ -50,7 +50,7 @@ import { TemplateModule } from '../../../template.module';
       class="p-button-rounded bg-red-500 text-white"
       icon="pi pi-search"
       (click)="buscar()"
-      [disabled]="form.get('palabraBuscar')?.invalid"
+        [disabled]="!form.get('palabraBuscar')?.value"
       pTooltip="Buscar">
     </button>
                       </div>
@@ -114,7 +114,6 @@ import { TemplateModule } from '../../../template.module';
 <div class="flex flex-col gap-2 w-full">
                       <label for="usuarioRecepcion">Usuario de recepci&oacute;n</label>
     <p-select appendTo="body" id="usuarioRecepcion" formControlName="usuarioRecepcion" [options]="usuariosPRLista" optionLabel="descripcion" placeholder="Seleccionar" class="w-full"></p-select>
-    <app-input-validation [form]="form" modelo="usuarioRecepcion" ver="Usuario Recepcion"></app-input-validation>
     <small class="text-xs text-gray-500">Para registrar usuario de recepción debe ir al módulo devoluciones</small>
 </div>
 </div>
@@ -218,7 +217,6 @@ import { TemplateModule } from '../../../template.module';
 <div class="flex flex-col gap-2 w-full">
                       <label for="usuarioRecepcion">Usuario de recepci&oacute;n</label>
     <p-select appendTo="body" id="usuarioRecepcion" formControlName="usuarioRecepcion" [options]="usuariosPRLista" optionLabel="descripcion" placeholder="Seleccionar" class="w-full"></p-select>
-    <app-input-validation [form]="formOtroUsuario" modelo="usuarioRecepcion" ver="Usuario Recepcion"></app-input-validation>
     <small class="text-xs text-gray-500">Para registrar usuario de recepción debe ir al módulo devoluciones</small>
 </div>
 </div>
@@ -230,7 +228,10 @@ import { TemplateModule } from '../../../template.module';
     </ng-template>
     <ng-template pTemplate="footer">
                     <button pButton pRipple type="button" icon="pi pi-times" (click)="closeModal()" [disabled]="loading" label="Cancelar" class="p-button-outlined p-button-danger"></button>
-                    <button pButton pRipple type="button" icon="pi pi-check" [disabled]="form.invalid || loading" label="Guardar" class="p-button-success"></button>
+                    <button pButton pRipple type="button" icon="pi pi-check"
+                            [disabled]="(activeTab === '0' ? form.invalid : formOtroUsuario.invalid) || loading"
+                            (click)="guardar()"
+                            label="Guardar" class="p-button-success"></button>
                 </ng-template>
   </p-dialog>
 
@@ -253,20 +254,22 @@ export class ModalRegularizarComponent implements OnInit {
     objeto: any = null;
     radioValue: any = null;
     palabraClave: string = "";
+    activeTab: string = '0';
+    @Output() saved = new EventEmitter<DetalleBibliotecaDTO>();
 
     constructor(private fb: FormBuilder, private genericoService: GenericoService, private materialBibliograficoService: MaterialBibliograficoService, private confirmationService: ConfirmationService, private messageService: MessageService) {
 
         this.form = this.fb.group({
             tipoUsuario: ['', [Validators.required]],
             tipoBuscar: [1, [Validators.required]],
-            palabraBuscar: ['', [Validators.required]],
+            palabraBuscar: [''],
             usuario: ['', [Validators.required]],
             numeroIngreso: ['', [Validators.required]],
             tipoMaterial: ['', [Validators.required]],
             fechaPrestamo: ['', [Validators.required]],
             fechaDevolucion: ['', [Validators.required]],
             usuarioPrestamo: ['', [Validators.required]],
-            usuarioRecepcion: ['', [Validators.required]]
+            usuarioRecepcion: ['']
         });
         ['numeroIngreso', 'tipoMaterial', 'fechaPrestamo', 'fechaDevolucion', 'usuarioPrestamo', 'usuarioRecepcion']
             .forEach(campo => this.form.get(campo)?.disable());
@@ -289,7 +292,7 @@ export class ModalRegularizarComponent implements OnInit {
             devolver: [false, [Validators.required]],
             fechaDevolucion: ['', [Validators.required]],
             usuarioPrestamo: ['', [Validators.required]],
-            usuarioRecepcion: ['', [Validators.required]]
+            usuarioRecepcion: ['']
         });
         ['numeroIngreso', 'tipoMaterial', 'fechaPrestamo', 'fechaDevolucion', 'usuarioPrestamo', 'usuarioRecepcion']
             .forEach(campo => this.formOtroUsuario.get(campo)?.disable());
@@ -364,8 +367,33 @@ export class ModalRegularizarComponent implements OnInit {
         this.display = false;
     }
     guardar() {
-        this.loading = false;
-        this.display = false;
+        this.loading = true;
+        const datos = this.activeTab === '0' ? this.form.getRawValue() : this.formOtroUsuario.getRawValue();
+        const id = this.objeto?.idDetalleBiblioteca;
+        const payload = { ...datos, idDetalleBiblioteca: id };
+        this.materialBibliograficoService.regularizarPrestamo(payload).subscribe({
+            next: (resp: any) => {
+                this.loading = false;
+                this.display = false;
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Listo',
+                    detail: 'Préstamo regularizado.'
+                });
+                this.saved.emit(resp?.data);
+            },
+            error: (e: HttpErrorResponse) => {
+                this.loading = false;
+                const detail = e.status === 403
+                    ? 'No tiene permisos para regularizar el préstamo'
+                    : 'No se pudo regularizar el préstamo';
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail
+                });
+            }
+        });
     }
     buscar() {
         this.filtrarUsuarios();
