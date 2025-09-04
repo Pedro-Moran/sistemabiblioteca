@@ -198,7 +198,7 @@ interface ReservaUsuario {
                 </div>
             </div>
 
-<app-modal-regularizar #modalRegularizar></app-modal-regularizar>
+<app-modal-regularizar #modalRegularizar (saved)="onRegularizado($event)"></app-modal-regularizar>
 
             <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
             <p-toast></p-toast>`,
@@ -666,6 +666,10 @@ private agruparPorBiblioteca(
 
   regularizarPrestamo(detalle: DetalleBibliotecaDTO) {
     this.modalRegularizar.openModal(detalle);
+  }
+
+  onRegularizado(_det: DetalleBibliotecaDTO) {
+    this.cargarTodosDetallesReservados();
   }
 
 }

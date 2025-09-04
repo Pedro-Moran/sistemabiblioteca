@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/auth/api/prestamos")
+@RequestMapping({"/auth/api/prestamos", "/api/prestamos"})
 @RequiredArgsConstructor
 public class PrestamoController {
 
@@ -126,6 +126,15 @@ public class PrestamoController {
         DetallePrestamo resultado = prestamoService
                 .recepcionarPrestamo(id, auth.getName());
         return ResponseEntity.ok(Map.of("status","0","data",resultado));
+    }
+
+    @PostMapping("/regularizar")
+    public ResponseEntity<?> regularizar(
+            @RequestBody Map<String, Object> payload,
+            Authentication auth
+    ) {
+        var resultado = prestamoService.regularizarPrestamo(payload, auth.getName());
+        return ResponseEntity.ok(Map.of("status","0","data", resultado));
     }
 
     @GetMapping("/reporte")

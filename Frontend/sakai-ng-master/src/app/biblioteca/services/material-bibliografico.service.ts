@@ -189,6 +189,15 @@ api_libros_lista(modulo: any): Observable<any> {
     );
   }
 
+  regularizarPrestamo(payload: any): Observable<any> {
+    const url = `${environment.filesUrl}/api/prestamos/regularizar`;
+    return this.http.post<any>(
+      url,
+      payload,
+      { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
+    );
+  }
+
 registrarEspecialidad(especialidad: any): Observable<any> {
     const url = `${this.apiUrl}/registrar/especialidad`;
     return this.http.post<any>(url, especialidad, {

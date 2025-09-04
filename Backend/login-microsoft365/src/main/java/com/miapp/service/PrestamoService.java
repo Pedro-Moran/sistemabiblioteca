@@ -4,7 +4,11 @@ import com.miapp.model.DetallePrestamo;
 import com.miapp.model.Equipo;
 import com.miapp.model.Estado;
 import com.miapp.model.TipoPrestamo;
+import com.miapp.model.DetalleBiblioteca;
+import com.miapp.model.dto.DetalleBibliotecaDTO;
+import com.miapp.mapper.BibliotecaMapper;
 import com.miapp.repository.DetallePrestamoRepository;
+import com.miapp.repository.DetalleBibliotecaRepository;
 import com.miapp.repository.EquipoRepository;
 import com.miapp.repository.EstadoRepository;
 import com.miapp.repository.OcurrenciaBibliotecaRepository;
@@ -19,6 +23,7 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -44,6 +49,8 @@ public class PrestamoService {
     private final TaskScheduler scheduler;
     private final OcurrenciaBibliotecaRepository ocurrenciaBibliotecaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final DetalleBibliotecaRepository detalleBibliotecaRepository;
+    private final BibliotecaMapper bibliotecaMapper;
 
     public DetallePrestamo solicitarPrestamo(Long equipoId,
                                              Integer tipoUsuario,
@@ -231,6 +238,44 @@ public class PrestamoService {
         equipoRepository.save(eq);
 
         return detallePrestamoRepository.save(dp);
+    }
+
+    public DetalleBibliotecaDTO regularizarPrestamo(Map<String, Object> datos, String usuario) {
+        Long id = Long.valueOf(String.valueOf(datos.get("idDetalleBiblioteca")));
+        DetalleBiblioteca det = detalleBibliotecaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Detalle no encontrado"));
+
+        if (datos.get("usuarioPrestamo") instanceof Map<?, ?> up) {
+            Object desc = up.get("descripcion");
+            det.setUsuarioPrestamo(desc != null ? desc.toString() : null);
+        }
+        if (datos.get("usuario") instanceof Map<?, ?> u) {
+            Object cod = u.get("codigoUsuario");
+            if (cod != null) {
+                det.setCodigoUsuario(cod.toString());
+            }
+        }
+        if (datos.get("fechaPrestamo") != null) {
+            det.setFechaPrestamo(OffsetDateTime.parse(datos.get("fechaPrestamo").toString()).toLocalDateTime());
+        }
+        if (datos.get("fechaDevolucion") != null) {
+            det.setFechaFin(OffsetDateTime.parse(datos.get("fechaDevolucion").toString()).toLocalDateTime());
+        }
+        det.setUsuarioModificacion(usuario);
+
+        String tipo = det.getTipoPrestamo();
+        final String descEstado = (tipo != null
+                && tipo.trim().toUpperCase().replace(' ', '_').contains("DOMICILIO"))
+                ? "PRESTAMO A DOMICILIO"
+                : "PRESTADO EN SALA";
+
+        Estado estado = estadoRepository.findByDescripcionIgnoreCase(descEstado)
+                .orElseThrow(() -> new RuntimeException("Estado '" + descEstado + "' no existe"));
+        det.setIdEstado(estado.getIdEstado());
+        det.setCantidadPrestamos((det.getCantidadPrestamos() == null ? 0 : det.getCantidadPrestamos()) + 1);
+
+        DetalleBiblioteca saved = detalleBibliotecaRepository.save(det);
+        return bibliotecaMapper.toDetalleDto(saved);
     }
 
     public List<DetallePrestamo> reporte(
