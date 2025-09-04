@@ -102,7 +102,10 @@ interface ReservaUsuario {
                         <ng-template pTemplate="caption">
 
                        <div class="flex items-center justify-between">
-               <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt1)" />
+               <div class="flex gap-2">
+                   <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt1)" />
+                   <p-button icon="pi pi-refresh" label="Regularizar" (click)="regularizarSeleccionado()" [disabled]="!detalleSeleccionado" />
+               </div>
 
                <p-iconfield>
                    <input pInputText type="text" placeholder="Filtrar" #filter (input)="onGlobalFilter(dt1, $event)"/>
@@ -149,28 +152,31 @@ interface ReservaUsuario {
                             <p-table
     [value]="detalle.detalles"
     showGridlines
-    [tableStyle]="{ 'min-width': '50rem' }">
+    [tableStyle]="{ 'min-width': '50rem' }"
+    dataKey="idDetalleBiblioteca"
+    selectionMode="single"
+    [(selection)]="detalleSeleccionado">
         <ng-template pTemplate="header">
             <tr>
                 <th>Título</th>
                 <th>Código</th>
                 <th>N.I</th>
                 <th>Fecha de reserva</th>
-                <th>Regularizar</th>
+                <th>Prestar</th>
                 <th>Cancelar</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-bib>
-            <tr>
+            <tr [pSelectableRow]="bib">
                 <td>{{ bib.biblioteca?.titulo || '-' }}</td>
                 <td>{{ bib.biblioteca?.id }}</td>
                 <td>{{ bib.numeroIngreso }}</td>
                 <td>{{ bib.fechaReserva }}</td>
                 <td>
-                <p-button icon="pi pi-refresh" rounded outlined (click)="regularizarPrestamo(bib)" pTooltip="Regularizar" tooltipPosition="bottom"/>
+                <p-button icon="pi pi-check" rounded outlined (click)="prestar(bib)" pTooltip="Prestar" tooltipPosition="bottom"/>
                 </td>
                 <td>
-                <p-button icon="pi pi-times" rounded outlined (click)="cancelar(bib)"pTooltip="Cancelar" tooltipPosition="bottom"/>
+                <p-button icon="pi pi-times" rounded outlined (click)="cancelar(bib)" pTooltip="Cancelar" tooltipPosition="bottom"/>
                 </td>
             </tr>
         </ng-template>
@@ -213,6 +219,7 @@ export class PrestamoMaterialBibliografico implements OnInit {
     form: FormGroup = new FormGroup({});
     user: any;
     selectedItem: any;
+    detalleSeleccionado: DetalleBibliotecaDTO | null = null;
     @ViewChild('menu') menu!: Menu;
     @ViewChild('filter') filter!: ElementRef;
     dataSede: Sedes[] = [];
@@ -247,6 +254,7 @@ export class PrestamoMaterialBibliografico implements OnInit {
   private cargarTodosDetallesReservados(): void {
     const sedeId = this.sedeFiltro?.id && this.sedeFiltro.id !== 0 ? this.sedeFiltro.id : undefined;
     const tipoCodigo = this.tipoFiltro?.codigo ? this.tipoFiltro.codigo : undefined;
+    this.detalleSeleccionado = null;
     this.loading = true;
     this.materialBibliograficoService.listarDetallesReservados(sedeId, tipoCodigo).subscribe({
       next: (lista: DetalleBibliotecaDTO[]) => {
@@ -570,6 +578,52 @@ private agruparPorBiblioteca(
 
   toggleGrupo(grupo: GrupoBiblioteca) {
     grupo.expandido = !grupo.expandido;
+  }
+
+  prestar(detalle: DetalleBibliotecaDTO) {
+    this.confirmationService.confirm({
+      message: '¿Estás seguro(a) de prestar el ejemplar?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'SI',
+      rejectLabel: 'NO',
+      accept: () => {
+        this.loading = true;
+        this.materialBibliograficoService.prestarDetalle(detalle.idDetalleBiblioteca!).subscribe({
+          next: (resp: any) => {
+            this.loading = false;
+            if (resp.p_status === 0) {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Listo',
+                detail: 'Ejemplar prestado.'
+              });
+              this.cargarTodosDetallesReservados();
+            } else {
+              this.messageService.add({
+                severity: 'warn',
+                summary: 'No se pudo prestar',
+                detail: 'El servidor devolvió un estado distinto a 0.'
+              });
+            }
+          },
+          error: () => {
+            this.loading = false;
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Ocurrió un error al comunicarse con el servidor.'
+            });
+          }
+        });
+      }
+    });
+  }
+
+  regularizarSeleccionado() {
+    if (this.detalleSeleccionado) {
+      this.regularizarPrestamo(this.detalleSeleccionado);
+    }
   }
 
     cancelar(detalle: DetalleBibliotecaDTO) {
