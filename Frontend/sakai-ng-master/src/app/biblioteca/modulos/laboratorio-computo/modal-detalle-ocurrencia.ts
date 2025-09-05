@@ -13,15 +13,15 @@ import { OcurrenciaMaterialDTO } from '../../interfaces/OcurrenciaMaterialDTO';
 @Component({
     selector: 'app-modal-detalle-ocurrencia',
     standalone: true,
-    template: ` <p-dialog [(visible)]="display" [style]="{width: '75%'}"  header="Regularizar ocurrencia" [modal]="true" [closable]="true" styleClass="p-fluid">
+    template: ` <p-dialog [(visible)]="display" [style]="{width: '75%'}"  header="Regularizar ocurrencia" [modal]="true" [closable]="true" styleClass="p-fluid" [contentStyle]="{overflow: 'visible'}"> 
      <ng-template pTemplate="content">
      <form [formGroup]="form">
-        <div class="grid grid-cols-7 gap-4">
-                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-2 lg:col-span-1">
-                    <label for="codigo">Codigo</label>
-                    <input pInputText id="codigo" type="text" formControlName="id" />
+        <div class="grid grid-cols-8 gap-4">
+                    <div class="flex flex-col gap-2 col-span-8 sm:col-span-4 md:col-span-4 lg:col-span-4">
+                    <label for="codigo">Código</label>
+                    <input pInputText id="codigo" type="text" formControlName="id" class="w-full" />
                     </div>
-                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-2 lg:col-span-2">
+                    <div class="flex flex-col gap-2 col-span-8 sm:col-span-4 md:col-span-4 lg:col-span-4">
                     <label for="fecha">Fecha</label>
                     <p-datepicker
       appendTo="body"
@@ -32,27 +32,27 @@ import { OcurrenciaMaterialDTO } from '../../interfaces/OcurrenciaMaterialDTO';
       formControlName="fechaCreacion">
 </p-datepicker>
                     </div>
-                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-3 lg:col-span-2">
+                    <div class="flex flex-col gap-2 col-span-8 sm:col-span-4 md:col-span-4 lg:col-span-4">
                     <label for="semestre">Semestre</label>
                     <p-select appendTo="body" [options]="semestreLista" optionLabel="descripcion" placeholder="Seleccionar" />
 
                     </div>
-                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-2 lg:col-span-2">
-                    <label for="sede">Local/Filial</label>
-                    <p-select appendTo="body" formControlName="sedePrestamo" [options]="sedesLista" optionLabel="descripcion" optionValue="id" placeholder="Seleccionar" />
+                      <div class="flex flex-col gap-2 col-span-8 sm:col-span-4 md:col-span-4 lg:col-span-4">
+                      <label for="sede">Local/Filial</label>
+                      <p-select appendTo="body" formControlName="sedePrestamo" [options]="sedesLista" optionLabel="descripcion" optionValue="id" placeholder="Seleccionar" />
 
-                    </div>
-                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-2 lg:col-span-2">
+                      </div>
+                    <div class="flex flex-col gap-2 col-span-8 sm:col-span-3 md:col-span-3 lg:col-span-3">
                     <label for="ambiente">Ambiente</label>
                     <p-select appendTo="body" [options]="ambienteLista" optionLabel="descripcion" placeholder="Seleccionar" />
 
                     </div>
-                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-3 lg:col-span-5">
-                    <label for="personal">Personal</label>
-                    <input pInputText id="personal" type="text" formControlName="usuarioCreacion"/>
+                      <div class="flex flex-col gap-2 col-span-8 sm:col-span-5 md:col-span-5 lg:col-span-5">
+                      <label for="personal">Personal</label>
+                      <input pInputText id="personal" type="text" formControlName="usuarioCreacion"/>
 
                     </div>
-                    <div class="flex flex-col gap-2 col-span-7">
+                    <div class="flex flex-col gap-2 col-span-8">
                     <label for="auditoria">Auditoria</label>
                     <textarea pTextarea id="auditoria" rows="4" formControlName="descripcion"></textarea>
                     </div>
@@ -60,8 +60,8 @@ import { OcurrenciaMaterialDTO } from '../../interfaces/OcurrenciaMaterialDTO';
                 </div>
 
 
-                <div class="grid grid-cols-7 gap-4 items-center py-4">
-    <span class="col-span-4 font-bold">ESTUDIANTES INVOLUCRADOS</span>
+                <div class="grid grid-cols-8 gap-4 items-center py-4">
+    <span class="col-span-5 font-bold">ESTUDIANTES INVOLUCRADOS</span>
 
 </div>
 <div class="py-4">
@@ -71,7 +71,7 @@ import { OcurrenciaMaterialDTO } from '../../interfaces/OcurrenciaMaterialDTO';
     [tableStyle]="{ 'min-width': '50rem' }">
         <ng-template #header>
             <tr>
-                <th>Codigo</th>
+                <th>Código</th>
                 <th>Estudiante</th>
                 <th></th>
             </tr>
@@ -87,8 +87,8 @@ import { OcurrenciaMaterialDTO } from '../../interfaces/OcurrenciaMaterialDTO';
         </ng-template>
 </p-table>
     </div>
-<div class="grid grid-cols-7 gap-4 items-center py-4">
-    <span class="col-span-4 font-bold">MATERIALES INVOLUCRADOS</span>
+<div class="grid grid-cols-8 gap-4 items-center py-4">
+    <span class="col-span-5 font-bold">MATERIALES INVOLUCRADOS</span>
 
 </div>
 <div class="py-4">
@@ -98,7 +98,7 @@ import { OcurrenciaMaterialDTO } from '../../interfaces/OcurrenciaMaterialDTO';
     [tableStyle]="{ 'min-width': '50rem' }">
         <ng-template #header>
             <tr>
-                <th>Codigo</th>
+                <th>Código</th>
                 <th>Material</th>
                 <th>Cant.</th>
                 @if(costear){
@@ -141,8 +141,8 @@ import { OcurrenciaMaterialDTO } from '../../interfaces/OcurrenciaMaterialDTO';
 
     </div>
     @if(!costear){
-<div class="grid grid-cols-7 gap-4">
-                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-2 lg:col-span-2">
+<div class="grid grid-cols-8 gap-4">
+                    <div class="flex flex-col gap-2 col-span-8 sm:col-span-3 md:col-span-2 lg:col-span-2">
                     <label for="costo">Costo</label>
                     <input pInputText id="costo" type="text" />
                     </div>
@@ -177,7 +177,8 @@ import { OcurrenciaMaterialDTO } from '../../interfaces/OcurrenciaMaterialDTO';
             <p-toast></p-toast>
   `,
     imports: [TemplateModule,ModalCostear],
-    providers: [MessageService, ConfirmationService]
+    providers: [MessageService, ConfirmationService],
+    styles: [`:host ::ng-deep label{white-space:normal !important;overflow:visible !important;text-overflow:initial !important;}`]
 })
 export class ModalDetalleOcurencia implements OnInit {
     loading: boolean = false;
