@@ -155,7 +155,7 @@ interface PrestamoUsuario {
                 <td>{{ bib.biblioteca?.titulo || '-' }}</td>
                 <td>{{ bib.biblioteca?.id }}</td>
                 <td>{{ bib.numeroIngreso }}</td>
-                <td>{{ bib.fechaReserva | date:'dd-MM-yyyy' }}</td>
+                <td>{{ bib.fechaPrestamo | date:'dd-MM-yyyy' }}</td>
                 <td>
                 <p-button icon="pi pi-check" rounded outlined (click)="devolver(bib)" pTooltip="Devolver" tooltipPosition="bottom"/>
                 </td>

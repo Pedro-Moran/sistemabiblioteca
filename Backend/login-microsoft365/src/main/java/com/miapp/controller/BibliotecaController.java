@@ -232,6 +232,14 @@ public class BibliotecaController {
                 : ResponseEntity.notFound().build();
     }
 
+    @GetMapping("/detalles/numero-ingreso/{numero}")
+    public ResponseEntity<DetalleBibliotecaDTO> getDetalleByNumeroIngreso(@PathVariable("numero") Long numeroIngreso) {
+        DetalleBibliotecaDTO dto = detalleService.findByNumeroIngreso(numeroIngreso);
+        return dto != null
+                ? ResponseEntity.ok(dto)
+                : ResponseEntity.notFound().build();
+    }
+
     /** Endpoint para obtener todos los detalles reservados (con su “biblioteca” anidada) */
     @GetMapping("/detalles-reservados")
     public ResponseEntity<Map<String, Object>> getDetallesReservados() {

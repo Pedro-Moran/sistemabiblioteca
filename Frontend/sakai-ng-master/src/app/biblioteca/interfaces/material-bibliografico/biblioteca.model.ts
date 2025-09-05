@@ -124,6 +124,8 @@ export interface DetalleBibliotecaDTO {
     /** Tipo de préstamo de la reserva */
     tipoPrestamo?: string | null;
     /** Fecha de la reserva */
+    fechaPrestamo?: string | null;
+    fechaDevolucion?: string | null;
     fechaReserva?: string | null;
     /** Detalle puede venir anidado con datos de la biblioteca */
     biblioteca?: BibliotecaDTO;

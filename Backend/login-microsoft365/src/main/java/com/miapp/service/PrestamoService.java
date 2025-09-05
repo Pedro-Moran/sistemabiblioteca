@@ -241,8 +241,8 @@ public class PrestamoService {
     }
 
     public DetalleBibliotecaDTO regularizarPrestamo(Map<String, Object> datos, String usuario) {
-        Long id = Long.valueOf(String.valueOf(datos.get("idDetalleBiblioteca")));
-        DetalleBiblioteca det = detalleBibliotecaRepository.findById(id)
+        Long numeroIngreso = Long.valueOf(String.valueOf(datos.get("numeroIngreso")));
+        DetalleBiblioteca det = detalleBibliotecaRepository.findFirstByNumeroIngreso(numeroIngreso)
                 .orElseThrow(() -> new RuntimeException("Detalle no encontrado"));
 
         if (datos.get("usuarioPrestamo") instanceof Map<?, ?> up) {
@@ -255,11 +255,20 @@ public class PrestamoService {
                 det.setCodigoUsuario(cod.toString());
             }
         }
-        if (datos.get("fechaPrestamo") != null) {
-            det.setFechaPrestamo(OffsetDateTime.parse(datos.get("fechaPrestamo").toString()).toLocalDateTime());
+        Object fechaPrestamoObj = datos.get("fechaPrestamo");
+        LocalDateTime fechaPrestamo = null;
+        if (fechaPrestamoObj instanceof String fpStr && !fpStr.isBlank()) {
+            fechaPrestamo = OffsetDateTime.parse(fpStr).toLocalDateTime();
         }
-        if (datos.get("fechaDevolucion") != null) {
-            det.setFechaFin(OffsetDateTime.parse(datos.get("fechaDevolucion").toString()).toLocalDateTime());
+        if (fechaPrestamo == null) {
+            fechaPrestamo = LocalDateTime.now();
+        }
+        det.setFechaPrestamo(fechaPrestamo);
+        det.setFechaInicio(fechaPrestamo);
+
+        Object fechaDevolucionObj = datos.get("fechaDevolucion");
+        if (fechaDevolucionObj instanceof String fdStr && !fdStr.isBlank()) {
+            det.setFechaFin(OffsetDateTime.parse(fdStr).toLocalDateTime());
         }
         det.setUsuarioModificacion(usuario);
 

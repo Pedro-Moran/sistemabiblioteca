@@ -117,4 +117,11 @@ public class DetalleBibliotecaService {
                 .map(mapper::toDetalleDto)
                 .orElse(null);
     }
+
+    /** Obtiene un detalle por número de ingreso y lo mapea a DTO */
+    public DetalleBibliotecaDTO findByNumeroIngreso(Long numeroIngreso) {
+        return detalleBibliotecaRepository.findFirstByNumeroIngreso(numeroIngreso)
+                .map(mapper::toDetalleDto)
+                .orElse(null);
+    }
 }
