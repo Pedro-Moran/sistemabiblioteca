@@ -46,7 +46,7 @@ import { ModalNuevoOcurencia } from '../../laboratorio-computo/modal-nuevo-ocurr
 
                               <label for="tipo" class="block text-sm font-medium">Tipo</label>
                               <p-select [(ngModel)]="tipoFiltro" [options]="dataTipo" optionLabel="descripcion"
-                                placeholder="Seleccionar" />
+                                placeholder="Seleccionar" (ngModelChange)="aplicarFiltros()" />
 
                             </div>
                             <div class="flex flex-col grow basis-0 gap-2">
@@ -56,13 +56,13 @@ import { ModalNuevoOcurencia } from '../../laboratorio-computo/modal-nuevo-ocurr
                             <div class="flex flex-col grow basis-0 gap-2">
                               <label class="block text-sm font-medium invisible">Placeholder</label>
                               <div class="flex items-center gap-2">
-                                <p-checkbox id="checkDiscapacidad" name="option" value="1"></p-checkbox>
+                                <p-checkbox id="checkDiscapacidad" name="option" [(ngModel)]="discapacidadFiltro" [binary]="true" (onChange)="aplicarFiltros()"></p-checkbox>
                                 <label for="checkDiscapacidad" class="text-sm">¿Equipos con discapacidad?</label>
                               </div>
                             </div>
                             <div class="flex items-end">
                               <button pButton type="button" class="p-button-rounded p-button-danger" icon="pi pi-search"
-                                (click)="listar()" [disabled]="loading" pTooltip="Filtrar" tooltipPosition="bottom">
+                                (click)="aplicarFiltros()" [disabled]="loading" pTooltip="Filtrar" tooltipPosition="bottom">
                               </button>
                             </div>
                             <div class="flex items-end">
@@ -119,23 +119,23 @@ import { ModalNuevoOcurencia } from '../../laboratorio-computo/modal-nuevo-ocurr
                               <!--<img [src]="objeto.foto" [alt]="objeto.nombres" width="50" class="shadow-lg" />-->
 
                             </td>
-                            <td>{{objeto.usuarioPrestamo}}
+                            <td>{{objeto.usuarioPrestamo || objeto.nombreUsuario || objeto.usuario}}
                             </td>
                             <td>
-                              {{objeto.equipo?.nombreEquipo}}
+                              {{objeto.equipo?.nombreEquipo || objeto.nombreEquipo}}
 
                             </td>
                             <td>
-                              {{objeto.equipo?.numeroEquipo}}
+                              {{objeto.equipo?.numeroEquipo || objeto.numeroEquipo}}
                             </td>
                             <td>
-                              {{objeto.equipo?.ip}}
+                              {{objeto.equipo?.ip || objeto.ip}}
                             </td>
                             <td>
-                              {{objeto.estado.descripcion}}
+                              {{objeto.estado?.descripcion || objeto.estado}}
                             </td>
                             <td>
-                              {{objeto.fechaPrestamo}}
+                              {{objeto.fechaPrestamo | date:'dd-MM-yyyy'}}
                             </td>
                             <td>
                               <p-button icon="pi pi-check" rounded outlined (click)="devolver(objeto)" pTooltip="Devolver"
@@ -202,9 +202,10 @@ export class DevolucionBibliotecaVirtual implements OnInit {
     tipoFiltro: Tipo = new Tipo();
     filtros: ClaseGeneral[] = [];
     opcionFiltro: ClaseGeneral = new ClaseGeneral();
-    palabra: any;
     palabraClave: string = "";
+    discapacidadFiltro: boolean = false;
     expandedRows = {};
+    todosPrestamos: any[] = [];
     @ViewChild('modalOcurrencia') modal!: ModalNuevoOcurencia;
 
     constructor(private bibliotecaVirtualService: BibliotecaVirtualService,private devolucionesService: DevolucionesService,private prestamosService: PrestamosService,private materialBibliograficoService: MaterialBibliograficoService, private genericoService: GenericoService, private fb: FormBuilder,
@@ -234,10 +235,11 @@ export class DevolucionBibliotecaVirtual implements OnInit {
         try {
           const result: any = await this.prestamosService.api_prestamos_tipos('conf/tipo-lista').toPromise();
           if (result.status === "0") {
-            this.dataTipo = result.data;
-            let tipos = [{ id: 0, descripcion: 'TODOS', activo: true, estado: 1 }, ...this.dataTipo];
-
-            this.dataTipo = tipos;
+            this.dataTipo = result.data.map((t: any) => ({
+              ...t,
+              codigo: this.mapDescripcionTipoToCodigo(t.descripcion)
+            }));
+            this.dataTipo = [{ id: 0, descripcion: 'TODOS', activo: true, codigo: null }, ...this.dataTipo];
             this.tipoFiltro = this.dataTipo[0];
           }
         } catch (error) {
@@ -247,10 +249,33 @@ export class DevolucionBibliotecaVirtual implements OnInit {
 
       }
 
+    private mapDescripcionTipoToCodigo(desc: string): string {
+        const normalized = desc
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .trim().toUpperCase().replace(/\s+/g, '_');
+        switch (normalized) {
+          case 'EN_SALA':
+          case 'PRESTAMO_EN_SALA':
+            return 'PRESTAMO_EN_SALA';
+          case 'A_DOMICILIO':
+          case 'PRESTAMO_A_DOMICILIO':
+            return 'PRESTAMO_A_DOMICILIO';
+          case 'SALA_Y_DOMICILIO':
+          case 'EN_SALA_DOMICILIO':
+          case 'PRESTAMO_SALA_DOMICILIO':
+          case 'SALAYDOMICILIO':
+            return 'PRESTAMO_SALA_DOMICILIO';
+          default:
+            return normalized;
+        }
+    }
+
     limpiar() {
         this.palabraClave = "";  // Resetea el campo de búsqueda
+        this.tipoFiltro = this.dataTipo[0];
+        this.discapacidadFiltro = false;
         this.sedeFiltro = this.dataSede[0];
-        this.opcionFiltro = this.filtros[0];
+        this.listar();
     }
 
     onGlobalFilter(table: Table, event: Event) {
@@ -260,6 +285,31 @@ export class DevolucionBibliotecaVirtual implements OnInit {
     clear(table: Table) {
         table.clear();
         this.filter.nativeElement.value = '';
+    }
+
+    aplicarFiltros() {
+        const termino = this.palabraClave.trim().toLowerCase();
+        const tipoCodigo = this.tipoFiltro?.codigo || null;
+        const requiereDiscapacidad = this.discapacidadFiltro;
+
+        this.data = this.todosPrestamos.filter(item => {
+            const coincideTipo = !tipoCodigo || this.mapDescripcionTipoToCodigo(item.tipoPrestamo ?? '') === tipoCodigo;
+            const coincideDiscapacidad = !requiereDiscapacidad || !!item.equipo?.discapacidad;
+            const textoBusqueda = [
+                item.usuarioPrestamo,
+                item.nombreUsuario,
+                item.usuario,
+                item.correoUsuario,
+                item.documentoUsuario,
+                item.equipo?.nombreEquipo,
+                item.equipo?.numeroEquipo,
+                item.equipo?.ip
+            ]
+                .map(v => String(v || '').toLowerCase())
+                .some(v => v.includes(termino));
+            const coincidePalabra = !termino || textoBusqueda;
+            return coincideTipo && coincideDiscapacidad && coincidePalabra;
+        });
     }
 
     private async cargarSedes() {
@@ -295,10 +345,33 @@ onAbrirOcurrencia(item: any) {
     }
     listar() {
         this.loading = true;
-        this.bibliotecaVirtualService.listarDevoluciones(this.sedeFiltro.id)
+        const sedeId = this.sedeFiltro?.id || 0;
+        this.bibliotecaVirtualService.listarDevoluciones(sedeId)
           .subscribe({
             next: r => {
-              this.data = r.data;
+              this.todosPrestamos = (r.data || []).map(item => ({
+                ...item,
+                equipo: {
+                  ...item.equipo,
+                  nombreEquipo:
+                    item.equipo?.nombreEquipo ??
+                    item.nombreEquipo ??
+                    item.equipoNombre ??
+                    '',
+                  numeroEquipo:
+                    item.equipo?.numeroEquipo ??
+                    item.numeroEquipo ??
+                    item.numero ??
+                    '',
+                  ip:
+                    item.equipo?.ip ??
+                    item.ip ??
+                    item.direccionIp ??
+                    item.direccionIP ??
+                    ''
+                }
+              }));
+              this.aplicarFiltros();
               this.loading = false;
             },
             error: (_: HttpErrorResponse) => {
