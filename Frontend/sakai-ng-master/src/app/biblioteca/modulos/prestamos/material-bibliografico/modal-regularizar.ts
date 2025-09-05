@@ -344,8 +344,10 @@ export class ModalRegularizarComponent implements OnInit {
       }
     });
   }
-    openModal(detalle: DetalleBibliotecaDTO) {
+    openModal(detalle: DetalleBibliotecaDTO | null = null) {
         this.objeto = detalle;
+        this.form.reset({ tipoBuscar: 1 });
+        this.formOtroUsuario.reset({ devolver: false });
         if (detalle) {
             const fechaPrestamo = detalle.fechaReserva ? new Date(detalle.fechaReserva) : null;
             const fechaDevolucion = fechaPrestamo

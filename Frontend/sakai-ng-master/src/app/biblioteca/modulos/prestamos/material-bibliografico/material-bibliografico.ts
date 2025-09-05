@@ -104,7 +104,7 @@ interface ReservaUsuario {
                        <div class="flex items-center justify-between">
                <div class="flex gap-2">
                    <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt1)" />
-                   <p-button icon="pi pi-refresh" label="Regularizar" (click)="regularizarSeleccionado()" [disabled]="!detalleSeleccionado" />
+                   <p-button icon="pi pi-refresh" label="Regularizar" (click)="regularizarPrestamo()" />
                </div>
 
                <p-iconfield>
@@ -620,12 +620,6 @@ private agruparPorBiblioteca(
     });
   }
 
-  regularizarSeleccionado() {
-    if (this.detalleSeleccionado) {
-      this.regularizarPrestamo(this.detalleSeleccionado);
-    }
-  }
-
     cancelar(detalle: DetalleBibliotecaDTO) {
       this.confirmationService.confirm({
         message: '¿Estás seguro(a) de cancelar la reserva del ejemplar?',
@@ -674,7 +668,7 @@ private agruparPorBiblioteca(
     // Si quisieras limpiar algo al colapsar, aquí va
   }
 
-  regularizarPrestamo(detalle: DetalleBibliotecaDTO) {
+  regularizarPrestamo(detalle: DetalleBibliotecaDTO | null = null) {
     this.modalRegularizar.openModal(detalle);
   }
 
