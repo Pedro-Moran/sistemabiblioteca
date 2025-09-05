@@ -85,6 +85,16 @@ public class BibliotecaServiceImpl implements BibliotecaService {
     public Biblioteca register(BibliotecaDTO dto, MultipartFile portada) {
         // 1) Mapea principal
         Biblioteca bib = mapToEntity(dto);
+
+        Long numeroIngreso = generarNumeroIngreso();
+        bib.setNumeroDeIngreso(numeroIngreso);
+        if (bib.getDetalles() != null) {
+            bib.getDetalles().forEach(d -> {
+                if (d.getNumeroIngreso() == null) {
+                    d.setNumeroIngreso(numeroIngreso);
+                }
+            });
+        }
         if (portada != null && !portada.isEmpty()) {
             String filename = fileStorageService.store(portada);
             bib.setNombreImagen(filename);
@@ -102,6 +112,14 @@ public class BibliotecaServiceImpl implements BibliotecaService {
         // Volvemos a mapearlo por completo (incluyendo detalles)
         Biblioteca bib = mapToEntity(dto);
         bib.setId(id);
+        bib.setNumeroDeIngreso(existente.getNumeroDeIngreso());
+        if (bib.getDetalles() != null) {
+            bib.getDetalles().forEach(d -> {
+                if (d.getNumeroIngreso() == null) {
+                    d.setNumeroIngreso(existente.getNumeroDeIngreso());
+                }
+            });
+        }
         if (portada != null && !portada.isEmpty()) {
             String filename = fileStorageService.store(portada);
             bib.setNombreImagen(filename);
@@ -397,6 +415,15 @@ public class BibliotecaServiceImpl implements BibliotecaService {
                 .stream()
                 .map(mapper::toDetalleDto)
                 .toList();
+    }
+
+    private Long generarNumeroIngreso() {
+        Long max = bibliotecaRepository.findMaxNumeroDeIngreso();
+        long next = (max != null ? max : 0L) + 1L;
+        while (bibliotecaRepository.existsByNumeroDeIngreso(next)) {
+            next++;
+        }
+        return next;
     }
 
     @Transactional
