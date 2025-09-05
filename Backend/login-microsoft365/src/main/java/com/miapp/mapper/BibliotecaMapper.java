@@ -141,6 +141,7 @@ public class BibliotecaMapper {
         dto.setNotaResumen(b.getNotaResumen());
         dto.setLinkPublicacion(b.getLinkPublicacion());
         dto.setNumeroPaginas(b.getNumeroPaginas());
+        dto.setNumeroDeIngreso(b.getNumeroDeIngreso());
         dto.setFechaIngreso(b.getFechaIngreso());
         dto.setCosto(b.getCosto());
         dto.setNumeroFactura(b.getNumeroFactura());

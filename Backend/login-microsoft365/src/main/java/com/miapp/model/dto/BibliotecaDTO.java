@@ -68,6 +68,7 @@ public class BibliotecaDTO {
     private String linkPublicacion;
     private Integer numeroPaginas;
     // numeroDeIngreso lo genera la secuencia en BD, no va en el DTO de entrada
+    private Long numeroDeIngreso;
     private Long sedeId;
     private Long tipoAdquisicionId;
     private LocalDateTime fechaIngreso;

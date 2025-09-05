@@ -54,7 +54,7 @@ public class DetalleBiblioteca {
     @Column(name = "CODIGOBARRA", insertable = false, updatable = false)
     private String codigoBarra;
 
-    @Column(name = "NUMEROINGRESO", insertable = false, updatable = false)
+    @Column(name = "NUMEROINGRESO")
     private Long numeroIngreso;
 
     @Column(name = "NROEXISTENCIA", insertable = false, updatable = false)
