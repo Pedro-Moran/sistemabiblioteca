@@ -9,6 +9,7 @@ import { GenericoService } from '../../../services/generico.service';
 import { DocumentoService } from '../../../services/documento.service';
 import { MaterialBibliograficoService } from '../../../services/material-bibliografico.service';
 import { TemplateModule } from '../../../template.module';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 @Component({
     selector: 'app-modal-regularizar',
     standalone: true,
@@ -272,15 +273,14 @@ export class ModalRegularizarComponent implements OnInit {
             usuarioPrestamo: ['', [Validators.required]],
             usuarioRecepcion: ['']
         });
-        ['numeroIngreso', 'tipoMaterial', 'fechaPrestamo', 'fechaDevolucion', 'usuarioPrestamo', 'usuarioRecepcion']
-            .forEach(campo => this.form.get(campo)?.disable());
+        // Los campos del detalle de préstamo deben poder editarse,
+        // por lo que se eliminan las desactivaciones iniciales.
         this.form.get('tipoUsuario')?.valueChanges.subscribe(() => {
             this.form.patchValue({ palabraBuscar: '', usuario: null });
             this.filtrarUsuarios();
         });
-        this.form.get('usuario')?.valueChanges.subscribe((u) => {
-            this.form.get('usuarioPrestamo')?.setValue(u);
-        });
+        // El usuario de préstamo debe seleccionarse de manera independiente,
+        // por lo que se elimina la asignación automática desde el usuario.
         this.formOtroUsuario = this.fb.group({
 
             tipoUsuario: ['', [Validators.required]],
@@ -295,13 +295,22 @@ export class ModalRegularizarComponent implements OnInit {
             usuarioPrestamo: ['', [Validators.required]],
             usuarioRecepcion: ['']
         });
-        ['numeroIngreso', 'tipoMaterial', 'fechaPrestamo', 'fechaDevolucion', 'usuarioPrestamo', 'usuarioRecepcion']
-            .forEach(campo => this.formOtroUsuario.get(campo)?.disable());
+        // Los campos del detalle de préstamo para otro usuario también
+        // deben permanecer habilitados.
+
+        this.form.get('numeroIngreso')?.valueChanges
+            .pipe(debounceTime(300), distinctUntilChanged())
+            .subscribe(valor => this.autocompletarTipoMaterial(valor, this.form));
+
+        this.formOtroUsuario.get('numeroIngreso')?.valueChanges
+            .pipe(debounceTime(300), distinctUntilChanged())
+            .subscribe(valor => this.autocompletarTipoMaterial(valor, this.formOtroUsuario));
     }
     async ngOnInit() {
 
         await this.listarTiposDocumento();
         await this.listarTiposUsuario();
+        await this.listarUsuariosPrestamo();
     }
 
   async listarTiposDocumento() {
@@ -344,6 +353,59 @@ export class ModalRegularizarComponent implements OnInit {
       }
     });
   }
+
+  async listarUsuariosPrestamo() {
+    this.loading = true;
+    this.materialBibliograficoService.listarUsuarios().subscribe({
+      next: (lista: Usuario[]) => {
+        this.loading = false;
+        this.usuariosPRLista = lista.map(u => ({
+          descripcion:
+            `${u.nombres ?? ''} ${u.apellidoPaterno ?? ''} ${u.apellidoMaterno ?? ''}`.trim() ||
+            u.email ||
+            u.login ||
+            u.codigo,
+          codigoUsuario: u.codigo ?? u.login ?? ''
+        }));
+      },
+      error: () => {
+        this.loading = false;
+        this.usuariosPRLista = [];
+      }
+    });
+  }
+
+    private autocompletarTipoMaterial(valor: string, destino: FormGroup) {
+        const numero = Number(valor);
+        if (!valor || isNaN(numero)) {
+            this.tipoMaterialLista = [];
+            destino.get('tipoMaterial')?.setValue(null);
+            this.objeto = null;
+            return;
+        }
+        this.materialBibliograficoService.getDetalleBiblioteca(numero).subscribe({
+            next: (detalle: DetalleBibliotecaDTO) => {
+                this.objeto = detalle;
+                if (detalle?.tipoMaterial) {
+                    this.tipoMaterialLista = [detalle.tipoMaterial];
+                    destino.get('tipoMaterial')?.setValue(detalle.tipoMaterial);
+                } else {
+                    this.tipoMaterialLista = [];
+                    destino.get('tipoMaterial')?.setValue(null);
+                }
+            },
+            error: () => {
+                this.tipoMaterialLista = [];
+                destino.get('tipoMaterial')?.setValue(null);
+                this.objeto = null;
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'No encontrado',
+                    detail: 'No se encontró material para el número ingresado'
+                });
+            }
+        });
+    }
     openModal(detalle: DetalleBibliotecaDTO | null = null) {
         this.objeto = detalle;
         this.form.reset({ tipoBuscar: 1 });
@@ -356,16 +418,20 @@ export class ModalRegularizarComponent implements OnInit {
             if (detalle.tipoMaterial) {
                 this.tipoMaterialLista = [detalle.tipoMaterial];
             }
-            if (detalle.usuarioPrestamo) {
-                this.usuariosPRLista = [{ descripcion: detalle.usuarioPrestamo }];
+            const usuarioPrestamo = detalle.usuarioPrestamo
+                ? this.usuariosPRLista.find(u => u.descripcion === detalle.usuarioPrestamo) ||
+                  { descripcion: detalle.usuarioPrestamo }
+                : null;
+            if (usuarioPrestamo && !this.usuariosPRLista.some(u => u.descripcion === usuarioPrestamo.descripcion)) {
+                this.usuariosPRLista = [usuarioPrestamo, ...this.usuariosPRLista];
             }
             this.form.patchValue({
                 numeroIngreso: detalle.numeroIngreso ?? '',
                 tipoMaterial: detalle.tipoMaterial ?? null,
                 fechaPrestamo,
                 fechaDevolucion,
-                usuarioPrestamo: detalle.usuarioPrestamo ? { descripcion: detalle.usuarioPrestamo } : null
-            });
+                usuarioPrestamo
+            }, { emitEvent: false });
         }
         this.cargarUsuarios(detalle?.codigoUsuario ?? '');
         this.display = true;
@@ -494,7 +560,6 @@ export class ModalRegularizarComponent implements OnInit {
                         u.codigo,
                     codigoUsuario: u.codigo ?? u.login ?? ''
                 }));
-                this.usuariosPRLista = [...this.usuariosLista];
                 if (codigoSeleccionado) {
                     const u = this.usuariosLista.find(us => us.codigoUsuario === codigoSeleccionado);
                     if (u) {
@@ -507,7 +572,6 @@ export class ModalRegularizarComponent implements OnInit {
             error: () => {
                 this.loading = false;
                 this.usuariosLista = [];
-                this.usuariosPRLista = [];
                 this.form.get('usuario')?.setValue(null);
             }
         });
