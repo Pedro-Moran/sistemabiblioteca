@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface DetalleBibliotecaRepository extends JpaRepository<DetalleBiblioteca, Long> {
     // devuelve todos los detalles de una biblioteca
@@ -29,4 +30,11 @@ public interface DetalleBibliotecaRepository extends JpaRepository<DetalleBiblio
             "     JOIN FETCH d.biblioteca b " +
             "WHERE d.idEstado = 3")
     List<DetalleBiblioteca> findAllConBibliotecaReservados();
+
+    /**
+     * Retorna el primer detalle que coincida con el número de ingreso indicado.
+     * Se usa {@code findFirst} para evitar excepciones cuando existan múltiples
+     * registros con el mismo número.
+     */
+    Optional<DetalleBiblioteca> findFirstByNumeroIngreso(Long numeroIngreso);
 }

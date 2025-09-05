@@ -108,6 +108,12 @@ public class DetalleBibliotecaDTO {
     /** Correo electrónico del usuario */
     private String correoUsuario;
 
+    /** Fecha en la que se prestó el material */
+    private LocalDateTime fechaPrestamo;
+
+    /** Fecha de devolución del material */
+    private LocalDateTime fechaDevolucion;
+
     /** Fecha de la reserva */
     private String fechaReserva;
 }

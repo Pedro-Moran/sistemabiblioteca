@@ -389,6 +389,8 @@ public class BibliotecaMapper {
                     .ifPresent(e -> tmp.setEstadoDescripcion(e.getDescripcion()));
         }
         tmp.setCantidadPrestamos(d.getCantidadPrestamos());
+        tmp.setFechaPrestamo(d.getFechaPrestamo());
+        tmp.setFechaDevolucion(d.getFechaFin());
         tmp.setFechaReserva(d.getFechaSolicitud());
 
         return tmp;

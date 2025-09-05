@@ -383,7 +383,7 @@ export class ModalRegularizarComponent implements OnInit {
             this.objeto = null;
             return;
         }
-        this.materialBibliograficoService.getDetalleBiblioteca(numero).subscribe({
+        this.materialBibliograficoService.getDetalleBibliotecaPorNumeroIngreso(numero).subscribe({
             next: (detalle: DetalleBibliotecaDTO) => {
                 this.objeto = detalle;
                 if (detalle?.tipoMaterial) {
@@ -393,6 +393,10 @@ export class ModalRegularizarComponent implements OnInit {
                     this.tipoMaterialLista = [];
                     destino.get('tipoMaterial')?.setValue(null);
                 }
+                destino.patchValue({
+                    fechaPrestamo: detalle.fechaPrestamo ? new Date(detalle.fechaPrestamo) : null,
+                    fechaDevolucion: detalle.fechaDevolucion ? new Date(detalle.fechaDevolucion) : null
+                }, { emitEvent: false });
             },
             error: () => {
                 this.tipoMaterialLista = [];
@@ -411,10 +415,12 @@ export class ModalRegularizarComponent implements OnInit {
         this.form.reset({ tipoBuscar: 1 });
         this.formOtroUsuario.reset({ devolver: false });
         if (detalle) {
-            const fechaPrestamo = detalle.fechaReserva ? new Date(detalle.fechaReserva) : null;
-            const fechaDevolucion = fechaPrestamo
-                ? new Date(fechaPrestamo.getTime() + 7 * 24 * 60 * 60 * 1000)
-                : null;
+            const fechaPrestamo = detalle.fechaPrestamo ? new Date(detalle.fechaPrestamo) : null;
+            const fechaDevolucion = detalle.fechaDevolucion
+                ? new Date(detalle.fechaDevolucion)
+                : (fechaPrestamo
+                    ? new Date(fechaPrestamo.getTime() + 7 * 24 * 60 * 60 * 1000)
+                    : null);
             if (detalle.tipoMaterial) {
                 this.tipoMaterialLista = [detalle.tipoMaterial];
             }
@@ -449,8 +455,12 @@ export class ModalRegularizarComponent implements OnInit {
                 ...datosRaw,
                 tipoDocumento: this.obtenerCodigoDocumento(datosRaw.tipoDocumento)
             };
-        const id = this.objeto?.idDetalleBiblioteca;
-        const payload = { ...datos, idDetalleBiblioteca: id };
+        const payload = {
+            ...datos,
+            numeroIngreso: Number(datos.numeroIngreso),
+            fechaPrestamo: datos.fechaPrestamo?.toISOString(),
+            fechaDevolucion: datos.fechaDevolucion?.toISOString()
+        };
         this.materialBibliograficoService.regularizarPrestamo(payload).subscribe({
             next: (resp: any) => {
                 this.loading = false;

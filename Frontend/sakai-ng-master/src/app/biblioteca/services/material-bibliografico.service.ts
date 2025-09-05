@@ -561,6 +561,13 @@ crearOcurrencia(dto: OcurrenciaDTO): Observable<OcurrenciaDTO> {
     );
   }
 
+  getDetalleBibliotecaPorNumeroIngreso(numero: number): Observable<DetalleBibliotecaDTO> {
+    return this.http.get<DetalleBibliotecaDTO>(
+      `${this.apiUrl}/api/biblioteca/detalles/numero-ingreso/${numero}`,
+      { headers: this.headers }
+    );
+  }
+
     /** Lista usuarios; permite filtrar por código/email y tipo de usuario */
     listarUsuarios(
       search?: string,
