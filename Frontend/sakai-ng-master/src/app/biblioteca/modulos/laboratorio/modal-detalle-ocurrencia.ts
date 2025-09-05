@@ -7,7 +7,7 @@ import { MaterialBibliograficoService } from '../../services/material-bibliograf
 @Component({
     selector: 'app-modal-detalle-ocurrencia',
     standalone: true,
-    template: ` <p-dialog [(visible)]="display" [style]="{width: '75%'}"  header="Detalle de ocurrencia" [modal]="true" [closable]="true" styleClass="p-fluid">
+    template: ` <p-dialog [(visible)]="display" [style]="{width: '75%'}"  header="Detalle de ocurrencia" [modal]="true" [closable]="true" styleClass="p-fluid" [contentStyle]="{overflow: 'visible'}"> 
      <ng-template pTemplate="content">  
         <form [formGroup]="form">
         <div class="grid grid-cols-7 gap-4">
@@ -78,7 +78,8 @@ import { MaterialBibliograficoService } from '../../services/material-bibliograf
   </p-dialog>
   `,
     imports: [TemplateModule],
-    providers: [MessageService, ConfirmationService]
+    providers: [MessageService, ConfirmationService],
+    styles: [`:host ::ng-deep label{white-space:normal !important;overflow:visible !important;text-overflow:initial !important;}`]
 })
 export class ModalDetalleOcurencia implements OnInit {
     loading: boolean = false;

@@ -10,15 +10,15 @@ import { ModalMaterial } from './modal-material';
 @Component({
     selector: 'app-modal-nuevo-ocurrencia',
     standalone: true,
-    template: ` <p-dialog [(visible)]="display" [style]="{width: '75%'}"  header="Mantenimiento de materiales en deuda" [modal]="true" [closable]="true" styleClass="p-fluid">
+    template: ` <p-dialog [(visible)]="display" [style]="{width: '75%'}"  header="Mantenimiento de materiales en deuda" [modal]="true" [closable]="true" styleClass="p-fluid" [contentStyle]="{overflow: 'visible'}"> 
      <ng-template pTemplate="content">
         <form [formGroup]="form">
         <div class="grid grid-cols-7 gap-4">
-                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-2 lg:col-span-1">
-                    <label for="codigo">Codigo</label>
-                    <input pInputText id="codigo" type="text" />
+                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-3 lg:col-span-3">
+                    <label for="codigo">Código</label>
+                    <input pInputText id="codigo" type="text" class="w-full" />
                     </div>
-                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-2 lg:col-span-2">
+                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-4 lg:col-span-4">
                     <label for="fecha">Fecha</label>
                     <p-datepicker
       appendTo="body"
@@ -28,12 +28,12 @@ import { ModalMaterial } from './modal-material';
       dateFormat="dd/mm/yy">
 </p-datepicker>
                     </div>
-                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-3 lg:col-span-2">
+                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-3 md:col-span-3 lg:col-span-3">
                     <label for="semestre">Semestre</label>
                     <p-select appendTo="body" [options]="semestreLista" optionLabel="descripcion" placeholder="Seleccionar" />
 
                     </div>
-                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-2 lg:col-span-2">
+                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-4 lg:col-span-4">
                     <label for="sede">Local/Filial</label>
                     <p-select appendTo="body" [options]="sedeLista" optionLabel="descripcion" placeholder="Seleccionar" />
 
@@ -73,7 +73,7 @@ import { ModalMaterial } from './modal-material';
                     <p-select appendTo="body" [options]="turnoLista" optionLabel="descripcion" placeholder="Seleccionar" />
 
                     </div>
-                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-3 lg:col-span-5">
+                    <div class="flex flex-col gap-2 col-span-7 sm:col-span-4 md:col-span-5 lg:col-span-5">
                     <label for="personal">Personal</label>
                     <input pInputText id="personal" type="text" />
 
@@ -174,7 +174,8 @@ import { ModalMaterial } from './modal-material';
 <app-modal-involucrado #modalInvolucrado></app-modal-involucrado>
   `,
     imports: [TemplateModule,ModalMaterial,ModalInvolucrado],
-    providers: [MessageService, ConfirmationService]
+    providers: [MessageService, ConfirmationService],
+    styles: [`:host ::ng-deep label{white-space:normal !important;overflow:visible !important;text-overflow:initial !important;}`]
 })
 export class ModalNuevoOcurencia implements OnInit {
     loading: boolean = false;
