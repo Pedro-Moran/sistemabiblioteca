@@ -96,6 +96,34 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 </div>
 
 <div class="flex flex-col gap-2 w-full">
+                      <label for="horaInicio">Hora inicio de pr&eacute;stamo</label>
+                      <p-datepicker
+      appendTo="body"
+      formControlName="horaInicio"
+      [ngClass]="'w-full'"
+      [style]="{ width: '100%' }"
+      [readonlyInput]="true"
+      timeOnly="true">
+</p-datepicker>
+    <app-input-validation [form]="form" modelo="horaInicio" ver="Hora Inicio"></app-input-validation>
+</div>
+
+<div class="flex flex-col gap-2 w-full">
+                      <label for="horaFin">Hora fin de pr&eacute;stamo</label>
+                      <p-datepicker
+      appendTo="body"
+      formControlName="horaFin"
+      [ngClass]="'w-full'"
+      [style]="{ width: '100%' }"
+      [readonlyInput]="true"
+      timeOnly="true">
+</p-datepicker>
+    <app-input-validation [form]="form" modelo="horaFin" ver="Hora Fin"></app-input-validation>
+</div>
+</div>
+
+<div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
+<div class="flex flex-col gap-2 w-full">
                       <label for="usuarioPrestamo">Usuario de pr&eacute;stamo</label>
     <p-select appendTo="body" id="usuarioPrestamo" formControlName="usuarioPrestamo" [options]="usuariosPRLista" optionLabel="descripcion" placeholder="Seleccionar" class="w-full"></p-select>
     <app-input-validation [form]="form" modelo="usuarioPrestamo" ver="Usuario Prestamo"></app-input-validation>
@@ -190,6 +218,34 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 </div>
 
 <div class="flex flex-col gap-2 w-full">
+                      <label for="horaInicio">Hora inicio de pr&eacute;stamo</label>
+                      <p-datepicker
+      appendTo="body"
+      formControlName="horaInicio"
+      [ngClass]="'w-full'"
+      [style]="{ width: '100%' }"
+      [readonlyInput]="true"
+      timeOnly="true">
+</p-datepicker>
+    <app-input-validation [form]="formOtroUsuario" modelo="horaInicio" ver="Hora Inicio"></app-input-validation>
+</div>
+
+<div class="flex flex-col gap-2 w-full">
+                      <label for="horaFin">Hora fin de pr&eacute;stamo</label>
+                      <p-datepicker
+      appendTo="body"
+      formControlName="horaFin"
+      [ngClass]="'w-full'"
+      [style]="{ width: '100%' }"
+      [readonlyInput]="true"
+      timeOnly="true">
+</p-datepicker>
+    <app-input-validation [form]="formOtroUsuario" modelo="horaFin" ver="Hora Fin"></app-input-validation>
+</div>
+</div>
+
+<div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
+                      <div class="flex flex-col gap-2 w-full">
                       <label for="usuarioPrestamo">Usuario de pr&eacute;stamo</label>
     <p-select appendTo="body" id="usuarioPrestamo" formControlName="usuarioPrestamo" [options]="usuariosPRLista" optionLabel="descripcion" placeholder="Seleccionar" class="w-full"></p-select>
     <app-input-validation [form]="formOtroUsuario" modelo="usuarioPrestamo" ver="Usuario Prestamo"></app-input-validation>
@@ -254,6 +310,7 @@ export class ModalRegularizarComponent implements OnInit {
     tipoMaterialLista: any[] = [];
     usuariosPRLista: any[] = [];
     objeto: any = null;
+    maxHoras: number | null = null;
     radioValue: any = null;
     palabraClave: string = "";
     activeTab: string = '0';
@@ -269,6 +326,8 @@ export class ModalRegularizarComponent implements OnInit {
             numeroIngreso: ['', [Validators.required]],
             tipoMaterial: ['', [Validators.required]],
             fechaPrestamo: ['', [Validators.required]],
+            horaInicio: ['', [Validators.required]],
+            horaFin: ['', [Validators.required]],
             fechaDevolucion: ['', [Validators.required]],
             usuarioPrestamo: ['', [Validators.required]],
             usuarioRecepcion: ['']
@@ -290,6 +349,8 @@ export class ModalRegularizarComponent implements OnInit {
             numeroIngreso: ['', [Validators.required]],
             tipoMaterial: ['', [Validators.required]],
             fechaPrestamo: ['', [Validators.required]],
+            horaInicio: ['', [Validators.required]],
+            horaFin: ['', [Validators.required]],
             devolver: [false, [Validators.required]],
             fechaDevolucion: ['', [Validators.required]],
             usuarioPrestamo: ['', [Validators.required]],
@@ -305,6 +366,11 @@ export class ModalRegularizarComponent implements OnInit {
         this.formOtroUsuario.get('numeroIngreso')?.valueChanges
             .pipe(debounceTime(300), distinctUntilChanged())
             .subscribe(valor => this.autocompletarTipoMaterial(valor, this.formOtroUsuario));
+
+        this.form.get('horaFin')?.valueChanges.subscribe(() => this.validarMaxHoras(this.form));
+        this.form.get('fechaDevolucion')?.valueChanges.subscribe(() => this.validarMaxHoras(this.form));
+        this.formOtroUsuario.get('horaFin')?.valueChanges.subscribe(() => this.validarMaxHoras(this.formOtroUsuario));
+        this.formOtroUsuario.get('fechaDevolucion')?.valueChanges.subscribe(() => this.validarMaxHoras(this.formOtroUsuario));
     }
     async ngOnInit() {
 
@@ -375,17 +441,95 @@ export class ModalRegularizarComponent implements OnInit {
     });
   }
 
+  private establecerHorario(destino: FormGroup, inicio: Date, bloquearInicio: boolean) {
+    const fin = new Date(inicio.getTime() + 60 * 60 * 1000);
+    destino.patchValue(
+      {
+        fechaPrestamo: inicio,
+        fechaDevolucion: fin,
+        horaInicio: inicio,
+        horaFin: fin
+      },
+      { emitEvent: false }
+    );
+    this.validarMaxHoras(destino);
+    if (bloquearInicio) {
+      destino.get('fechaPrestamo')?.disable({ emitEvent: false });
+      destino.get('horaInicio')?.disable({ emitEvent: false });
+    } else {
+      destino.get('fechaPrestamo')?.enable({ emitEvent: false });
+      destino.get('horaInicio')?.enable({ emitEvent: false });
+    }
+  }
+
+  private formatearFechaHora(fecha: Date): string {
+    const fechaParte = fecha.toLocaleDateString('es-PE', {
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric'
+    });
+    const horaParte = fecha.toLocaleTimeString('es-PE', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    return `${fechaParte}, ${horaParte}`;
+  }
+
+  private validarMaxHoras(destino: FormGroup) {
+    if (!this.maxHoras) {
+      return;
+    }
+    const fechaPrestamo: Date | null = destino.get('fechaPrestamo')?.value;
+    const horaInicio: Date | null = destino.get('horaInicio')?.value;
+    const fechaDevolucion: Date | null = destino.get('fechaDevolucion')?.value;
+    const horaFin: Date | null = destino.get('horaFin')?.value;
+    if (!fechaPrestamo || !horaInicio || !fechaDevolucion || !horaFin) {
+      return;
+    }
+    const inicio = new Date(
+      fechaPrestamo.getFullYear(),
+      fechaPrestamo.getMonth(),
+      fechaPrestamo.getDate(),
+      horaInicio.getHours(),
+      horaInicio.getMinutes()
+    );
+    const fin = new Date(
+      fechaDevolucion.getFullYear(),
+      fechaDevolucion.getMonth(),
+      fechaDevolucion.getDate(),
+      horaFin.getHours(),
+      horaFin.getMinutes()
+    );
+    const diff = (fin.getTime() - inicio.getTime()) / 3600000;
+    if (diff > this.maxHoras) {
+      this.messageService.add({ severity: 'warn', detail: `Máximo ${this.maxHoras} horas de préstamo.` });
+      const limite = new Date(inicio.getTime() + this.maxHoras * 3600000);
+      destino.patchValue({ fechaDevolucion: limite, horaFin: limite }, { emitEvent: false });
+    }
+  }
+
     private autocompletarTipoMaterial(valor: string, destino: FormGroup) {
         const numero = Number(valor);
         if (!valor || isNaN(numero)) {
             this.tipoMaterialLista = [];
-            destino.get('tipoMaterial')?.setValue(null);
+            destino.patchValue({
+                tipoMaterial: null,
+                fechaPrestamo: null,
+                fechaDevolucion: null,
+                horaInicio: null,
+                horaFin: null
+            }, { emitEvent: false });
+            destino.get('fechaPrestamo')?.enable({ emitEvent: false });
+            destino.get('horaInicio')?.enable({ emitEvent: false });
             this.objeto = null;
+            this.maxHoras = null;
             return;
         }
         this.materialBibliograficoService.getDetalleBibliotecaPorNumeroIngreso(numero).subscribe({
             next: (detalle: DetalleBibliotecaDTO) => {
                 this.objeto = detalle;
+                this.maxHoras = detalle.maxHoras ?? null;
                 if (detalle?.tipoMaterial) {
                     this.tipoMaterialLista = [detalle.tipoMaterial];
                     destino.get('tipoMaterial')?.setValue(detalle.tipoMaterial);
@@ -393,15 +537,43 @@ export class ModalRegularizarComponent implements OnInit {
                     this.tipoMaterialLista = [];
                     destino.get('tipoMaterial')?.setValue(null);
                 }
+
+                const fechaPrestamo = detalle.fechaPrestamo ? new Date(detalle.fechaPrestamo) : null;
+                const fechaDevolucion = detalle.fechaDevolucion ? new Date(detalle.fechaDevolucion) : null;
+
                 destino.patchValue({
-                    fechaPrestamo: detalle.fechaPrestamo ? new Date(detalle.fechaPrestamo) : null,
-                    fechaDevolucion: detalle.fechaDevolucion ? new Date(detalle.fechaDevolucion) : null
+                    fechaPrestamo,
+                    fechaDevolucion,
+                    horaInicio: fechaPrestamo,
+                    horaFin: fechaDevolucion
                 }, { emitEvent: false });
+
+                const estado = (detalle.estadoDescripcion ?? '').toUpperCase();
+                const prestado = detalle.idEstado === 4 || estado.includes('PRESTADO') ||
+                    (fechaDevolucion != null && fechaDevolucion.getTime() > Date.now());
+                if (prestado) {
+                    const disponible = fechaDevolucion ? this.formatearFechaHora(fechaDevolucion) : '';
+                    this.confirmationService.confirm({
+                        header: 'Material no disponible',
+                        message: disponible
+                            ? `Material prestado a otro usuario.<br/>El material se encuentra disponible en este horario:<br/><strong>${disponible}</strong><br/>¿Desea pre-registrar?`
+                            : 'Material prestado a otro usuario.',
+                        icon: 'pi pi-exclamation-triangle',
+                        acceptLabel: 'Aceptar',
+                        rejectLabel: 'Cancelar',
+                        closeOnEscape: false,
+                        accept: () => this.establecerHorario(destino, fechaDevolucion || new Date(), true),
+                        reject: () => destino.get('numeroIngreso')?.reset()
+                    });
+                } else {
+                    this.establecerHorario(destino, new Date(), false);
+                }
             },
             error: () => {
                 this.tipoMaterialLista = [];
                 destino.get('tipoMaterial')?.setValue(null);
                 this.objeto = null;
+                this.maxHoras = null;
                 this.messageService.add({
                     severity: 'warn',
                     summary: 'No encontrado',
@@ -412,8 +584,13 @@ export class ModalRegularizarComponent implements OnInit {
     }
     openModal(detalle: DetalleBibliotecaDTO | null = null) {
         this.objeto = detalle;
-        this.form.reset({ tipoBuscar: 1 });
-        this.formOtroUsuario.reset({ devolver: false });
+        this.maxHoras = detalle?.maxHoras ?? null;
+        this.form.reset({ tipoBuscar: 1, horaInicio: null, horaFin: null });
+        this.formOtroUsuario.reset({ devolver: false, horaInicio: null, horaFin: null });
+        this.form.get('fechaPrestamo')?.enable({ emitEvent: false });
+        this.form.get('horaInicio')?.enable({ emitEvent: false });
+        this.formOtroUsuario.get('fechaPrestamo')?.enable({ emitEvent: false });
+        this.formOtroUsuario.get('horaInicio')?.enable({ emitEvent: false });
         if (detalle) {
             const fechaPrestamo = detalle.fechaPrestamo ? new Date(detalle.fechaPrestamo) : null;
             const fechaDevolucion = detalle.fechaDevolucion
@@ -436,6 +613,8 @@ export class ModalRegularizarComponent implements OnInit {
                 tipoMaterial: detalle.tipoMaterial ?? null,
                 fechaPrestamo,
                 fechaDevolucion,
+                horaInicio: fechaPrestamo,
+                horaFin: fechaDevolucion,
                 usuarioPrestamo
             }, { emitEvent: false });
         }
@@ -459,7 +638,9 @@ export class ModalRegularizarComponent implements OnInit {
             ...datos,
             numeroIngreso: Number(datos.numeroIngreso),
             fechaPrestamo: datos.fechaPrestamo?.toISOString(),
-            fechaDevolucion: datos.fechaDevolucion?.toISOString()
+            fechaDevolucion: datos.fechaDevolucion?.toISOString(),
+            horaInicio: datos.horaInicio?.toISOString(),
+            horaFin: datos.horaFin?.toISOString()
         };
         this.materialBibliograficoService.regularizarPrestamo(payload).subscribe({
             next: (resp: any) => {
