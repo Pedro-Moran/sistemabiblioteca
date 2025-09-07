@@ -334,11 +334,12 @@ export class PrestamoBibliotecaVirtual implements OnInit{
         try {
           const result: any = await this.prestamosService.api_prestamos_tipos('conf/tipo-lista').toPromise();
           if (result.status === "0") {
-            this.dataTipo = result.data.map((t: any) => ({
+            const tipos = result.data.map((t: any) => ({
               ...t,
               codigo: this.mapDescripcionTipoToCodigo(t.descripcion)
             }));
-            this.dataTipo = [{ id: 0, descripcion: 'TODOS', activo: true, codigo: null }, ...this.dataTipo];
+            this.dataTipo = tipos.filter((t: any) => t.codigo !== 'PRESTAMO_SALA_DOMICILIO');
+            this.dataTipo = [{ id: 0, descripcion: 'Sala y domicilio', activo: true, codigo: null }, ...this.dataTipo];
             this.tipoFiltro = this.dataTipo[0];
           }
         } catch (error) {
