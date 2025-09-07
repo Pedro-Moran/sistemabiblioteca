@@ -7,6 +7,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputTextarea } from 'primeng/inputtextarea';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { PortalService, NosotrosDTO } from '../../services/portal.service';
 
@@ -21,11 +22,13 @@ import { PortalService, NosotrosDTO } from '../../services/portal.service';
     InputTextModule,
     InputTextarea,
     ButtonModule,
-    ToastModule
+    ToastModule,
+    ConfirmDialogModule
   ],
   providers: [ MessageService, ConfirmationService ],
   template: `
     <p-toast></p-toast>
+    <p-confirmdialog></p-confirmdialog>
     <div class="grid">
       <div class="col-12">
         <div class="card flex flex-col gap-4 w-full">
@@ -64,7 +67,8 @@ export class Nosotros implements OnInit {
   constructor(
     private fb: FormBuilder,
     private portal: PortalService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private confirmationService: ConfirmationService
   ) {}
 
   ngOnInit() {
@@ -104,25 +108,34 @@ export class Nosotros implements OnInit {
   guardar() {
     if (this.form.invalid) return;
 
-    const updated: NosotrosDTO = {
-      ...this.datos,
-      eyebrow:  this.form.value.eyebrow,
-      title:    this.form.value.title,
-      body:     this.form.value.body
-    };
+    this.confirmationService.confirm({
+      message: '¿Desea guardar los cambios?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Aceptar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        const updated: NosotrosDTO = {
+          ...this.datos,
+          eyebrow: this.form.value.eyebrow,
+          title: this.form.value.title,
+          body: this.form.value.body
+        };
 
-    const formData = new FormData();
-    formData.append('dto', new Blob([JSON.stringify(updated)], { type: 'application/json' }));
-    if (this.archivo) {
-      formData.append('imagen', this.archivo);
-    }
+        const formData = new FormData();
+        formData.append('dto', new Blob([JSON.stringify(updated)], { type: 'application/json' }));
+        if (this.archivo) {
+          formData.append('imagen', this.archivo);
+        }
 
-    this.portal
-      .saveNosotros(formData)
-      .subscribe({
-        next: () => this.messageService.add({severity:'success',detail:'¡Guardado!'}),
-        error: () => this.messageService.add({severity:'error',detail:'Error al guardar'})
-      });
+        this.portal
+          .saveNosotros(formData)
+          .subscribe({
+            next: () => this.messageService.add({ severity: 'success', detail: '¡Guardado!' }),
+            error: () => this.messageService.add({ severity: 'error', detail: 'Error al guardar' })
+          });
+      }
+    });
   }
 
 }
