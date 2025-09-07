@@ -352,15 +352,6 @@ export class Aceptaciones implements OnInit, AfterViewInit {
       const opcion = this.opcionFiltro?.valor;
       const valor  = this.palabraClave?.trim() || '';
 
-      if (opcion === 'codigoLocalizacion' && valor && !/^\d+$/.test(valor)) {
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Código inválido',
-          detail: 'Ingrese solo números para buscar por código'
-        });
-        return;
-      }
-
       const params: string[] = [];
       if (this.sedeFiltro?.id) {
         params.push(`codigoSede=${this.sedeFiltro.id}`);
