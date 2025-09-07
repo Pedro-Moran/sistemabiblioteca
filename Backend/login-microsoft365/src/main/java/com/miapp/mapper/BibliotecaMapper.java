@@ -8,6 +8,8 @@ import com.miapp.repository.EstadoRepository;
 import lombok.RequiredArgsConstructor;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Component
 @RequiredArgsConstructor
@@ -389,8 +391,24 @@ public class BibliotecaMapper {
                     .ifPresent(e -> tmp.setEstadoDescripcion(e.getDescripcion()));
         }
         tmp.setCantidadPrestamos(d.getCantidadPrestamos());
-        tmp.setFechaPrestamo(d.getFechaPrestamo());
-        tmp.setFechaDevolucion(d.getFechaFin());
+
+        // Combinar fecha y hora para exponer un LocalDateTime completo
+        LocalDateTime fPrestamo = null;
+        if (d.getFechaInicio() != null) {
+            LocalTime hi = d.getHoraInicio() != null ? LocalTime.parse(d.getHoraInicio()) : LocalTime.MIDNIGHT;
+            fPrestamo = LocalDateTime.of(d.getFechaInicio(), hi);
+        } else if (d.getFechaPrestamo() != null) {
+            fPrestamo = d.getFechaPrestamo();
+        }
+        tmp.setFechaPrestamo(fPrestamo);
+
+        LocalDateTime fDevolucion = null;
+        if (d.getFechaFin() != null) {
+            LocalTime hf = d.getHoraFin() != null ? LocalTime.parse(d.getHoraFin()) : LocalTime.MIDNIGHT;
+            fDevolucion = LocalDateTime.of(d.getFechaFin(), hf);
+        }
+        tmp.setFechaDevolucion(fDevolucion);
+
         tmp.setFechaReserva(d.getFechaSolicitud());
 
         return tmp;
