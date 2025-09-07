@@ -672,8 +672,40 @@ private agruparPorBiblioteca(
     this.modalRegularizar.openModal(detalle);
   }
 
-  onRegularizado(_det: DetalleBibliotecaDTO) {
+  onRegularizado(det: DetalleBibliotecaDTO) {
+    this.programarPrestamoAutomatico(det);
     this.cargarTodosDetallesReservados();
+  }
+
+  private programarPrestamoAutomatico(det: DetalleBibliotecaDTO): void {
+    if (!det.idDetalleBiblioteca) {
+      return;
+    }
+    const inicio = this.obtenerFechaInicio(det);
+    if (!inicio) {
+      return;
+    }
+    const ejecutar = () => {
+      this.materialBibliograficoService
+        .prestarDetalle(det.idDetalleBiblioteca!)
+        .subscribe(() => this.cargarTodosDetallesReservados());
+    };
+    const delay = inicio.getTime() - Date.now();
+    if (delay <= 0) {
+      ejecutar();
+    } else {
+      setTimeout(ejecutar, delay);
+    }
+  }
+
+  private obtenerFechaInicio(det: DetalleBibliotecaDTO): Date | null {
+    if (det.horaInicio) {
+      return new Date(det.horaInicio);
+    }
+    if (det.fechaPrestamo) {
+      return new Date(det.fechaPrestamo);
+    }
+    return null;
   }
 
 }
