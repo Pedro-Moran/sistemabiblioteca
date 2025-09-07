@@ -195,69 +195,88 @@ export class FormEquipo implements OnInit, OnChanges {
             horaInicio: this.formatTime(valores.horaInicio as Date),
             horaFin: this.formatTime(valores.horaFin as Date)
         };
-        console.log('ver equipo: ' + equipo.id);
-        // Verificamos si el id existe y es mayor a 0
-        if (equipo.id && equipo.id > 0) {
-            // Actualizar: Llamamos al método de actualización
-            this.bibliotecaVirtualService.actualizarEquipo(equipo.id, equipo).subscribe(
-                (result: any) => {
-                    if (result.status === 0) {
-                        this.messageService.add({
-                            severity: 'success',
-                            summary: 'Satisfactorio',
-                            detail: 'Equipo actualizado correctamente.'
-                        });
-                        this.saved.emit();
-                        this.closeModal();
-                    } else {
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: result.message || 'No se pudo actualizar el equipo.'
-                        });
-                    }
-                    this.loading = false;
-                },
-                (error: HttpErrorResponse) => {
+
+        this.bibliotecaVirtualService.verificarIpDuplicada(equipo.ip!, equipo.id).subscribe(
+            (resp) => {
+                if (resp.exists) {
                     this.messageService.add({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: 'Ocurrió un error. Inténtelo más tarde'
+                        severity: 'warn',
+                        summary: 'Atención',
+                        detail: 'La dirección IP ya está registrada.'
                     });
                     this.loading = false;
+                    return;
                 }
-            );
-        } else {
-            // Crear: Si no hay id o es 0, se crea un nuevo registro.
-            this.bibliotecaVirtualService.crearEquipo(equipo).subscribe(
-                (result: any) => {
-                    if (result.status === 0) {
-                        this.messageService.add({
-                            severity: 'info',
-                            summary: 'Pendiente',
-                            detail: 'Equipo pendiente de aprobación. Revise el módulo Aceptaciones Equipos.'
-                        });
-                        this.closeModal();
-                        this.saved.emit();
-                    } else {
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: result.message || 'No se pudo registrar el equipo.'
-                        });
-                    }
-                    this.loading = false;
-                },
-                (error: HttpErrorResponse) => {
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: 'Ocurrió un error. Inténtelo más tarde'
-                    });
-                    this.loading = false;
+
+                if (equipo.id && equipo.id > 0) {
+                    this.bibliotecaVirtualService.actualizarEquipo(equipo.id, equipo).subscribe(
+                        (result: any) => {
+                            if (result.status === 0) {
+                                this.messageService.add({
+                                    severity: 'success',
+                                    summary: 'Satisfactorio',
+                                    detail: 'Equipo actualizado correctamente.'
+                                });
+                                this.saved.emit();
+                                this.closeModal();
+                            } else {
+                                this.messageService.add({
+                                    severity: 'error',
+                                    summary: 'Error',
+                                    detail: result.message || 'No se pudo actualizar el equipo.'
+                                });
+                            }
+                            this.loading = false;
+                        },
+                        (error: HttpErrorResponse) => {
+                            this.messageService.add({
+                                severity: 'error',
+                                summary: 'Error',
+                                detail: 'Ocurrió un error. Inténtelo más tarde'
+                            });
+                            this.loading = false;
+                        }
+                    );
+                } else {
+                    this.bibliotecaVirtualService.crearEquipo(equipo).subscribe(
+                        (result: any) => {
+                            if (result.status === 0) {
+                                this.messageService.add({
+                                    severity: 'info',
+                                    summary: 'Pendiente',
+                                    detail: 'Equipo pendiente de aprobación. Revise el módulo Aceptaciones Equipos.'
+                                });
+                                this.closeModal();
+                                this.saved.emit();
+                            } else {
+                                this.messageService.add({
+                                    severity: 'error',
+                                    summary: 'Error',
+                                    detail: result.message || 'No se pudo registrar el equipo.'
+                                });
+                            }
+                            this.loading = false;
+                        },
+                        (error: HttpErrorResponse) => {
+                            this.messageService.add({
+                                severity: 'error',
+                                summary: 'Error',
+                                detail: 'Ocurrió un error. Inténtelo más tarde'
+                            });
+                            this.loading = false;
+                        }
+                    );
                 }
-            );
-        }
+            },
+            (error: HttpErrorResponse) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo validar la IP.'
+                });
+                this.loading = false;
+            }
+        );
     }
 
     private formatTime(date: Date): string {

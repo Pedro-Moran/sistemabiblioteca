@@ -139,5 +139,11 @@ public class EquipoController {
         return ResponseEntity.ok(Map.of("status", 0, "data", lista));
     }
 
+    @GetMapping("/exists")
+    public ResponseEntity<?> existeIp(@RequestParam String ip, @RequestParam(required = false) Long id) {
+        boolean exists = equipoService.existeIp(ip, id);
+        return ResponseEntity.ok(Map.of("exists", exists));
+    }
+
 
 }

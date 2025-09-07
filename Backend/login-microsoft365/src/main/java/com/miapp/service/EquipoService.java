@@ -121,4 +121,11 @@ public class EquipoService {
         equipoRepository.deleteAllInBatch(registros);
         equipoRepository.flush();
     }
+
+    public boolean existeIp(String ip, Long id) {
+        if (id != null) {
+            return equipoRepository.existsByIpAndIdEquipoNot(ip, id);
+        }
+        return equipoRepository.existsByIp(ip);
+    }
 }
