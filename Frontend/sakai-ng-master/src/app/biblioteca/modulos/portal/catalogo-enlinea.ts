@@ -243,7 +243,7 @@ import { map } from 'rxjs/operators';
 
                         <div class="flex flex-col">
                             <label>Hora de devolución</label>
-                            <p-calendar appendTo="body" name="fechaFinTime" [(ngModel)]="prestamo.fechaFinTime" timeOnly="true" hourFormat="24" [minDate]="minHora" [maxDate]="maxHora" (ngModelChange)="onDateRangeChange()"> </p-calendar>
+                            <p-calendar appendTo="body" name="fechaFinTime" [(ngModel)]="prestamo.fechaFinTime" timeOnly="true" hourFormat="24" [minDate]="minHoraFin" [maxDate]="maxHora" (ngModelChange)="onDateRangeChange()"> </p-calendar>
                         </div>
                     </div>
                 </div>
@@ -313,6 +313,7 @@ export class CatalogoEnLineaComponent {
     minDate: Date = new Date();
     minHora: Date | null = null;
     maxHora: Date | null = null;
+    minHoraFin: Date | null = null;
     prestamo: {
         fechaInicioDate?: Date | null;
         fechaInicioTime?: Date | null;
@@ -561,6 +562,15 @@ export class CatalogoEnLineaComponent {
     }
 
     onDateRangeChange() {
+        if (this.prestamo.fechaInicioTime) {
+            this.minHoraFin = new Date(this.prestamo.fechaInicioTime.getTime() + 5 * 60000);
+            if (this.prestamo.fechaFinTime && this.prestamo.fechaFinTime < this.minHoraFin) {
+                this.prestamo.fechaFinTime = new Date(this.minHoraFin);
+            }
+            if (this.prestamo.fechaFinDate && this.prestamo.fechaFinDate < this.minHoraFin) {
+                this.prestamo.fechaFinDate = new Date(this.minHoraFin);
+            }
+        }
         if (this.prestamo.fechaInicioDate && this.prestamo.fechaFinDate && this.prestamo.fechaInicioTime && this.prestamo.fechaFinTime) {
             this.acceptedTerms = false;
         }
@@ -570,6 +580,7 @@ export class CatalogoEnLineaComponent {
         this.displayDialog = false;
         this.minHora = null;
         this.maxHora = null;
+        this.minHoraFin = null;
     }
 
     openConfirmDialog() {
@@ -580,6 +591,7 @@ export class CatalogoEnLineaComponent {
         this.selectedItem = this.reservas[0];
         this.selectedTipo = undefined;
         const now = new Date();
+
         if (this.selectedItem.horaInicio && this.selectedItem.horaFin) {
             this.minHora = this.parseTimeAtDate(this.selectedItem.horaInicio, now);
             this.maxHora = this.parseTimeAtDate(this.selectedItem.horaFin, now);
@@ -587,15 +599,27 @@ export class CatalogoEnLineaComponent {
                 this.maxHora.setDate(this.maxHora.getDate() + 1);
             }
         } else {
-            this.minHora = null;
+            this.minHora = new Date(now);
             this.maxHora = null;
         }
-        const startBase = this.minHora && now > this.minHora ? now : (this.minHora ?? now);
+
+        if (this.minHora < now) {
+            this.minHora = now;
+        }
+
+        if (this.maxHora && this.maxHora <= this.minHora) {
+            this.maxHora.setDate(this.maxHora.getDate() + 1);
+        }
+
+        this.minDate = new Date(this.minHora);
+        const startBase = this.minHora;
+        const endBase = new Date(startBase.getTime() + 5 * 60000);
+        this.minHoraFin = endBase;
         this.prestamo = {
             fechaInicioDate: new Date(startBase),
             fechaInicioTime: new Date(startBase),
-            fechaFinDate: new Date(startBase),
-            fechaFinTime: new Date(startBase)
+            fechaFinDate: new Date(endBase),
+            fechaFinTime: new Date(endBase)
         };
         this.displayDialog = true;
     }
@@ -629,11 +653,33 @@ export class CatalogoEnLineaComponent {
 
         const inicioDate = this.prestamo.fechaInicioDate;
         const inicioTime = this.prestamo.fechaInicioTime;
-        const dtInicio = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate(), inicioTime.getHours(), inicioTime.getMinutes());
+        const dtInicio = new Date(
+            inicioDate.getFullYear(),
+            inicioDate.getMonth(),
+            inicioDate.getDate(),
+            inicioTime.getHours(),
+            inicioTime.getMinutes()
+        );
 
         const finDate = this.prestamo.fechaFinDate;
         const finTime = this.prestamo.fechaFinTime;
-        const dtFin = new Date(finDate.getFullYear(), finDate.getMonth(), finDate.getDate(), finTime.getHours(), finTime.getMinutes());
+        const dtFin = new Date(
+            finDate.getFullYear(),
+            finDate.getMonth(),
+            finDate.getDate(),
+            finTime.getHours(),
+            finTime.getMinutes()
+        );
+
+        if (dtFin <= dtInicio) {
+            this.messageService.add({ severity: 'warn', detail: 'La hora de devolución debe ser posterior a la hora de inicio.' });
+            return;
+        }
+
+        if (dtFin.getTime() - dtInicio.getTime() < 5 * 60000) {
+            this.messageService.add({ severity: 'warn', detail: 'La reserva debe tener una duración mínima de 5 minutos.' });
+            return;
+        }
 
         for (const item of this.reservas) {
             if (item.horaInicio && item.horaFin) {
