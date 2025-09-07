@@ -36,4 +36,8 @@ public interface EquipoRepository extends JpaRepository<Equipo, Long> {
             "lower(e.nombreEquipo) like lower(concat('%',:q,'%')) or " +
             "e.ip like %:q%")
     List<Equipo> search(@Param("q") String q);
+
+    boolean existsByIp(String ip);
+
+    boolean existsByIpAndIdEquipoNot(String ip, Long idEquipo);
 }
