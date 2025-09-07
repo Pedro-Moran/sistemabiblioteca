@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -33,7 +34,9 @@ public class BibliotecaReminderScheduler {
         LocalDateTime now = LocalDateTime.now();
         for (DetalleBiblioteca d : prestamos) {
             if (d.getFechaFin() == null) continue;
-            long horas = ChronoUnit.HOURS.between(now, d.getFechaFin());
+            LocalTime hf = d.getHoraFin() != null ? LocalTime.parse(d.getHoraFin()) : LocalTime.MIDNIGHT;
+            LocalDateTime fechaFin = LocalDateTime.of(d.getFechaFin(), hf);
+            long horas = ChronoUnit.HOURS.between(now, fechaFin);
             if (horas == 24) {
                 emailService.sendMaterialReturnReminder(d, 24, ChronoUnit.HOURS);
             } else if (horas == 0) {

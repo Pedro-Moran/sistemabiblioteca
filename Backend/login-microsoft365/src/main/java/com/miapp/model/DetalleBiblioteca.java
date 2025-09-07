@@ -8,6 +8,8 @@ import org.hibernate.annotations.NotFound;
 import org.hibernate.annotations.NotFoundAction;
 
 import java.math.BigDecimal;
+import com.miapp.util.LocalDateAttributeConverter;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -76,14 +78,16 @@ public class DetalleBiblioteca {
     @Column(name = "FECHASOLICITUD", length = 20)
     private String fechaSolicitud;       // por ejemplo: "2025-06-01"
 
-    @Column(name = "FECHA_INICIO")
-    private LocalDateTime fechaInicio;   // inicio de préstamo/reserva
+    @Convert(converter = LocalDateAttributeConverter.class)
+    @Column(name = "FECHA_INICIO", columnDefinition = "TIMESTAMP")
+    private LocalDate fechaInicio;       // inicio de préstamo/reserva (solo fecha)
 
     @Column(name = "FECHAPRESTAMO")
     private LocalDateTime fechaPrestamo; // cuándo realmente se entregó el ejemplar
 
-    @Column(name = "FECHA_FIN")
-    private LocalDateTime fechaFin;      // fecha de devolución o fin del préstamo
+    @Convert(converter = LocalDateAttributeConverter.class)
+    @Column(name = "FECHA_FIN", columnDefinition = "TIMESTAMP")
+    private LocalDate fechaFin;          // fecha de devolución o fin del préstamo (solo fecha)
 
     @Column(name = "TIPOPRESTAMO", length = 80)
     private String tipoPrestamo;         // ej. "A DOMICILIO", "EN SALA", etc.

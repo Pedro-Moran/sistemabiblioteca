@@ -7,6 +7,8 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
@@ -80,10 +82,15 @@ public class EmailService {
         msg.setTo("moranpedro0398@gmail.com");
         msg.setSubject("Confirmación de préstamo del material "
                 + detalle.getBiblioteca().getTitulo());
+        LocalDateTime fechaDev = null;
+        if (detalle.getFechaFin() != null) {
+            LocalTime hf = detalle.getHoraFin() != null ? LocalTime.parse(detalle.getHoraFin()) : LocalTime.MIDNIGHT;
+            fechaDev = LocalDateTime.of(detalle.getFechaFin(), hf);
+        }
         msg.setText("Tu préstamo ha sido registrado.\n" +
                 "Fecha devolución: " +
-                (detalle.getFechaFin() != null
-                        ? detalle.getFechaFin().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                (fechaDev != null
+                        ? fechaDev.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
                         : "N/A"));
         mailSender.send(msg);
     }
@@ -103,8 +110,13 @@ public class EmailService {
 
     public void sendMaterialReturnReminder(DetalleBiblioteca detalle, long amount, ChronoUnit unit) {
         String unitName = unit == ChronoUnit.HOURS ? "horas" : "minutos";
-        String fecha = detalle.getFechaFin() != null
-                ? detalle.getFechaFin().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+        LocalDateTime fechaDev = null;
+        if (detalle.getFechaFin() != null) {
+            LocalTime hf = detalle.getHoraFin() != null ? LocalTime.parse(detalle.getHoraFin()) : LocalTime.MIDNIGHT;
+            fechaDev = LocalDateTime.of(detalle.getFechaFin(), hf);
+        }
+        String fecha = fechaDev != null
+                ? fechaDev.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
                 : "N/A";
 
         SimpleMailMessage msg = new SimpleMailMessage();
@@ -120,8 +132,13 @@ public class EmailService {
     }
 
     public void sendMaterialOverdue(DetalleBiblioteca detalle) {
-        String fecha = detalle.getFechaFin() != null
-                ? detalle.getFechaFin().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+        LocalDateTime fechaDev2 = null;
+        if (detalle.getFechaFin() != null) {
+            LocalTime hf = detalle.getHoraFin() != null ? LocalTime.parse(detalle.getHoraFin()) : LocalTime.MIDNIGHT;
+            fechaDev2 = LocalDateTime.of(detalle.getFechaFin(), hf);
+        }
+        String fecha = fechaDev2 != null
+                ? fechaDev2.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
                 : "N/A";
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setFrom(from);

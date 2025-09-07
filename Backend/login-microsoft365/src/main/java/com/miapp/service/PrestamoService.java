@@ -22,8 +22,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -255,20 +257,23 @@ public class PrestamoService {
                 det.setCodigoUsuario(cod.toString());
             }
         }
-        Object fechaPrestamoObj = datos.get("fechaPrestamo");
-        LocalDateTime fechaPrestamo = null;
-        if (fechaPrestamoObj instanceof String fpStr && !fpStr.isBlank()) {
-            fechaPrestamo = OffsetDateTime.parse(fpStr).toLocalDateTime();
+        LocalDate fechaInicio = parseFecha(datos.get("fechaPrestamo"));
+        LocalTime horaInicio = parseHora(datos.get("horaInicio"));
+        if (fechaInicio == null) {
+            fechaInicio = LocalDate.now();
         }
-        if (fechaPrestamo == null) {
-            fechaPrestamo = LocalDateTime.now();
+        if (horaInicio == null) {
+            horaInicio = LocalTime.MIDNIGHT;
         }
-        det.setFechaPrestamo(fechaPrestamo);
-        det.setFechaInicio(fechaPrestamo);
+        det.setFechaPrestamo(LocalDateTime.of(fechaInicio, horaInicio));
+        det.setFechaInicio(fechaInicio);
+        det.setHoraInicio(horaInicio.toString());
 
-        Object fechaDevolucionObj = datos.get("fechaDevolucion");
-        if (fechaDevolucionObj instanceof String fdStr && !fdStr.isBlank()) {
-            det.setFechaFin(OffsetDateTime.parse(fdStr).toLocalDateTime());
+        LocalDate fechaFin = parseFecha(datos.get("fechaDevolucion"));
+        LocalTime horaFin = parseHora(datos.get("horaFin"));
+        det.setFechaFin(fechaFin);
+        if (horaFin != null) {
+            det.setHoraFin(horaFin.toString());
         }
         det.setUsuarioModificacion(usuario);
 
@@ -285,6 +290,26 @@ public class PrestamoService {
 
         DetalleBiblioteca saved = detalleBibliotecaRepository.save(det);
         return bibliotecaMapper.toDetalleDto(saved);
+    }
+
+    private LocalDate parseFecha(Object valor) {
+        if (valor instanceof String s && !s.isBlank()) {
+            try {
+                return s.contains("T") ? LocalDateTime.parse(s).toLocalDate() : LocalDate.parse(s);
+            } catch (DateTimeParseException ignore) {
+            }
+        }
+        return null;
+    }
+
+    private LocalTime parseHora(Object valor) {
+        if (valor instanceof String s && !s.isBlank()) {
+            try {
+                return s.contains("T") ? LocalDateTime.parse(s).toLocalTime() : LocalTime.parse(s);
+            } catch (DateTimeParseException ignore) {
+            }
+        }
+        return null;
     }
 
     public List<DetallePrestamo> reporte(
