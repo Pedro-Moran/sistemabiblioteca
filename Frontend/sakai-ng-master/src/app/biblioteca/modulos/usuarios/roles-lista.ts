@@ -306,25 +306,47 @@ export class RolesLista {
       activo: true,
       accion: id && id > 0 ? 'actualizar' : 'registrar'
     };
-    this.genericoService.conf_event_post(data, this.modulo + '/registrar')
-      .subscribe(result => {
-        if (result.p_status == 0) {
-          this.objetoDialog = false;
-          const detalle = id && id > 0 ? 'Registro actualizado.' : 'Registro guardado.';
-          this.messageService.add({ severity: 'success', summary: 'Satisfactorio', detail: detalle });
-          this.listar();
-        } else {
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se puedo realizar el proceso.' });
-        }
-        this.loading = false;
-      }
-        , (error: HttpErrorResponse) => {
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrio un error. Intentelo más tarde' });
+    this.genericoService
+      .conf_event_post(data, this.modulo + '/registrar')
+      .subscribe({
+        next: (result) => {
           this.loading = false;
-        });
-
+          if (result.p_status === 0) {
+            this.objetoDialog = false;
+            const detalle =
+              id && id > 0 ? 'Registro actualizado.' : 'Registro guardado.';
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Satisfactorio',
+              detail: detalle,
+            });
+            this.listar();
+          } else {
+            const detalle =
+              result.p_mensaje ||
+              result.message ||
+              'No se puedo realizar el proceso.';
+            const warning = detalle.toLowerCase().includes('ya existe');
+            this.messageService.add({
+              severity: warning ? 'warn' : 'error',
+              summary: warning ? 'Advertencia' : 'Error',
+              detail: detalle,
+            });
+          }
+        },
+        error: (error: HttpErrorResponse) => {
+          this.loading = false;
+          const detalle =
+            error.error?.message || 'Ocurrio un error. Intentelo más tarde';
+          const warning = error.status === 400;
+          this.messageService.add({
+            severity: warning ? 'warn' : 'error',
+            summary: warning ? 'Advertencia' : 'Error',
+            detail: detalle,
+          });
+        },
+      });
   }
-
   deleteRegistro(objeto: ClaseGeneral) {
     this.confirmationService.confirm({
       message: '¿Estás seguro(a) de que quieres eliminar el rol: ' + objeto.descripcion + ' ?',
