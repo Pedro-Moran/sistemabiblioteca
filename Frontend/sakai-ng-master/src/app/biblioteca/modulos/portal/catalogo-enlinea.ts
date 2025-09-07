@@ -48,7 +48,7 @@ import { map } from 'rxjs/operators';
                                     <td>
                                         <img [src]="getImageUrl(objeto)" [alt]="objeto.material?.titulo || objeto.titulo" width="50" class="shadow-lg" />
                                     </td>
-                                    <td>{{ objeto.codigo }}</td>
+                                    <td>{{ objeto.codigoLocalizacion }}</td>
                                     <td>{{ objeto.numeroIngreso }}</td>
                                     <td>{{ objeto.material?.titulo || objeto.titulo }}</td>
                                     <td>
@@ -119,7 +119,7 @@ import { map } from 'rxjs/operators';
                             [rowHover]="true"
                             styleClass="p-datatable-gridlines"
                             [paginator]="true"
-                            [globalFilterFields]="['id', 'codigo', 'titulo', 'autorPersonal', 'autorSecundario', 'anioPublicacion', 'coleccion.descripcion']"
+                            [globalFilterFields]="['id', 'codigoLocalizacion', 'titulo', 'autorPersonal', 'autorSecundario', 'anioPublicacion', 'coleccion.descripcion']"
                             responsiveLayout="scroll"
                         >
                             <ng-template pTemplate="caption">
@@ -135,7 +135,7 @@ import { map } from 'rxjs/operators';
                                 <tr>
                                     <th style="width: 5rem"></th>
                                     <th>Imagen</th>
-                                    <th pSortableColumn="codigo" style="width: 4rem">Codigo<p-sortIcon field="codigo"></p-sortIcon></th>
+                                    <th pSortableColumn="codigoLocalizacion" style="width: 4rem">Codigo<p-sortIcon field="codigoLocalizacion"></p-sortIcon></th>
                                     <th pSortableColumn="titulo" style="min-width:200px">Titulo<p-sortIcon field="titulo"></p-sortIcon></th>
                                     <th pSortableColumn="autorPersonal" style="min-width:200px">Autor<p-sortIcon field="autorPersonal"></p-sortIcon></th>
                                     <th pSortableColumn="anioPublicacion" style="width: 8rem">Año<p-sortIcon field="anioPublicacion"></p-sortIcon></th>
@@ -151,7 +151,7 @@ import { map } from 'rxjs/operators';
                                     <td>
                                         <img [src]="getImageUrl(objeto)" [alt]="objeto.material?.titulo || objeto.titulo" width="50" class="shadow-lg" />
                                     </td>
-                                    <td>{{ objeto.codigo }}</td>
+                                    <td>{{ objeto.codigoLocalizacion }}</td>
                                     <td>
                                         {{ objeto.material?.titulo || objeto.titulo }}
                                     </td>
@@ -487,6 +487,10 @@ export class CatalogoEnLineaComponent {
 
                         resp.forEach((r: { cab: any; detalles: any[] }) => {
                             if (r.detalles.length > 0) {
+                                const det = r.detalles[0];
+                                r.cab.coleccion = r.cab.coleccion || det?.tipoMaterial;
+                                r.cab.codigoLocalizacion = r.cab.codigoLocalizacion || r.cab.codigo;
+                                r.cab.anioPublicacion = r.cab.anioPublicacion || r.cab.material?.anioPublicacion;
                                 this.data.push(r.cab);
                                 this.detallesPorBiblioteca[r.cab.id] = r.detalles;
                             }
@@ -562,16 +566,32 @@ export class CatalogoEnLineaComponent {
     }
 
     onDateRangeChange() {
-        if (this.prestamo.fechaInicioTime) {
-            this.minHoraFin = new Date(this.prestamo.fechaInicioTime.getTime() + 5 * 60000);
-            if (this.prestamo.fechaFinTime && this.prestamo.fechaFinTime < this.minHoraFin) {
-                this.prestamo.fechaFinTime = new Date(this.minHoraFin);
+        if (
+            this.prestamo.fechaInicioDate &&
+            this.prestamo.fechaFinDate &&
+            this.prestamo.fechaInicioTime &&
+            this.prestamo.fechaFinTime
+        ) {
+            const dtInicio = new Date(
+                this.prestamo.fechaInicioDate.getFullYear(),
+                this.prestamo.fechaInicioDate.getMonth(),
+                this.prestamo.fechaInicioDate.getDate(),
+                this.prestamo.fechaInicioTime.getHours(),
+                this.prestamo.fechaInicioTime.getMinutes()
+            );
+            const dtFin = new Date(
+                this.prestamo.fechaFinDate.getFullYear(),
+                this.prestamo.fechaFinDate.getMonth(),
+                this.prestamo.fechaFinDate.getDate(),
+                this.prestamo.fechaFinTime.getHours(),
+                this.prestamo.fechaFinTime.getMinutes()
+            );
+            if (dtFin <= dtInicio) {
+                dtFin.setDate(dtFin.getDate() + 1);
+                this.prestamo.fechaFinDate = new Date(dtFin);
+                this.prestamo.fechaFinTime = new Date(dtFin);
+                this.minHoraFin = null;
             }
-            if (this.prestamo.fechaFinDate && this.prestamo.fechaFinDate < this.minHoraFin) {
-                this.prestamo.fechaFinDate = new Date(this.minHoraFin);
-            }
-        }
-        if (this.prestamo.fechaInicioDate && this.prestamo.fechaFinDate && this.prestamo.fechaInicioTime && this.prestamo.fechaFinTime) {
             this.acceptedTerms = false;
         }
     }
@@ -614,7 +634,7 @@ export class CatalogoEnLineaComponent {
         this.minDate = new Date(this.minHora);
         const startBase = this.minHora;
         const endBase = new Date(startBase.getTime() + 5 * 60000);
-        this.minHoraFin = endBase;
+        this.minHoraFin = null;
         this.prestamo = {
             fechaInicioDate: new Date(startBase),
             fechaInicioTime: new Date(startBase),
@@ -672,8 +692,7 @@ export class CatalogoEnLineaComponent {
         );
 
         if (dtFin <= dtInicio) {
-            this.messageService.add({ severity: 'warn', detail: 'La hora de devolución debe ser posterior a la hora de inicio.' });
-            return;
+            dtFin.setDate(dtFin.getDate() + 1);
         }
 
         if (dtFin.getTime() - dtInicio.getTime() < 5 * 60000) {
