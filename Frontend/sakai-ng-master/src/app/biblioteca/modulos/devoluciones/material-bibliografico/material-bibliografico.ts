@@ -146,6 +146,7 @@ interface PrestamoUsuario {
                 <th>Código</th>
                 <th>N.I</th>
                 <th>Fecha de préstamo</th>
+                <th>Hora de préstamo</th>
                 <th>Devolver</th>
                 <th>Cancelar</th>
             </tr>
@@ -155,7 +156,14 @@ interface PrestamoUsuario {
                 <td>{{ bib.biblioteca?.titulo || '-' }}</td>
                 <td>{{ bib.biblioteca?.id }}</td>
                 <td>{{ bib.numeroIngreso }}</td>
-                <td>{{ bib.fechaPrestamo | date:'dd-MM-yyyy' }}</td>
+                <td>
+                    <div>Fecha inicio: {{ bib.fechaPrestamo ? (bib.fechaPrestamo | date:'dd-MM-yyyy') : '-' }}</div>
+                    <div>Fecha fin: {{ bib.fechaDevolucion ? (bib.fechaDevolucion | date:'dd-MM-yyyy') : '-' }}</div>
+                </td>
+                <td>
+                    <div>Hora inicio: {{ bib.horaInicio || '-' }}</div>
+                    <div>Hora fin: {{ bib.horaFin || '-' }}</div>
+                </td>
                 <td>
                 <p-button icon="pi pi-check" rounded outlined (click)="devolver(bib)" pTooltip="Devolver" tooltipPosition="bottom"/>
                 </td>
