@@ -30,8 +30,8 @@ import { MessageService, ConfirmationService } from 'primeng/api';
             <p-tag [value]="esp.activo ? 'Sí' : 'No'" [severity]="esp.activo ? 'success' : 'danger'"></p-tag>
           </td>
           <td>
-            <p-button icon="pi pi-pencil" rounded outlined class="mr-2" (click)="edit(esp)"></p-button>
-            <p-button icon="pi pi-trash" severity="danger" rounded outlined (click)="confirmDelete(esp)"></p-button>
+            <p-button icon="pi pi-pencil" rounded outlined class="mr-2" (onClick)="edit(esp)"></p-button>
+            <p-button icon="pi pi-trash" severity="danger" rounded outlined (onClick)="confirmDelete(esp)"></p-button>
           </td>
         </tr>
       </ng-template>
@@ -51,6 +51,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
         <p-button label="Guardar" (onClick)="save()" />
       </ng-template>
     </p-dialog>
+    <p-confirmDialog></p-confirmDialog>
   `
 })
 export class EspecialidadesComponent implements OnInit {
