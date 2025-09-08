@@ -9,6 +9,7 @@ import { DocumentoService } from '../../../services/documento.service';
 import { BibliotecaVirtualService } from '../../../services/biblioteca-virtual.service';
 import { TemplateModule } from '../../../template.module';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
 @Component({
     selector: 'app-modal-regularizar',
     standalone: true,
@@ -471,14 +472,6 @@ export class ModalRegularizarComponent implements OnInit {
     }
 
 
-    private parseTimeAtDate(time: string, base: Date): Date {
-        const [h, m] = time.split(':').map((n: any) => parseInt(n, 10));
-        const d = new Date(base);
-        d.setHours(h, m, 0, 0);
-        return d;
-    }
-
-
     private autocompletarEquipo(equipo: any, destino: FormGroup) {
         if (!equipo?.id) {
             destino.patchValue({
@@ -493,47 +486,32 @@ export class ModalRegularizarComponent implements OnInit {
             this.duracionSeleccionada = null;
             return;
         }
-        this.bibliotecaVirtualService.listarEquiposPrestamo(String(equipo.id)).subscribe({
-            next: (lista: any[]) => {
-                const detalle = lista?.[0];
-                this.maxHoras = detalle?.maxHoras ?? null;
+
+        const sede = destino.get('sede')?.value;
+        const sedeId = sede?.id ?? sede;
+
+        forkJoin({
+            info: this.bibliotecaVirtualService.listarEquiposPrestamo(String(equipo.id)),
+            detalles: this.bibliotecaVirtualService.listarDetallePrestamoEquipo(equipo.id, sedeId)
+        }).subscribe({
+            next: ({ info, detalles }) => {
+                const registros = (info || []).filter((e: any) => {
+                    const idEq = e.idEquipo ?? e.id;
+                    const sedeEq = e.sede?.id ?? e.idSede;
+                    return idEq === equipo.id && (sedeId == null || sedeEq === sedeId);
+                });
+
+                const base = registros[0] || {};
+                this.maxHoras = base?.maxHoras ?? base?.detallePrestamo?.maxHoras ?? null;
                 this.duracionSeleccionada = this.maxHoras;
 
-                let fechaPrestamo = detalle?.fechaPrestamo ? new Date(detalle.fechaPrestamo) : null;
-                let fechaDevolucion = detalle?.fechaDevolucion ? new Date(detalle.fechaDevolucion) : null;
+                const activo = (detalles || []).find((d: any) => {
+                    const fin = d?.fechaFin ? new Date(d.fechaFin) : null;
+                    return fin && fin.getTime() > Date.now();
+                });
 
-                if (!fechaPrestamo && detalle?.horaInicio) {
-                    fechaPrestamo = this.parseTimeAtDate(detalle.horaInicio, new Date());
-                }
-                if (!fechaDevolucion && detalle?.horaFin) {
-                    const base = fechaPrestamo ?? new Date();
-                    fechaDevolucion = this.parseTimeAtDate(detalle.horaFin, base);
-                }
-
-                destino.patchValue({
-                    fechaPrestamo,
-                    fechaDevolucion,
-                    horaInicio: fechaPrestamo,
-                    horaFin: fechaDevolucion
-                }, { emitEvent: false });
-
-                const estado = (detalle?.estado?.descripcion ?? '').toUpperCase();
-                const prestado = estado === 'PRESTADO' || estado === 'RESERVADO' ||
-                    (fechaDevolucion != null && fechaDevolucion.getTime() > Date.now());
-                if (prestado) {
-                    const disponible = fechaDevolucion ? this.formatearFechaHora(fechaDevolucion) : '';
-                    this.confirmationService.confirm({
-                        header: 'Equipo no disponible',
-                        message: disponible
-                            ? `Equipo prestado a otro usuario.<br/>El equipo se encuentra disponible en este horario:<br/><strong>${disponible}</strong><br/>¿Desea pre-registrar?`
-                            : 'Equipo prestado a otro usuario.',
-                        icon: 'pi pi-exclamation-triangle',
-                        acceptLabel: 'Aceptar',
-                        rejectLabel: 'Cancelar',
-                        closeOnEscape: false,
-                        accept: () => this.establecerHorario(destino, fechaDevolucion || new Date(), true),
-                        reject: () => destino.get('numeroEquipo')?.reset()
-                    });
+                if (activo) {
+                    this.mostrarEquipoNoDisponible(destino, new Date(activo.fechaFin));
                 } else {
                     this.establecerHorario(destino, new Date(), false);
                 }
@@ -552,13 +530,33 @@ export class ModalRegularizarComponent implements OnInit {
         });
     }
 
+    private mostrarEquipoNoDisponible(destino: FormGroup, fin?: Date) {
+        const disponible = fin ? this.formatearFechaHora(fin) : '';
+        this.confirmationService.confirm({
+            header: 'Equipo no disponible',
+            message: disponible
+                ? `Equipo prestado a otro usuario.<br/>El equipo se encuentra disponible en este horario:<br/><strong>${disponible}</strong><br/>¿Desea pre-registrar?`
+                : 'Equipo prestado a otro usuario.',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Aceptar',
+            rejectLabel: 'Cancelar',
+            closeOnEscape: false,
+            accept: () => this.establecerHorario(destino, fin || new Date(), true),
+            reject: () => destino.get('numeroEquipo')?.reset()
+        });
+    }
+
     private establecerHorario(destino: FormGroup, inicio: Date, bloquearInicio: boolean) {
         const fin = new Date(inicio.getTime() + 60 * 60 * 1000);
+        const fechaPrestamo = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate());
+        const fechaDevolucion = new Date(fin.getFullYear(), fin.getMonth(), fin.getDate());
+        const horaInicio = new Date(0, 0, 0, inicio.getHours(), inicio.getMinutes());
+        const horaFin = new Date(0, 0, 0, fin.getHours(), fin.getMinutes());
         destino.patchValue({
-            fechaPrestamo: inicio,
-            fechaDevolucion: fin,
-            horaInicio: inicio,
-            horaFin: fin
+            fechaPrestamo,
+            fechaDevolucion,
+            horaInicio,
+            horaFin
         }, { emitEvent: false });
         this.validarMaxHoras(destino);
         if (bloquearInicio) {

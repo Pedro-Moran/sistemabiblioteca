@@ -220,6 +220,19 @@ public class PrestamoController {
         return ResponseEntity.ok(Map.of("status","0","data", lista));
     }
 
+    /**
+     * Lista el historial de préstamos de un equipo determinado. Si se envía una sede,
+     * se filtra por dicha sede.
+     */
+    @GetMapping("/equipos/{equipoId}/detalles")
+    public ResponseEntity<?> listarDetallePorEquipo(
+            @PathVariable Long equipoId,
+            @RequestParam(required = false) Long sedeId
+    ) {
+        List<DetallePrestamo> lista = prestamoService.listarPrestamosPorEquipo(equipoId, sedeId);
+        return ResponseEntity.ok(Map.of("status","0","data", lista));
+    }
+
     /** Lista equipos (id, nombre o ip) */
     @GetMapping("/equipos")
     public ResponseEntity<?> listarEquipos(

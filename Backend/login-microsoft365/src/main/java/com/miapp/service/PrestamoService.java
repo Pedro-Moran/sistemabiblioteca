@@ -201,6 +201,17 @@ public class PrestamoService {
     }
 
     /**
+     * Devuelve el historial de préstamos de un equipo.
+     * Si se envía una sede, se filtra además por dicho código de sede.
+     */
+    public List<DetallePrestamo> listarPrestamosPorEquipo(Long equipoId, Long sedeId) {
+        if (sedeId != null) {
+            return detallePrestamoRepository.findByEquipo_IdEquipoAndCodigoSede(equipoId, sedeId.toString());
+        }
+        return detallePrestamoRepository.findByEquipo_IdEquipo(equipoId);
+    }
+
+    /**
      * Para el listado de devoluciones: solo PRESTADO EN SALA/A DOMICILIO,
      * y si pasan sedeId != null, filtra por ese código de sede.
      */
