@@ -28,6 +28,10 @@ public interface DetallePrestamoRepository
             String descripcionEstado
     );
 
+    List<DetallePrestamo> findByEquipo_IdEquipo(Long equipoId);
+
+    List<DetallePrestamo> findByEquipo_IdEquipoAndCodigoSede(Long equipoId, String codigoSede);
+
     List<DetallePrestamo> findByEstado_DescripcionIn(List<String> estados);
     List<DetallePrestamo> findByEstado_DescripcionInAndCodigoSedeIgnoreCase(
             List<String> estados, String codigoSede);
