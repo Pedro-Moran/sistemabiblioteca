@@ -102,27 +102,30 @@ export class PrestamosService {
     programa?: number | string,
     ciclo?: number | string,
     fechaInicio?: string,
-    fechaFin?: string
+    fechaFin?: string,
+    tipo: 'materiales' | 'equipos' = 'equipos'
   ): Observable<DetallePrestamo[]> {
     let params = new HttpParams();
 
-    if (sede != null)           params = params.set('sede', String(sede));
-    if (tipoUsuario != null)    params = params.set('tipoUsuario', String(tipoUsuario));
-    if (tipoPrestamo)           params = params.set('estado', tipoPrestamo);
-    if (escuela != null)        params = params.set('escuela', String(escuela));
-    if (programa != null)       params = params.set('programa', String(programa));
-    if (ciclo != null)          params = params.set('ciclo', String(ciclo));
-    if (fechaInicio)            params = params.set('fechaInicio', fechaInicio);
-    if (fechaFin)               params = params.set('fechaFin', fechaFin);
+    const agregarParam = (clave: string, valor?: number | string | null) => {
+      if (valor != null && valor !== 0 && valor !== '0') {
+        params = params.set(clave, String(valor));
+      }
+    };
 
+    agregarParam('sede', sede);
+    agregarParam('tipoUsuario', tipoUsuario);
+    agregarParam('estado', tipoPrestamo);
+    agregarParam('escuela', escuela);
+    agregarParam('programa', programa);
+    agregarParam('ciclo', ciclo);
+    if (fechaInicio)            params = params.set('fechaPrestamoInicio', fechaInicio);
+    if (fechaFin)               params = params.set('fechaPrestamoFin', fechaFin);
+
+    const endpoint = `${this.apiUrl}/api/prestamos/reporte/${tipo}`;
     return this.http
-      .get<{ status: string; data: DetallePrestamo[] }>(
-        `${this.apiUrl}/api/prestamos/reporte`,
-        { params }
-      )
-      .pipe(
-        map(resp => resp.data ?? [])
-      );
+      .get<{ status: string; data: DetallePrestamo[] }>(endpoint, { params })
+      .pipe(map(resp => resp.data ?? []));
   }
 
   listarEstados(): Observable<any> {
