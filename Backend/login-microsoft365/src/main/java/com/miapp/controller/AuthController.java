@@ -109,14 +109,12 @@ public class AuthController {
         Optional<Usuario> usuarioOpt = usuarioService.buscarPorEmail(email);
 
         if (usuarioOpt.isEmpty()) {
-            Usuario usuario = usuarioService.registrarDesdeOffice365(email, microsoftId);
-            usuarioService.incrementarContadorLogins(usuario.getLogin());
-            String rolDescripcion = usuario.getRoles().isEmpty()
-                    ? "Sin Rol"
-                    : usuario.getRoles().iterator().next().getDescripcion();
-            String jwt = jwtUtil.generateToken(usuario.getEmail(), rolDescripcion);
-            RefreshToken refresh = refreshTokenService.createRefreshToken(usuario);
-            return ResponseEntity.ok(new LoginResponse("Registro y login exitoso", jwt, refresh.getToken()));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of(
+                            "message", "Usuario no registrado",
+                            "email", email,
+                            "microsoftId", microsoftId
+                    ));
         }
 
         Usuario usuario = usuarioOpt.get();
