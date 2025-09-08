@@ -190,7 +190,7 @@ import { ModalRegularizarComponent } from './modal-regularizar';
 
                 </div>
             </div>
-<app-modal-regularizar #modalRegularizar></app-modal-regularizar>
+<app-modal-regularizar #modalRegularizar (saved)="listar()"></app-modal-regularizar>
 
             <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
             <p-toast></p-toast>`,

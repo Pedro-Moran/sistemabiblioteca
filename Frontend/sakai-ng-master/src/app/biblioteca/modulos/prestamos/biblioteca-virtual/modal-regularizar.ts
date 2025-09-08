@@ -1,19 +1,19 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Table } from 'primeng/table';
-import { Menu } from 'primeng/menu';
 import { InputValidation } from '../../../input-validation';
 import { GenericoService } from '../../../services/generico.service';
 import { MaterialBibliograficoService } from '../../../services/material-bibliografico.service';
+import { DocumentoService } from '../../../services/documento.service';
+import { BibliotecaVirtualService } from '../../../services/biblioteca-virtual.service';
 import { TemplateModule } from '../../../template.module';
 @Component({
     selector: 'app-modal-regularizar',
     standalone: true,
     template: ` <p-dialog [(visible)]="display" [style]="{width: '80vw'}"  header="Regularizar" [modal]="true" [closable]="true" styleClass="p-fluid">
     <ng-template pTemplate="content">
-    <p-tabs value="0">
+    <p-tabs [(value)]="activeTab">
                             <p-tablist>
                                 <p-tab value="0">Datos de Usuario</p-tab>
                                 <p-tab value="1">Otros Usuarios</p-tab>
@@ -224,7 +224,10 @@ import { TemplateModule } from '../../../template.module';
     </ng-template>
     <ng-template pTemplate="footer">
                     <button pButton pRipple type="button" icon="pi pi-times" (click)="closeModal()" [disabled]="loading" label="Cancelar" class="p-button-outlined p-button-danger"></button>
-                    <button pButton pRipple type="button" icon="pi pi-check" [disabled]="form.invalid || loading" label="Guardar" class="p-button-success"></button>
+                    <button pButton pRipple type="button" icon="pi pi-check"
+                            [disabled]="(activeTab === '0' ? form.invalid : formOtroUsuario.invalid) || loading"
+                            (click)="guardar()"
+                            label="Guardar" class="p-button-success"></button>
                 </ng-template>
   </p-dialog>
 
@@ -238,7 +241,6 @@ export class ModalRegularizarComponent implements OnInit {
     form: FormGroup = new FormGroup({});
     formOtroUsuario: FormGroup = new FormGroup({});
     display: boolean = false;
-    items!: MenuItem[];
     uploadedFiles: any[] = [];
     sedeLista: any[] = [];
     numeroEquipoLista: any[] = [];
@@ -249,9 +251,19 @@ export class ModalRegularizarComponent implements OnInit {
     usuariosPRLista: any[] = [];
     objeto: any = null;
     radioValue: any = null;
-    palabraClave: string = "";
+    palabraClave: string = '';
+    activeTab: string = '0';
+    @Output() saved = new EventEmitter<any>();
 
-    constructor(private fb: FormBuilder, private genericoService: GenericoService, private materialBibliograficoService: MaterialBibliograficoService, private confirmationService: ConfirmationService, private messageService: MessageService) {
+    constructor(
+        private fb: FormBuilder,
+        private genericoService: GenericoService,
+        private materialBibliograficoService: MaterialBibliograficoService,
+        private documentoService: DocumentoService,
+        private bibliotecaVirtualService: BibliotecaVirtualService,
+        private confirmationService: ConfirmationService,
+        private messageService: MessageService
+    ) {
 
         this.form = this.fb.group({
             tipoUsuario: ['', [Validators.required]],
@@ -266,7 +278,6 @@ export class ModalRegularizarComponent implements OnInit {
             usuarioRecepcion: ['', [Validators.required]]
         });
         this.formOtroUsuario = this.fb.group({
-
             tipoUsuario: ['', [Validators.required]],
             tipoDocumento: ['', [Validators.required]],
             nummeroDocumento: ['', [Validators.required]],
@@ -274,15 +285,24 @@ export class ModalRegularizarComponent implements OnInit {
             sede: ['', [Validators.required]],
             numeroEquipo: ['', [Validators.required]],
             fechaPrestamo: ['', [Validators.required]],
-            devolver: [false, [Validators.required]],
+            devolver: [[], [Validators.required]],
             fechaDevolucion: ['', [Validators.required]],
             usuarioPrestamo: ['', [Validators.required]],
             usuarioRecepcion: ['', [Validators.required]]
         });
+
+        this.form.get('tipoUsuario')?.valueChanges.subscribe(() => {
+            this.form.patchValue({ palabraBuscar: '', usuario: null });
+            this.filtrarUsuarios();
+        });
+        this.form.get('sede')?.valueChanges.subscribe(s => this.cargarEquipos(s));
+        this.formOtroUsuario.get('sede')?.valueChanges.subscribe(s => this.cargarEquipos(s));
     }
     async ngOnInit() {
-
         await this.listarTiposDocumento();
+        await this.listarTiposUsuario();
+        await this.listarUsuariosPrestamo();
+        await this.listarSedes();
     }
 
   async listarTiposDocumento() {
@@ -303,17 +323,214 @@ export class ModalRegularizarComponent implements OnInit {
       );
   }
     openModal() {
+        this.form.reset({ tipoBuscar: 1 });
+        this.formOtroUsuario.reset({ devolver: [] });
         this.objeto = {};
         this.display = true;
+        this.filtrarUsuarios();
     }
 
     closeModal() {
         this.display = false;
     }
-    guardar() {
-        this.loading = false;
-        this.display = false;
-    }
-    buscar() { }
 
+    buscar() {
+        if (this.activeTab === '0') {
+            this.filtrarUsuarios();
+        } else {
+            this.buscarPorDocumento();
+        }
+    }
+
+    private buscarPorDocumento() {
+        const doc = this.formOtroUsuario.get('tipoDocumento')?.value;
+        const tipo = this.obtenerCodigoDocumento(doc);
+        const numero = (this.formOtroUsuario.get('nummeroDocumento')?.value || '').trim();
+        if (!tipo || !numero) {
+            return;
+        }
+        this.loading = true;
+        this.documentoService.consultar(tipo, numero).subscribe(data => {
+            this.loading = false;
+            if (data) {
+                let nombre =
+                    data.NombreCompleto ||
+                    data.NAME ||
+                    `${data.Nombres ?? ''} ${data.ApellidoPaterno ?? ''} ${data.ApellidoMaterno ?? ''}`.trim();
+                if (typeof nombre === 'string') {
+                    nombre = nombre.replace(',', ' ').trim();
+                }
+                this.formOtroUsuario.get('nombreCompleto')?.setValue(nombre);
+            } else {
+                this.formOtroUsuario.get('nombreCompleto')?.setValue('');
+                this.messageService.add({ severity: 'warn', summary: 'No encontrado', detail: 'No se encontró el documento' });
+            }
+        });
+    }
+
+    private obtenerCodigoDocumento(doc: any): string | null {
+        const tipo = doc?.codigo ?? doc?.code ?? doc?.idTipoDocumento ?? doc?.id;
+        return tipo != null ? String(tipo).padStart(2, '0') : null;
+    }
+
+    private cargarEquipos(sede: any) {
+        if (!sede?.id) {
+            this.numeroEquipoLista = [];
+            return;
+        }
+        this.bibliotecaVirtualService.filtrarPorSede(sede.id).subscribe({
+            next: resp => {
+                this.numeroEquipoLista = (resp?.data || []).map((e: any) => ({
+                    descripcion: e.numeroEquipo,
+                    id: e.idEquipo ?? e.id
+                }));
+            },
+            error: () => {
+                this.numeroEquipoLista = [];
+            }
+        });
+    }
+
+    private cargarUsuarios(codigoSeleccionado: string) {
+        const tipoInicial = this.tipoUsuarioLista[0];
+        if (codigoSeleccionado) {
+            this.loading = true;
+            this.materialBibliograficoService.listarUsuarios(codigoSeleccionado).subscribe({
+                next: (usuarios: any[]) => {
+                    this.loading = false;
+                    const uSel = usuarios.find(u => u.codigo === codigoSeleccionado || u.login === codigoSeleccionado);
+                    const tipoSel = uSel
+                        ? this.tipoUsuarioLista.find((t: any) => String(t.id) === String(uSel.tipoUsuarioCodigo) || t.descripcion === uSel.tipoUsuario)
+                        : tipoInicial;
+                    this.form.get('tipoUsuario')?.setValue(tipoSel || tipoInicial);
+                    this.filtrarUsuarios(codigoSeleccionado);
+                },
+                error: () => {
+                    this.loading = false;
+                    this.form.get('tipoUsuario')?.setValue(tipoInicial);
+                    this.filtrarUsuarios();
+                }
+            });
+        } else {
+            this.form.get('tipoUsuario')?.setValue(tipoInicial);
+            this.filtrarUsuarios();
+        }
+    }
+
+    private filtrarUsuarios(codigoSeleccionado: string = '') {
+        const tipoId = String(this.form.get('tipoUsuario')?.value?.id ?? '');
+        const termino = (this.form.get('palabraBuscar')?.value || '').trim();
+        const tipoFiltro = String(this.form.get('tipoBuscar')?.value ?? '');
+        this.loading = true;
+        this.materialBibliograficoService.listarUsuarios(termino, tipoId, tipoFiltro).subscribe({
+            next: (lista: any[]) => {
+                this.loading = false;
+                this.usuariosLista = lista.map(u => ({
+                    descripcion: `${u.nombres ?? ''} ${u.apellidoPaterno ?? ''} ${u.apellidoMaterno ?? ''}`.trim() || u.email || u.login || u.codigo,
+                    codigoUsuario: u.codigo ?? u.login ?? ''
+                }));
+                if (codigoSeleccionado) {
+                    const u = this.usuariosLista.find(us => us.codigoUsuario === codigoSeleccionado);
+                    if (u) {
+                        this.form.get('usuario')?.setValue(u);
+                    }
+                } else {
+                    this.form.get('usuario')?.setValue(null);
+                }
+            },
+            error: () => {
+                this.loading = false;
+                this.usuariosLista = [];
+                this.form.get('usuario')?.setValue(null);
+            }
+        });
+    }
+
+    async listarTiposUsuario() {
+        this.genericoService.roles_get('roles/lista-roles').subscribe({
+            next: (result: any) => {
+                if (result.status === '0') {
+                    this.tipoUsuarioLista = result.data.map((rol: any) => ({
+                        id: rol.idRol ?? rol.id ?? rol.codigo,
+                        descripcion: rol.descripcion
+                    }));
+                } else {
+                    this.tipoUsuarioLista = [];
+                }
+            },
+            error: () => (this.tipoUsuarioLista = [])
+        });
+    }
+
+    async listarUsuariosPrestamo() {
+        this.loading = true;
+        this.materialBibliograficoService.listarUsuarios().subscribe({
+            next: (lista: any[]) => {
+                this.loading = false;
+                this.usuariosPRLista = lista.map(u => ({
+                    descripcion: `${u.nombres ?? ''} ${u.apellidoPaterno ?? ''} ${u.apellidoMaterno ?? ''}`.trim() || u.email || u.login || u.codigo,
+                    codigoUsuario: u.codigo ?? u.login ?? ''
+                }));
+            },
+            error: () => {
+                this.loading = false;
+                this.usuariosPRLista = [];
+            }
+        });
+    }
+
+    async listarSedes() {
+        this.loading = true;
+        this.genericoService.sedes_get('api/equipos/sedes').subscribe({
+            next: (result: any) => {
+                this.loading = false;
+                if (result.status === 0) {
+                    this.sedeLista = result.data;
+                }
+            },
+            error: () => {
+                this.loading = false;
+                this.sedeLista = [];
+            }
+        });
+    }
+
+    guardar() {
+        this.loading = true;
+        const datosRaw = this.activeTab === '0' ? this.form.getRawValue() : this.formOtroUsuario.getRawValue();
+        const datos = this.activeTab === '0'
+            ? datosRaw
+            : { ...datosRaw, tipoDocumento: this.obtenerCodigoDocumento(datosRaw.tipoDocumento) };
+        const payload: any = {
+            ...datos,
+            sedeId: datos.sede?.id,
+            idEquipo: datos.numeroEquipo?.id,
+            numeroEquipo: datos.numeroEquipo?.descripcion,
+            fechaPrestamo: this.aIsoLocal(datos.fechaPrestamo),
+            fechaDevolucion: this.aIsoLocal(datos.fechaDevolucion)
+        };
+        this.materialBibliograficoService.regularizarPrestamo(payload).subscribe({
+            next: (resp: any) => {
+                this.loading = false;
+                this.display = false;
+                this.messageService.add({ severity: 'success', summary: 'Listo', detail: 'Préstamo regularizado.' });
+                this.saved.emit(resp?.data);
+            },
+            error: (e: HttpErrorResponse) => {
+                this.loading = false;
+                const detail = e.status === 403
+                    ? 'No tiene permisos para regularizar el préstamo'
+                    : 'No se pudo regularizar el préstamo';
+                this.messageService.add({ severity: 'error', summary: 'Error', detail });
+            }
+        });
+    }
+
+    private aIsoLocal(fecha: Date | null): string | null {
+        if (!fecha) {
+            return null;
+        }
+        const offset = fecha.getTimezoneOffset() * 60000;
+        return new Date(fecha.getTime() - offset).toISOString().slice(0, 19);
+    }
 }
