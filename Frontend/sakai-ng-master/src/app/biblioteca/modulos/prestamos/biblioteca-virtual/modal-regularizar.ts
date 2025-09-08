@@ -8,6 +8,7 @@ import { MaterialBibliograficoService } from '../../../services/material-bibliog
 import { DocumentoService } from '../../../services/documento.service';
 import { BibliotecaVirtualService } from '../../../services/biblioteca-virtual.service';
 import { TemplateModule } from '../../../template.module';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 @Component({
     selector: 'app-modal-regularizar',
     standalone: true,
@@ -77,42 +78,66 @@ import { TemplateModule } from '../../../template.module';
 </div>
 
 <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
-                      <div class="flex flex-col gap-2 w-full">
-                      <label for="usuario">Fecha de prestamo</label>
-                      <p-datepicker
+  <div class="flex flex-col gap-2 w-full">
+    <label for="usuario">Fecha de prestamo</label>
+    <p-datepicker
       appendTo="body"
       formControlName="fechaPrestamo"
       [ngClass]="'w-full'"
       [style]="{ width: '100%' }"
       [readonlyInput]="true"
       dateFormat="dd/mm/yy">
-</p-datepicker>
+    </p-datepicker>
     <app-input-validation [form]="form" modelo="fechaPrestamo" ver="Fecha Prestamo"></app-input-validation>
+  </div>
+  <div class="flex flex-col gap-2 w-full">
+    <label for="horaInicio">Hora inicio de pr&eacute;stamo</label>
+    <p-datepicker
+      appendTo="body"
+      formControlName="horaInicio"
+      [ngClass]="'w-full'"
+      [style]="{ width: '100%' }"
+      [readonlyInput]="true"
+      timeOnly="true">
+    </p-datepicker>
+    <app-input-validation [form]="form" modelo="horaInicio" ver="Hora Inicio"></app-input-validation>
+  </div>
+  <div class="flex flex-col gap-2 w-full">
+    <label for="horaFin">Hora fin de pr&eacute;stamo</label>
+    <p-datepicker
+      appendTo="body"
+      formControlName="horaFin"
+      [ngClass]="'w-full'"
+      [style]="{ width: '100%' }"
+      [readonlyInput]="true"
+      timeOnly="true">
+    </p-datepicker>
+    <app-input-validation [form]="form" modelo="horaFin" ver="Hora Fin"></app-input-validation>
+  </div>
 </div>
-
-<div class="flex flex-col gap-2 w-full">
-                      <label for="usuarioPrestamo">Usuario de pr&eacute;stamo</label>
+<div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
+  <div class="flex flex-col gap-2 w-full">
+    <label for="usuarioPrestamo">Usuario de pr&eacute;stamo</label>
     <p-select appendTo="body" id="usuarioPrestamo" formControlName="usuarioPrestamo" [options]="usuariosPRLista" optionLabel="descripcion" placeholder="Seleccionar" class="w-full"></p-select>
     <app-input-validation [form]="form" modelo="usuarioPrestamo" ver="Usuario Prestamo"></app-input-validation>
-</div>
-
-<div class="flex flex-col gap-2 w-full">
-                      <label for="fechaDevolucion">Fecha de devoluci&oacute;n</label>
-                      <p-datepicker
+  </div>
+  <div class="flex flex-col gap-2 w-full">
+    <label for="fechaDevolucion">Fecha de devoluci&oacute;n</label>
+    <p-datepicker
       appendTo="body"
       formControlName="fechaDevolucion"
       [ngClass]="'w-full'"
       [style]="{ width: '100%' }"
       [readonlyInput]="true"
       dateFormat="dd/mm/yy">
-</p-datepicker>
+    </p-datepicker>
     <app-input-validation [form]="form" modelo="fechaDevolucion" ver="Fecha Devolución"></app-input-validation>
-</div>
-<div class="flex flex-col gap-2 w-full">
-                      <label for="usuarioRecepcion">Usuario de recepci&oacute;n</label>
+  </div>
+  <div class="flex flex-col gap-2 w-full">
+    <label for="usuarioRecepcion">Usuario de recepci&oacute;n</label>
     <p-select appendTo="body" id="usuarioRecepcion" formControlName="usuarioRecepcion" [options]="usuariosPRLista" optionLabel="descripcion" placeholder="Seleccionar" class="w-full"></p-select>
     <app-input-validation [form]="form" modelo="usuarioRecepcion" ver="Usuario Recepcion"></app-input-validation>
-</div>
+  </div>
 </div>
 
                                 </form>
@@ -170,24 +195,49 @@ import { TemplateModule } from '../../../template.module';
 </div>
 
 <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
-                      <div class="flex flex-col gap-2 w-full">
-                      <label for="usuario">Fecha de prestamo</label>
-                      <p-datepicker
+  <div class="flex flex-col gap-2 w-full">
+    <label for="usuario">Fecha de prestamo</label>
+    <p-datepicker
       appendTo="body"
       formControlName="fechaPrestamo"
       [ngClass]="'w-full'"
       [style]="{ width: '100%' }"
       [readonlyInput]="true"
       dateFormat="dd/mm/yy">
-</p-datepicker>
+    </p-datepicker>
     <app-input-validation [form]="formOtroUsuario" modelo="fechaPrestamo" ver="Fecha Prestamo"></app-input-validation>
+  </div>
+  <div class="flex flex-col gap-2 w-full">
+    <label for="horaInicio">Hora inicio de pr&eacute;stamo</label>
+    <p-datepicker
+      appendTo="body"
+      formControlName="horaInicio"
+      [ngClass]="'w-full'"
+      [style]="{ width: '100%' }"
+      [readonlyInput]="true"
+      timeOnly="true">
+    </p-datepicker>
+    <app-input-validation [form]="formOtroUsuario" modelo="horaInicio" ver="Hora Inicio"></app-input-validation>
+  </div>
+  <div class="flex flex-col gap-2 w-full">
+    <label for="horaFin">Hora fin de pr&eacute;stamo</label>
+    <p-datepicker
+      appendTo="body"
+      formControlName="horaFin"
+      [ngClass]="'w-full'"
+      [style]="{ width: '100%' }"
+      [readonlyInput]="true"
+      timeOnly="true">
+    </p-datepicker>
+    <app-input-validation [form]="formOtroUsuario" modelo="horaFin" ver="Hora Fin"></app-input-validation>
+  </div>
 </div>
-
-<div class="flex flex-col gap-2 w-full">
-                      <label for="usuarioPrestamo">Usuario de pr&eacute;stamo</label>
+<div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
+  <div class="flex flex-col gap-2 w-full">
+    <label for="usuarioPrestamo">Usuario de pr&eacute;stamo</label>
     <p-select appendTo="body" id="usuarioPrestamo" formControlName="usuarioPrestamo" [options]="usuariosPRLista" optionLabel="descripcion" placeholder="Seleccionar" class="w-full"></p-select>
     <app-input-validation [form]="formOtroUsuario" modelo="usuarioPrestamo" ver="Usuario Prestamo"></app-input-validation>
-</div>
+  </div>
 </div>
 <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
 
@@ -253,6 +303,8 @@ export class ModalRegularizarComponent implements OnInit {
     radioValue: any = null;
     palabraClave: string = '';
     activeTab: string = '0';
+    maxHoras: number | null = null;
+    duracionSeleccionada: number | null = null;
     @Output() saved = new EventEmitter<any>();
 
     constructor(
@@ -273,6 +325,8 @@ export class ModalRegularizarComponent implements OnInit {
             sede: ['', [Validators.required]],
             numeroEquipo: ['', [Validators.required]],
             fechaPrestamo: ['', [Validators.required]],
+            horaInicio: ['', [Validators.required]],
+            horaFin: ['', [Validators.required]],
             fechaDevolucion: ['', [Validators.required]],
             usuarioPrestamo: ['', [Validators.required]],
             usuarioRecepcion: ['', [Validators.required]]
@@ -285,6 +339,8 @@ export class ModalRegularizarComponent implements OnInit {
             sede: ['', [Validators.required]],
             numeroEquipo: ['', [Validators.required]],
             fechaPrestamo: ['', [Validators.required]],
+            horaInicio: ['', [Validators.required]],
+            horaFin: ['', [Validators.required]],
             devolver: [[], [Validators.required]],
             fechaDevolucion: ['', [Validators.required]],
             usuarioPrestamo: ['', [Validators.required]],
@@ -297,6 +353,14 @@ export class ModalRegularizarComponent implements OnInit {
         });
         this.form.get('sede')?.valueChanges.subscribe(s => this.cargarEquipos(s));
         this.formOtroUsuario.get('sede')?.valueChanges.subscribe(s => this.cargarEquipos(s));
+        this.form.get('numeroEquipo')?.valueChanges
+            .pipe(debounceTime(300), distinctUntilChanged())
+            .subscribe(eq => this.autocompletarEquipo(eq, this.form));
+        this.formOtroUsuario.get('numeroEquipo')?.valueChanges
+            .pipe(debounceTime(300), distinctUntilChanged())
+            .subscribe(eq => this.autocompletarEquipo(eq, this.formOtroUsuario));
+        this.registrarValidacionesHoras(this.form);
+        this.registrarValidacionesHoras(this.formOtroUsuario);
     }
     async ngOnInit() {
         await this.listarTiposDocumento();
@@ -327,6 +391,8 @@ export class ModalRegularizarComponent implements OnInit {
         this.formOtroUsuario.reset({ devolver: [] });
         this.objeto = {};
         this.display = true;
+        this.maxHoras = null;
+        this.duracionSeleccionada = null;
         this.filtrarUsuarios();
     }
 
@@ -389,6 +455,157 @@ export class ModalRegularizarComponent implements OnInit {
                 this.numeroEquipoLista = [];
             }
         });
+    }
+
+    private autocompletarEquipo(equipo: any, destino: FormGroup) {
+        if (!equipo?.id) {
+            destino.patchValue({
+                fechaPrestamo: null,
+                fechaDevolucion: null,
+                horaInicio: null,
+                horaFin: null
+            }, { emitEvent: false });
+            destino.get('fechaPrestamo')?.enable({ emitEvent: false });
+            destino.get('horaInicio')?.enable({ emitEvent: false });
+            this.maxHoras = null;
+            this.duracionSeleccionada = null;
+            return;
+        }
+        this.materialBibliograficoService.listarEquipos(String(equipo.id)).subscribe({
+            next: (lista: any[]) => {
+                const detalle = lista?.[0];
+                this.maxHoras = detalle?.maxHoras ?? null;
+                this.duracionSeleccionada = this.maxHoras;
+                const fechaPrestamo = detalle?.fechaPrestamo ? new Date(detalle.fechaPrestamo) : null;
+                const fechaDevolucion = detalle?.fechaDevolucion ? new Date(detalle.fechaDevolucion) : null;
+                destino.patchValue({
+                    fechaPrestamo,
+                    fechaDevolucion,
+                    horaInicio: fechaPrestamo,
+                    horaFin: fechaDevolucion
+                }, { emitEvent: false });
+                const estado = (detalle?.estado?.descripcion ?? '').toUpperCase();
+                const prestado = estado === 'PRESTADO' || estado === 'RESERVADO' ||
+                    (fechaDevolucion != null && fechaDevolucion.getTime() > Date.now());
+                if (prestado) {
+                    const disponible = fechaDevolucion ? this.formatearFechaHora(fechaDevolucion) : '';
+                    this.confirmationService.confirm({
+                        header: 'Equipo no disponible',
+                        message: disponible
+                            ? `Equipo prestado a otro usuario.<br/>El equipo se encuentra disponible en este horario:<br/><strong>${disponible}</strong><br/>¿Desea pre-registrar?`
+                            : 'Equipo prestado a otro usuario.',
+                        icon: 'pi pi-exclamation-triangle',
+                        acceptLabel: 'Aceptar',
+                        rejectLabel: 'Cancelar',
+                        closeOnEscape: false,
+                        accept: () => this.establecerHorario(destino, fechaDevolucion || new Date(), true),
+                        reject: () => destino.get('numeroEquipo')?.reset()
+                    });
+                } else {
+                    this.establecerHorario(destino, new Date(), false);
+                }
+            },
+            error: () => {
+                destino.patchValue({
+                    fechaPrestamo: null,
+                    fechaDevolucion: null,
+                    horaInicio: null,
+                    horaFin: null
+                }, { emitEvent: false });
+                this.maxHoras = null;
+                this.duracionSeleccionada = null;
+                this.messageService.add({ severity: 'warn', summary: 'No encontrado', detail: 'No se encontró información del equipo' });
+            }
+        });
+    }
+
+    private establecerHorario(destino: FormGroup, inicio: Date, bloquearInicio: boolean) {
+        const fin = new Date(inicio.getTime() + 60 * 60 * 1000);
+        destino.patchValue({
+            fechaPrestamo: inicio,
+            fechaDevolucion: fin,
+            horaInicio: inicio,
+            horaFin: fin
+        }, { emitEvent: false });
+        this.validarMaxHoras(destino);
+        if (bloquearInicio) {
+            destino.get('fechaPrestamo')?.disable({ emitEvent: false });
+            destino.get('horaInicio')?.disable({ emitEvent: false });
+        } else {
+            destino.get('fechaPrestamo')?.enable({ emitEvent: false });
+            destino.get('horaInicio')?.enable({ emitEvent: false });
+        }
+    }
+
+    private formatearFechaHora(fecha: Date): string {
+        const fechaParte = fecha.toLocaleDateString('es-PE', {
+            day: 'numeric',
+            month: 'numeric',
+            year: 'numeric'
+        });
+        const horaParte = fecha.toLocaleTimeString('es-PE', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+        return `${fechaParte}, ${horaParte}`;
+    }
+
+    private registrarValidacionesHoras(destino: FormGroup) {
+        ['horaInicio', 'horaFin', 'fechaPrestamo', 'fechaDevolucion'].forEach(control =>
+            destino.get(control)?.valueChanges.subscribe(() => this.validarMaxHoras(destino))
+        );
+    }
+
+    private validarMaxHoras(destino: FormGroup) {
+        if (this.maxHoras == null) {
+            return;
+        }
+        const fechaPrestamo: Date | null = destino.get('fechaPrestamo')?.value;
+        const horaInicio: Date | null = destino.get('horaInicio')?.value;
+        const horaFin: Date | null = destino.get('horaFin')?.value;
+        if (!fechaPrestamo || !horaInicio || !horaFin) {
+            return;
+        }
+        const inicio = new Date(
+            fechaPrestamo.getFullYear(),
+            fechaPrestamo.getMonth(),
+            fechaPrestamo.getDate(),
+            horaInicio.getHours(),
+            horaInicio.getMinutes()
+        );
+        const finMismoDia = new Date(
+            fechaPrestamo.getFullYear(),
+            fechaPrestamo.getMonth(),
+            fechaPrestamo.getDate(),
+            horaFin.getHours(),
+            horaFin.getMinutes()
+        );
+        let fin = finMismoDia;
+        let diff = (fin.getTime() - inicio.getTime()) / 3600000;
+        if (diff < 0) {
+            const finDiaSiguiente = new Date(finMismoDia);
+            finDiaSiguiente.setDate(finDiaSiguiente.getDate() + 1);
+            const diffDiaSiguiente = (finDiaSiguiente.getTime() - inicio.getTime()) / 3600000;
+            if (diffDiaSiguiente <= this.maxHoras) {
+                fin = finDiaSiguiente;
+                diff = diffDiaSiguiente;
+            } else {
+                this.messageService.add({ severity: 'warn', detail: 'La hora fin no puede ser menor que la hora de inicio.' });
+                destino.patchValue({ horaFin: inicio, fechaDevolucion: inicio }, { emitEvent: false });
+                return;
+            }
+        }
+        if (diff <= this.maxHoras) {
+            this.duracionSeleccionada = diff;
+            destino.patchValue({ fechaDevolucion: fin }, { emitEvent: false });
+            return;
+        }
+        this.messageService.add({ severity: 'warn', detail: `Máximo ${this.maxHoras} horas de préstamo.` });
+        const horasPermitidas = Math.min(this.duracionSeleccionada ?? this.maxHoras, this.maxHoras);
+        const limite = new Date(inicio.getTime() + horasPermitidas * 3600000);
+        destino.patchValue({ fechaDevolucion: limite, horaFin: limite }, { emitEvent: false });
+        this.duracionSeleccionada = horasPermitidas;
     }
 
     private cargarUsuarios(codigoSeleccionado: string) {
@@ -507,6 +724,8 @@ export class ModalRegularizarComponent implements OnInit {
             idEquipo: datos.numeroEquipo?.id,
             numeroEquipo: datos.numeroEquipo?.descripcion,
             fechaPrestamo: this.aIsoLocal(datos.fechaPrestamo),
+            horaInicio: this.aIsoLocal(datos.horaInicio),
+            horaFin: this.aIsoLocal(datos.horaFin),
             fechaDevolucion: this.aIsoLocal(datos.fechaDevolucion)
         };
         this.materialBibliograficoService.regularizarPrestamo(payload).subscribe({
