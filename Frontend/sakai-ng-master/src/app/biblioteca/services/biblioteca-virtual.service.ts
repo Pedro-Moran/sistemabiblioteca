@@ -1,6 +1,7 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
 import { Equipo } from '../../biblioteca/interfaces/biblioteca-virtual/equipo';
@@ -87,6 +88,25 @@ export class BibliotecaVirtualService {
 
     listarEstados(): Observable<any> {
         return this.http.get<any>(`${this.apiUrl}/api/equipos/estados`);
+    }
+
+    listarEquiposPrestamo(search?: string): Observable<any[]> {
+        let params = new HttpParams();
+        if (search && search.trim().length) {
+            params = params.set('search', search.trim());
+        }
+        return this.http
+            .get<{ status: string; data: any[] }>(
+                `${this.apiUrl}/api/prestamos/equipos`,
+                {
+                    params,
+                    headers: new HttpHeaders().set(
+                        'Authorization',
+                        `Bearer ${this.authService.getToken()}`
+                    )
+                }
+            )
+            .pipe(map(resp => resp.data));
     }
 
     solicitar(req: any): Observable<any> {
