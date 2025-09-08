@@ -19,20 +19,54 @@ export class EspecialidadService {
 
   list(): Observable<Especialidad[]> {
     return this.http
-      .get<{ data: Especialidad[] }>(`${this.apiUrl}/especialidad/lista`, { headers: this.headers() })
-      .pipe(map(res => res.data));
+      .get<{ data: any[] }>(`${this.apiUrl}/especialidad/lista-activo`, { headers: this.headers() })
+      .pipe(
+        map(res =>
+          res.data.map(e =>
+            new Especialidad({
+              id: e.idEspecialidad,
+              descripcion: e.descripcion,
+              activo: e.activo
+            })
+          )
+        )
+      );
+  }
+
+  private toPayload(especialidad: Especialidad) {
+    return {
+      idEspecialidad: especialidad.id || undefined,
+      descripcion: especialidad.descripcion,
+      activo: especialidad.activo
+    };
   }
 
   create(especialidad: Especialidad): Observable<Especialidad> {
     return this.http
-      .post<{ data: Especialidad }>(`${this.apiUrl}/especialidad`, especialidad, { headers: this.headers() })
-      .pipe(map(res => res.data));
+      .post<{ data: any }>(`${this.apiUrl}/especialidad`, this.toPayload(especialidad), { headers: this.headers() })
+      .pipe(
+        map(res =>
+          new Especialidad({
+            id: res.data.idEspecialidad,
+            descripcion: res.data.descripcion,
+            activo: res.data.activo
+          })
+        )
+      );
   }
 
   update(id: number, especialidad: Especialidad): Observable<Especialidad> {
     return this.http
-      .put<{ data: Especialidad }>(`${this.apiUrl}/especialidad/${id}`, especialidad, { headers: this.headers() })
-      .pipe(map(res => res.data));
+      .put<{ data: any }>(`${this.apiUrl}/especialidad/${id}`, this.toPayload(especialidad), { headers: this.headers() })
+      .pipe(
+        map(res =>
+          new Especialidad({
+            id: res.data.idEspecialidad,
+            descripcion: res.data.descripcion,
+            activo: res.data.activo
+          })
+        )
+      );
   }
 
   delete(id: number): Observable<void> {
