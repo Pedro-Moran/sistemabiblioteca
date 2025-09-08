@@ -287,6 +287,16 @@ export class AppMenu {
                         label: 'Sedes',
                         icon: 'pi pi-fw pi-tags',
                         routerLink: ['/main/configuracion/sedes'],role: ['ROLE_CONF_SEDES']
+                    },
+                    {
+                        label: 'Programas',
+                        icon: 'pi pi-fw pi-book',
+                        routerLink: ['/main/configuracion/programas'],role: ['ROLE_CONF_PROGRAMAS']
+                    },
+                    {
+                        label: 'Especialidades',
+                        icon: 'pi pi-fw pi-star',
+                        routerLink: ['/main/configuracion/especialidades'],role: ['ROLE_CONF_ESPECIALIDADES']
                     }
                 ]
             },
