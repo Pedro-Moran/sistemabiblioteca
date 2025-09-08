@@ -16,6 +16,7 @@ import { PrestamosService } from '../../services/prestamos.service';
 import { DetallePrestamo  } from '../../interfaces/detalle-prestamo';
 import { Sedes            } from '../../interfaces/sedes';
 import { ClaseGeneral     } from '../../interfaces/clase-general';
+import { ReportesFiltroService } from '../../services/reportes-filtro.service';
 
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -157,19 +158,19 @@ import { HttpClient } from '@angular/common/http';
 export class ReportePrestamoEquipoComputo implements OnInit {
   titulo = 'Préstamo detallado de equipos de cómputo';
 
-  dataSede: Sedes[]        = [];
+  dataSede: Sedes[]              = [];
   dataTipoUsuario: ClaseGeneral[] = [];
   dataEstado: ClaseGeneral[]     = [];
   dataEscuela: ClaseGeneral[]    = [];
   dataPrograma: ClaseGeneral[]   = [];
   dataCiclo: ClaseGeneral[]      = [];
 
-  sedeFiltro!:        number;
-  tipoUsuarioFiltro = '';
+  sedeFiltro:        Sedes        = new Sedes();
+  tipoUsuarioFiltro: ClaseGeneral = new ClaseGeneral();
   estadoFiltro!: number;
-  escuelaFiltro    = '';
-  programaFiltro   = '';
-  cicloFiltro      = '';
+  escuelaFiltro:    ClaseGeneral = new ClaseGeneral();
+  programaFiltro:   ClaseGeneral = new ClaseGeneral();
+  cicloFiltro:      ClaseGeneral = new ClaseGeneral();
 
   fechaInicio!: Date;
   fechaFin!:    Date;
@@ -185,14 +186,29 @@ export class ReportePrestamoEquipoComputo implements OnInit {
   tipoPrestamoFiltro: string | null = null;
 
       constructor(private svc: PrestamosService,
-                    private messageService: MessageService, private http: HttpClient) {}
+                    private messageService: MessageService,
+                    private http: HttpClient,
+                    private filtrosService: ReportesFiltroService) {}
 
       async ngOnInit() {
-        // aquí cargas combos (sedes, tipos, estados…)
-        // y preset de fechas, p.ej:
+        await this.cargarFiltros();
         this.fechaInicio = new Date();
         this.fechaFin    = new Date();
         await this.cargarEstados();
+      }
+
+      private async cargarFiltros() {
+        const filtros = await this.filtrosService.cargarFiltros();
+        this.dataSede = filtros.sedes;
+        this.sedeFiltro = this.dataSede[0];
+        this.dataTipoUsuario = filtros.tipoUsuarios;
+        this.tipoUsuarioFiltro = this.dataTipoUsuario[0];
+        this.dataEscuela = filtros.especialidades;
+        this.escuelaFiltro = this.dataEscuela[0];
+        this.dataPrograma = filtros.programas;
+        this.programaFiltro = this.dataPrograma[0];
+        this.dataCiclo = filtros.ciclos;
+        this.cicloFiltro = this.dataCiclo[0];
       }
 
 async reporte() {
@@ -208,12 +224,12 @@ async reporte() {
     // Forzamos un array vacío si la llamada devolviera undefined
     const data = (await this.svc
       .listar(
-        this.sedeFiltro,
-        this.tipoUsuarioFiltro,
+        this.sedeFiltro.id,
+        this.tipoUsuarioFiltro.id,
         estado,
-        this.escuelaFiltro,
-        this.programaFiltro,
-        this.cicloFiltro,
+        this.escuelaFiltro.id,
+        this.programaFiltro.id,
+        this.cicloFiltro.id,
         fi,
         ff
       )
@@ -237,15 +253,12 @@ async reporte() {
     }
 
   get sedeFiltroLabel(): string {
-    const s = this.dataSede.find(x => x.id === this.sedeFiltro);
-    return s ? s.descripcion : 'Todas';
+    return this.sedeFiltro?.descripcion ?? 'Todas';
   }
 
-get programaFiltroLabel(): string {
-  const idNumerico = Number(this.programaFiltro);
-  const p = this.dataPrograma.find(x => x.id === idNumerico);
-  return p ? p.descripcion : 'Todos';
-}
+  get programaFiltroLabel(): string {
+    return this.programaFiltro?.descripcion ?? 'Todos';
+  }
 
   async exportExcel() {
     if (!this.resultados.length) {

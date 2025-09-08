@@ -4,6 +4,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { TemplateModule } from '../../template.module';
 import { Sedes } from '../../interfaces/sedes';
 import { ClaseGeneral } from '../../interfaces/clase-general';
+import { ReportesFiltroService } from '../../services/reportes-filtro.service';
 
 @Component({
     selector: 'app-reporte-prestamo-domiclio',
@@ -67,9 +68,19 @@ export class ReportePrestamoDomicilio {
     dataMes: ClaseGeneral[] = [];
     mesFiltro: ClaseGeneral = new ClaseGeneral();
     loading: boolean = true;
-
+    constructor(private filtrosService: ReportesFiltroService) {}
     async ngOnInit() {
+        await this.cargarFiltros();
         await this.reporte();
     }
-    reporte(){}
+    private async cargarFiltros() {
+        const filtros = await this.filtrosService.cargarFiltros();
+        this.dataSede = filtros.sedes;
+        this.sedeFiltro = this.dataSede[0];
+        this.dataPrograma = filtros.programas;
+        this.programaFiltro = this.dataPrograma[0];
+        this.dataEscuela = filtros.especialidades;
+        this.escuelaFiltro = this.dataEscuela[0];
+    }
+    async reporte(){}
 }
