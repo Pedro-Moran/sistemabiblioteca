@@ -158,22 +158,21 @@ import { HttpClient } from '@angular/common/http';
 export class ReportePrestamoEquipoComputo implements OnInit {
   titulo = 'Préstamo detallado de equipos de cómputo';
 
-  dataSede: Sedes[]              = [];
+  dataSede: Sedes[]               = [];
   dataTipoUsuario: ClaseGeneral[] = [];
-  dataEstado: ClaseGeneral[]     = [];
-  dataEscuela: ClaseGeneral[]    = [];
-  dataPrograma: ClaseGeneral[]   = [];
-  dataCiclo: ClaseGeneral[]      = [];
+  dataEstado: ClaseGeneral[]      = [];
+  dataEscuela: ClaseGeneral[]     = [];
+  dataPrograma: ClaseGeneral[]    = [];
+  dataCiclo: ClaseGeneral[]       = [];
 
-  sedeFiltro:        Sedes        = new Sedes();
-  tipoUsuarioFiltro: ClaseGeneral = new ClaseGeneral();
-  estadoFiltro!: number;
-  escuelaFiltro:    ClaseGeneral = new ClaseGeneral();
-  programaFiltro:   ClaseGeneral = new ClaseGeneral();
-  cicloFiltro:      ClaseGeneral = new ClaseGeneral();
+  sedeFiltro?:        Sedes;
+  tipoUsuarioFiltro?: ClaseGeneral;
+  escuelaFiltro?:     ClaseGeneral;
+  programaFiltro?:    ClaseGeneral;
+  cicloFiltro?:       ClaseGeneral;
 
-  fechaInicio!: Date;
-  fechaFin!:    Date;
+  fechaInicio?: Date;
+  fechaFin?:    Date;
 
   resultados: DetallePrestamo[] = [];
   loading = false;
@@ -192,46 +191,44 @@ export class ReportePrestamoEquipoComputo implements OnInit {
 
       async ngOnInit() {
         await this.cargarFiltros();
-        this.fechaInicio = new Date();
-        this.fechaFin    = new Date();
         await this.cargarEstados();
+        await this.reporte();
       }
 
       private async cargarFiltros() {
         const filtros = await this.filtrosService.cargarFiltros();
-        this.dataSede = filtros.sedes;
-        this.sedeFiltro = this.dataSede[0];
+        this.dataSede        = filtros.sedes;
         this.dataTipoUsuario = filtros.tipoUsuarios;
-        this.tipoUsuarioFiltro = this.dataTipoUsuario[0];
-        this.dataEscuela = filtros.especialidades;
-        this.escuelaFiltro = this.dataEscuela[0];
-        this.dataPrograma = filtros.programas;
-        this.programaFiltro = this.dataPrograma[0];
-        this.dataCiclo = filtros.ciclos;
-        this.cicloFiltro = this.dataCiclo[0];
+        this.dataEscuela     = filtros.especialidades;
+        this.dataPrograma    = filtros.programas;
+        this.dataCiclo       = filtros.ciclos;
       }
 
 async reporte() {
-  if (!this.fechaInicio || !this.fechaFin) return;
   this.loading = true;
 
   const pad = (n: number) => n.toString().padStart(2, '0');
-  const fi = `${pad(this.fechaInicio.getDate())}/${pad(this.fechaInicio.getMonth()+1)}/${this.fechaInicio.getFullYear()}`;
-  const ff = `${pad(this.fechaFin.getDate())}/${pad(this.fechaFin.getMonth()+1)}/${this.fechaFin.getFullYear()}`;
+  const fi = this.fechaInicio
+    ? `${pad(this.fechaInicio.getDate())}/${pad(this.fechaInicio.getMonth()+1)}/${this.fechaInicio.getFullYear()}`
+    : undefined;
+  const ff = this.fechaFin
+    ? `${pad(this.fechaFin.getDate())}/${pad(this.fechaFin.getMonth()+1)}/${this.fechaFin.getFullYear()}`
+    : undefined;
   const estado = this.tipoPrestamoFiltro ?? undefined;
 
   try {
     // Forzamos un array vacío si la llamada devolviera undefined
     const data = (await this.svc
       .listar(
-        this.sedeFiltro.id,
-        this.tipoUsuarioFiltro.id,
+        this.sedeFiltro?.id,
+        this.tipoUsuarioFiltro?.id,
         estado,
-        this.escuelaFiltro.id,
-        this.programaFiltro.id,
-        this.cicloFiltro.id,
+        this.escuelaFiltro?.id,
+        this.programaFiltro?.id,
+        this.cicloFiltro?.id,
         fi,
-        ff
+        ff,
+        'equipos'
       )
       .toPromise()) ?? [];
 
