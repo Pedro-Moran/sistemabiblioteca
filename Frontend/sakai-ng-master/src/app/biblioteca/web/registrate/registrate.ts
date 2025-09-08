@@ -221,6 +221,26 @@ export class PortalRegistrate implements OnInit {
     ngOnInit() {
         this.limpiarObjeto();
         this.formValidar();
+        const msData = localStorage.getItem('msUserData');
+        const state = history.state as { notRegistered?: boolean };
+        if (msData) {
+            const parsed = JSON.parse(msData);
+            this.fieldsDisabled = false;
+            this.form.patchValue({
+                email: parsed.email,
+                EMAIL_INST: parsed.email
+            });
+        }
+        if (state?.notRegistered) {
+            setTimeout(() => {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Usuario no registrado',
+                    detail: 'Por favor llenar los campos.'
+                });
+            });
+            localStorage.removeItem('msUserData');
+        }
         this.authService.getPublicRoles().subscribe({
             next: roles => this.roles = roles,
             error: () => this.roles = []

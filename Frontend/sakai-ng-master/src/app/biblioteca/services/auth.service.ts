@@ -256,8 +256,13 @@ loginMicrosoft() {
                   },
                   error: (error) => {
                     console.error('Error en autenticación con backend:', error);
-                    // Cierra el popup (MSAL lo debería cerrar automáticamente) y muestra tu alerta
-                    alert(this.obtenerMensajeError(error));
+                    if (error.status === 404 && error.error?.email) {
+                      localStorage.setItem('msUserData', JSON.stringify(error.error));
+                      this.router.navigate(['/registrate'], { state: { notRegistered: true } });
+                    } else {
+                      // Cierra el popup (MSAL lo debería cerrar automáticamente) y muestra tu alerta
+                      alert(this.obtenerMensajeError(error));
+                    }
                   }
                 });
             },
