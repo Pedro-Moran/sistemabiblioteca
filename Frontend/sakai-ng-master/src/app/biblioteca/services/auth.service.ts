@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, forkJoin } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { map, tap, switchMap } from 'rxjs/operators';
 import { JwtHelperService } from "@auth0/angular-jwt";
 import { Router } from '@angular/router';
 import * as _ from 'lodash';
@@ -227,60 +227,54 @@ export class AuthService {
 //     return this.http.post<LoginResponse>(`${this.apiUrl}/login-microsoft`, { token: msToken });
 // }
 
-loginMicrosoft() {
-    // Limpia la cuenta activa para evitar reutilizar sesiones previas
-    this.msalService.instance.setActiveAccount(null);
-    this.msalService.loginPopup({ prompt: 'select_account', scopes: ['user.read'] }).subscribe({
-      next: (result: AuthenticationResult) => {
-        console.log('Inicio de sesión exitoso', result);
-        // Establece la cuenta activa y continúa con la obtención del token
+getMicrosoftToken(): Observable<{ email: string; token: string }> {
+    const scopes = ['user.read'];
+    const active = this.msalService.instance.getActiveAccount();
+
+    if (active) {
+      return this.msalService.acquireTokenSilent({ account: active, scopes }).pipe(
+        map(res => ({ email: active.username || '', token: res.accessToken })),
+        catchError(() =>
+          this.msalService.acquireTokenPopup({ scopes }).pipe(
+            map(r => ({ email: r.account?.username || '', token: r.accessToken }))
+          )
+        )
+      );
+    }
+
+    return this.msalService.loginPopup({ prompt: 'select_account', scopes }).pipe(
+      map((result: AuthenticationResult) => {
         this.msalService.instance.setActiveAccount(result.account);
-        this.msalService.acquireTokenSilent({ scopes: ['user.read'] })
-          .pipe(
-            catchError(error => {
-              // Si el token silencioso falla, intenta obtener el token con un popup
-              return this.msalService.acquireTokenPopup({ scopes: ['user.read'] });
-            })
-          ).subscribe({
-            next: (tokenResponse) => {
-              console.log('Token de Microsoft:', tokenResponse.accessToken);
-              this.http.post<LoginResponse>(`${this.apiUrl}/login-microsoft`, { token: tokenResponse.accessToken })
-                .subscribe({
-                  next: (backendResponse) => {
-                    if (backendResponse.token) {
-                      this.setAuthentication(backendResponse.token);
-                      this.currentUserSubject.next(this.getUser());
-                      this.openPendingResource();
-                      this.router.navigate(['/main']);
-                    }
-                  },
-                  error: (error) => {
-                    console.error('Error en autenticación con backend:', error);
-                    if (error.status === 404 && error.error?.email) {
-                      localStorage.setItem('msUserData', JSON.stringify(error.error));
-                      this.router.navigate(['/registrate'], { state: { notRegistered: true } });
-                    } else {
-                      // Cierra el popup (MSAL lo debería cerrar automáticamente) y muestra tu alerta
-                      alert(this.obtenerMensajeError(error));
-                    }
-                  }
-                });
-            },
-            error: (error) => {
-              console.error('Error obteniendo el token de Microsoft:', error);
-              alert(this.obtenerMensajeError(error));
-            },
-          });
-      },
-      error: (error) => {
-        console.error('Error en la autenticación con Microsoft:', error);
-        alert(this.obtenerMensajeError(error));
-      },
-    });
+        return { email: result.account?.username || '', token: result.accessToken };
+      })
+    );
+  }
+
+loginMicrosoft(msToken: string, role: string): void {
+    this.http.post<LoginResponse>(`${this.apiUrl}/login-microsoft`, { token: msToken, role })
+      .subscribe({
+        next: (backendResponse) => {
+          if (backendResponse.token) {
+            this.setAuthentication(backendResponse.token);
+            this.currentUserSubject.next(this.getUser());
+            this.openPendingResource();
+            this.router.navigate(['/main']);
+          }
+        },
+        error: (error) => {
+          console.error('Error en autenticación con backend:', error);
+          if (error.status === 404 && error.error?.email) {
+            localStorage.setItem('msUserData', JSON.stringify(error.error));
+            this.router.navigate(['/registrate'], { state: { notRegistered: true } });
+          } else {
+            alert(this.obtenerMensajeError(error));
+          }
+        }
+      });
   }
 
   // Método para personalizar el mensaje de error
-  private obtenerMensajeError(error: any): string {
+  public obtenerMensajeError(error: any): string {
     const errorMessage =
       error?.error?.message || error?.error || error?.message || error.toString();
     if (typeof errorMessage === 'string' && errorMessage.includes('AADSTS50020')) {
@@ -412,13 +406,9 @@ private resetInactivityTimer(): void {
     localStorage.removeItem(this.TOKEN_NAME);
     localStorage.removeItem(this.REFRESH_NAME);
     this.currentUserSubject.next({} as Usuario);
-    const activeAccount = this.msalService.instance.getActiveAccount();
-    if (activeAccount) {
-      this.msalService.logoutPopup({ mainWindowRedirectUri: '/auth/login' }).subscribe();
-    } else {
-      this.router.navigate(['/auth/login']);
-    }
-    return;
+    this.msalService.instance.setActiveAccount(null);
+    void this.msalService.instance.clearCache();
+    this.router.navigate(['/auth/login']);
   }
 
   refreshAccessToken(): Observable<string> {

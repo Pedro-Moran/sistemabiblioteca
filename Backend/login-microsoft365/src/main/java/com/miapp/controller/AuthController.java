@@ -96,6 +96,7 @@ public class AuthController {
     @PostMapping("/login-microsoft")
     public ResponseEntity<?> loginMicrosoft(@RequestBody Map<String, String> request) {
         String microsoftToken = request.get("token");
+        String requestedRole = request.get("role");
         Map<String, String> datosMicrosoft = usuarioService.validarYExtraerDatosMicrosoft(microsoftToken);
 
         if (datosMicrosoft == null) {
@@ -118,9 +119,27 @@ public class AuthController {
         }
 
         Usuario usuario = usuarioOpt.get();
-        String rolDescripcion = usuario.getRoles().isEmpty()
-                ? "Sin Rol"
-                : usuario.getRoles().iterator().next().getDescripcion();
+
+        String rolDescripcion;
+        if (requestedRole != null && !requestedRole.isBlank()) {
+            boolean hasRole = usuario.getRoles().stream()
+                    .anyMatch(r -> r.getDescripcion().equalsIgnoreCase(requestedRole));
+            if (!hasRole) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("message", "Rol no autorizado"));
+            }
+            rolDescripcion = requestedRole;
+        } else {
+            rolDescripcion = usuario.getRoles().stream()
+                    .filter(r -> r.getDescripcion().equalsIgnoreCase("ESTUDIANTE"))
+                    .findFirst()
+                    .map(Rol::getDescripcion)
+                    .orElseGet(() -> usuario.getRoles().stream()
+                            .findFirst()
+                            .map(Rol::getDescripcion)
+                            .orElse("Sin Rol"));
+        }
+
         usuarioService.incrementarContadorLogins(usuario.getLogin());
         String jwt = jwtUtil.generateToken(usuario.getEmail(), rolDescripcion);
 
