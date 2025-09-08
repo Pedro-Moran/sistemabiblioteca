@@ -351,6 +351,15 @@ export class ModalRegularizarComponent implements OnInit {
             this.form.patchValue({ palabraBuscar: '', usuario: null });
             this.filtrarUsuarios();
         });
+        this.form.get('usuario')?.valueChanges.subscribe(u => {
+            const ctrl = this.form.get('palabraBuscar');
+            if (u) {
+                ctrl?.clearValidators();
+            } else {
+                ctrl?.setValidators([Validators.required]);
+            }
+            ctrl?.updateValueAndValidity({ emitEvent: false });
+        });
         this.form.get('sede')?.valueChanges.subscribe(s => this.cargarEquipos(s));
         this.formOtroUsuario.get('sede')?.valueChanges.subscribe(s => this.cargarEquipos(s));
         this.form.get('numeroEquipo')?.valueChanges
@@ -394,6 +403,9 @@ export class ModalRegularizarComponent implements OnInit {
         this.maxHoras = null;
         this.duracionSeleccionada = null;
         this.filtrarUsuarios();
+        const ctrl = this.form.get('palabraBuscar');
+        ctrl?.setValidators([Validators.required]);
+        ctrl?.updateValueAndValidity({ emitEvent: false });
     }
 
     closeModal() {
@@ -446,15 +458,37 @@ export class ModalRegularizarComponent implements OnInit {
         }
         this.bibliotecaVirtualService.filtrarPorSede(sede.id).subscribe({
             next: resp => {
-                this.numeroEquipoLista = (resp?.data || []).map((e: any) => ({
-                    descripcion: e.numeroEquipo,
-                    id: e.idEquipo ?? e.id
-                }));
+                const ahora = new Date();
+                this.numeroEquipoLista = (resp?.data || [])
+                    .filter((e: any) => e.estado?.descripcion === 'DISPONIBLE' && this.estaDisponibleAhora(e, ahora))
+                    .map((e: any) => ({
+                        descripcion: e.numeroEquipo,
+                        id: e.idEquipo ?? e.id
+                    }));
             },
             error: () => {
                 this.numeroEquipoLista = [];
             }
         });
+    }
+
+    private estaDisponibleAhora(eq: any, ref: Date = new Date()): boolean {
+        if (!eq.horaInicio || !eq.horaFin) {
+            return true;
+        }
+        const inicio = this.parseTimeAtDate(eq.horaInicio, ref);
+        const fin = this.parseTimeAtDate(eq.horaFin, ref);
+        if (fin <= inicio) {
+            return ref >= inicio || ref <= fin;
+        }
+        return ref >= inicio && ref <= fin;
+    }
+
+    private parseTimeAtDate(time: string, base: Date): Date {
+        const [h, m] = time.split(':').map((n: any) => parseInt(n, 10));
+        const d = new Date(base);
+        d.setHours(h, m, 0, 0);
+        return d;
     }
 
     private autocompletarEquipo(equipo: any, destino: FormGroup) {
