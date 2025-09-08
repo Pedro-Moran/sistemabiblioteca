@@ -7,6 +7,7 @@ import { Sedes } from '../../interfaces/sedes';
 import { ClaseGeneral } from '../../interfaces/clase-general';
 import { PrestamosService } from '../../services/prestamos.service';
 import { VisitanteBibliotecaVirtualDTO } from '../../interfaces/reportes/visitante-biblioteca-virtual';
+import { ReportesFiltroService } from '../../services/reportes-filtro.service';
 
 @Component({
     selector: 'app-reporte-visitantes-biblioteca',
@@ -131,9 +132,23 @@ export class ReporteVisitantesBibliotecaVirtual {
     loading: boolean = true;
     resultados: VisitanteBibliotecaVirtualDTO[] = [];
 
-    constructor(private svc: PrestamosService, private messageService: MessageService) {}
+    constructor(private svc: PrestamosService, private messageService: MessageService, private filtrosService: ReportesFiltroService) {}
     async ngOnInit() {
+        await this.cargarFiltros();
         await this.reporte();
+    }
+    private async cargarFiltros() {
+        const filtros = await this.filtrosService.cargarFiltros();
+        this.dataSede = filtros.sedes;
+        this.sedeFiltro = this.dataSede[0];
+        this.dataPrograma = filtros.programas;
+        this.programaFiltro = this.dataPrograma[0];
+        this.dataTipoUsuario = filtros.tipoUsuarios;
+        this.tipoUsuarioFiltro = this.dataTipoUsuario[0];
+        this.dataEscuela = filtros.especialidades;
+        this.escuelaFiltro = this.dataEscuela[0];
+        this.dataCiclo = filtros.ciclos;
+        this.cicloFiltro = this.dataCiclo[0];
     }
     async reporte() {
         this.loading = true;

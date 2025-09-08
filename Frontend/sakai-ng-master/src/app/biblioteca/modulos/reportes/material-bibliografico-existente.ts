@@ -4,6 +4,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { TemplateModule } from '../../template.module';
 import { Sedes } from '../../interfaces/sedes';
 import { ClaseGeneral } from '../../interfaces/clase-general';
+import { ReportesFiltroService } from '../../services/reportes-filtro.service';
 
 @Component({
     selector: 'app-reporte-material-bibliografico-existente',
@@ -49,9 +50,17 @@ export class ReporteMaterialBibliograficoExistente {
     dataColeccion: ClaseGeneral[] = [];
     tipo:number=1;
     loading: boolean = true;
-
+    constructor(private filtrosService: ReportesFiltroService) {}
     async ngOnInit() {
+        await this.cargarFiltros();
         await this.reporte();
     }
-    reporte(){}
+    private async cargarFiltros() {
+        const filtros = await this.filtrosService.cargarFiltros();
+        this.dataSede = filtros.sedes;
+        this.sedeFiltro = this.dataSede[0];
+        this.dataColeccion = filtros.tiposMaterial;
+        this.coleccionFiltro = this.dataColeccion[0];
+    }
+    async reporte(){}
 }

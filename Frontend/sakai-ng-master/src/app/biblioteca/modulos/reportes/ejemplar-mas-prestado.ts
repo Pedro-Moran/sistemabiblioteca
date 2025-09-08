@@ -11,6 +11,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { ReportesFiltroService } from '../../services/reportes-filtro.service';
 
 @Component({
     selector: 'app-reporte-ejemplar-mas-prestado',
@@ -144,10 +145,28 @@ export class ReporteEjemplarMasPrestado {
 
     constructor(private svc: MaterialBibliograficoService,
                 private messageService: MessageService,
-                private http: HttpClient) {}
+                private http: HttpClient,
+                private filtrosService: ReportesFiltroService) {}
 
     async ngOnInit() {
+        await this.cargarFiltros();
         await this.reporte();
+    }
+
+    private async cargarFiltros() {
+        const filtros = await this.filtrosService.cargarFiltros();
+        this.dataSede = filtros.sedes;
+        this.sedeFiltro = this.dataSede[0];
+        this.dataPrograma = filtros.programas;
+        this.programaFiltro = this.dataPrograma[0];
+        this.dataTipoUsuario = filtros.tipoUsuarios;
+        this.tipoUsuarioFiltro = this.dataTipoUsuario[0];
+        this.dataTipoMaterial = filtros.tiposMaterial;
+        this.tipoMaterialFiltro = this.dataTipoMaterial[0];
+        this.dataEspecialidad = filtros.especialidades;
+        this.especialidadFiltro = this.dataEspecialidad[0];
+        this.dataCiclo = filtros.ciclos;
+        this.cicloFiltro = this.dataCiclo[0];
     }
     async reporte() {
         this.loading = true;

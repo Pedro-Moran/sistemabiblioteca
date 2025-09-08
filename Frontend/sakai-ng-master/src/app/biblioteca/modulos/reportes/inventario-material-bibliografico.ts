@@ -12,6 +12,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { ReportesFiltroService } from '../../services/reportes-filtro.service';
 
 @Component({
     selector: 'app-reporte-inventario-material-bibliografico',
@@ -97,10 +98,19 @@ export class ReporteInventarioMaterialBibliografico {
     constructor(
         private materialService: MaterialBibliograficoService,
         private messageService: MessageService,
-        private http: HttpClient
+        private http: HttpClient,
+        private filtrosService: ReportesFiltroService
     ) {}
     async ngOnInit() {
+        await this.cargarFiltros();
         await this.reporte();
+    }
+    private async cargarFiltros() {
+        const filtros = await this.filtrosService.cargarFiltros();
+        this.dataSede = filtros.sedes;
+        this.sedeFiltro = this.dataSede[0];
+        this.dataColeccion = filtros.tiposMaterial;
+        this.coleccionFiltro = this.dataColeccion[0];
     }
     async reporte() {
         this.loading = true;

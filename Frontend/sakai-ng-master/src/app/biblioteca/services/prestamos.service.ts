@@ -95,23 +95,23 @@ export class PrestamosService {
         });
     }
   listar(
-    sede?: number,
-    tipoUsuario?: string,
+    sede?: number | string,
+    tipoUsuario?: number | string,
     tipoPrestamo?: string,
-    escuela?: string,
-    programa?: string,
-    ciclo?: string,
+    escuela?: number | string,
+    programa?: number | string,
+    ciclo?: number | string,
     fechaInicio?: string,
     fechaFin?: string
   ): Observable<DetallePrestamo[]> {
     let params = new HttpParams();
 
-    if (sede != null)           params = params.set('sede', sede.toString());
-    if (tipoUsuario)            params = params.set('tipoUsuario', tipoUsuario);
+    if (sede != null)           params = params.set('sede', String(sede));
+    if (tipoUsuario != null)    params = params.set('tipoUsuario', String(tipoUsuario));
     if (tipoPrestamo)           params = params.set('estado', tipoPrestamo);
-    if (escuela)                params = params.set('escuela', escuela);
-    if (programa)               params = params.set('programa', programa);
-    if (ciclo)                  params = params.set('ciclo', ciclo);
+    if (escuela != null)        params = params.set('escuela', String(escuela));
+    if (programa != null)       params = params.set('programa', String(programa));
+    if (ciclo != null)          params = params.set('ciclo', String(ciclo));
     if (fechaInicio)            params = params.set('fechaInicio', fechaInicio);
     if (fechaFin)               params = params.set('fechaFin', fechaFin);
 

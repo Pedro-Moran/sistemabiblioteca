@@ -7,6 +7,7 @@ import { Sedes } from '../../interfaces/sedes';
 import { ClaseGeneral } from '../../interfaces/clase-general';
 import { PrestamosService } from '../../services/prestamos.service';
 import { EquipoUsoTiempoDTO } from '../../interfaces/reportes/equipo-uso-tiempo';
+import { ReportesFiltroService } from '../../services/reportes-filtro.service';
 
 @Component({
     selector: 'app-reporte-usotiempo-biblioteca',
@@ -109,10 +110,23 @@ export class ReporteUsoTiempoBiblioteca {
 
     constructor(
         private svc: PrestamosService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private filtrosService: ReportesFiltroService
     ) {}
     async ngOnInit() {
+        await this.cargarFiltros();
         await this.reporte();
+    }
+    private async cargarFiltros() {
+        const filtros = await this.filtrosService.cargarFiltros();
+        this.dataSede = filtros.sedes;
+        this.sedeFiltro = this.dataSede[0];
+        this.dataTipoUsuario = filtros.tipoUsuarios;
+        this.tipoUsuarioFiltro = this.dataTipoUsuario[0];
+        this.dataCiclo = filtros.ciclos;
+        this.cicloFiltro = this.dataCiclo[0];
+        this.dataEscuela = filtros.especialidades;
+        this.escuelaFiltro = this.dataEscuela[0];
     }
     private formatDate(d?: Date): string | undefined {
         return d ? d.toISOString().split('T')[0] : undefined;
