@@ -242,8 +242,81 @@ public class PrestamoService {
         return detallePrestamoRepository.save(dp);
     }
 
-    public DetalleBibliotecaDTO regularizarPrestamo(Map<String, Object> datos, String usuario) {
-        Long numeroIngreso = Long.valueOf(String.valueOf(datos.get("numeroIngreso")));
+    public Object regularizarPrestamo(Map<String, Object> datos, String usuario) {
+        // Caso 1: regularización de préstamo de equipos (biblioteca virtual)
+        if (datos.get("idEquipo") != null) {
+            Long equipoId = parseLong(datos.get("idEquipo"));
+            if (equipoId == null) {
+                throw new RuntimeException("Equipo inválido");
+            }
+            Equipo eq = equipoRepository.findById(equipoId)
+                    .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
+
+            DetallePrestamo dp = new DetallePrestamo();
+            dp.setEquipo(eq);
+
+            Integer tipoUsuario = parseInt(datos.get("tipoUsuario"));
+            if (tipoUsuario != null) {
+                dp.setTipoUsuario(tipoUsuario);
+            }
+
+            if (datos.get("usuario") instanceof Map<?, ?> u) {
+                Object cod = u.get("codigoUsuario");
+                if (cod != null) {
+                    dp.setCodigoUsuario(cod.toString());
+                }
+            }
+
+            Object sede = datos.get("sedeId");
+            if (sede != null) {
+                dp.setCodigoSede(sede.toString());
+            }
+
+            LocalDate fechaPrestamo = parseFecha(datos.get("fechaPrestamo"));
+            LocalTime horaInicio = parseHora(datos.get("horaInicio"));
+            if (fechaPrestamo == null) {
+                fechaPrestamo = LocalDate.now();
+            }
+            if (horaInicio == null) {
+                horaInicio = LocalTime.MIDNIGHT;
+            }
+            LocalDateTime inicio = LocalDateTime.of(fechaPrestamo, horaInicio);
+            dp.setFechaPrestamo(inicio);
+            dp.setFechaInicio(inicio);
+
+            LocalDate fechaDev = parseFecha(datos.get("fechaDevolucion"));
+            LocalTime horaFin = parseHora(datos.get("horaFin"));
+            if (fechaDev != null || horaFin != null) {
+                LocalDateTime fin = LocalDateTime.of(
+                        fechaDev != null ? fechaDev : fechaPrestamo,
+                        horaFin != null ? horaFin : LocalTime.MIDNIGHT);
+                dp.setFechaFin(fin);
+            }
+
+            if (datos.get("usuarioPrestamo") instanceof Map<?, ?> up) {
+                Object desc = up.get("descripcion");
+                dp.setUsuarioPrestamo(desc != null ? desc.toString() : usuario);
+            } else {
+                dp.setUsuarioPrestamo(usuario);
+            }
+
+            TipoPrestamo tp = TipoPrestamo.EN_SALA;
+            dp.setTipoPrestamo(tp);
+            Estado estado = estadoRepository.findByDescripcionIgnoreCase(tp.getEstadoDesc())
+                    .orElseThrow(() -> new RuntimeException("Estado '" + tp.getEstadoDesc() + "' no existe"));
+            dp.setEstado(estado);
+            eq.setEstado(estado);
+            equipoRepository.save(eq);
+
+            dp = detallePrestamoRepository.save(dp);
+            return dp;
+        }
+
+        // Caso 2: regularización de material bibliográfico
+        Long numeroIngreso = parseLong(datos.get("numeroIngreso"));
+        if (numeroIngreso == null) {
+            throw new RuntimeException("Número de ingreso inválido");
+        }
         DetalleBiblioteca det = detalleBibliotecaRepository.findFirstByNumeroIngreso(numeroIngreso)
                 .orElseThrow(() -> new RuntimeException("Detalle no encontrado"));
 
@@ -290,6 +363,32 @@ public class PrestamoService {
 
         DetalleBiblioteca saved = detalleBibliotecaRepository.save(det);
         return bibliotecaMapper.toDetalleDto(saved);
+    }
+
+    private Integer parseInt(Object valor) {
+        if (valor instanceof Number n) {
+            return n.intValue();
+        }
+        if (valor instanceof String s && !s.isBlank() && !"null".equalsIgnoreCase(s)) {
+            try {
+                return Integer.valueOf(s);
+            } catch (NumberFormatException ignore) {
+            }
+        }
+        return null;
+    }
+
+    private Long parseLong(Object valor) {
+        if (valor instanceof Number n) {
+            return n.longValue();
+        }
+        if (valor instanceof String s && !s.isBlank() && !"null".equalsIgnoreCase(s)) {
+            try {
+                return Long.valueOf(s);
+            } catch (NumberFormatException ignore) {
+            }
+        }
+        return null;
     }
 
     private LocalDate parseFecha(Object valor) {
