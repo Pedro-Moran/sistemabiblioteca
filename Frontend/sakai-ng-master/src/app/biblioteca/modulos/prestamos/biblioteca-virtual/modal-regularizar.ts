@@ -458,9 +458,7 @@ export class ModalRegularizarComponent implements OnInit {
         }
         this.bibliotecaVirtualService.filtrarPorSede(sede.id).subscribe({
             next: resp => {
-                const ahora = new Date();
                 this.numeroEquipoLista = (resp?.data || [])
-                    .filter((e: any) => e.estado?.descripcion === 'DISPONIBLE' && this.estaDisponibleAhora(e, ahora))
                     .map((e: any) => ({
                         descripcion: e.numeroEquipo,
                         id: e.idEquipo ?? e.id
@@ -472,17 +470,6 @@ export class ModalRegularizarComponent implements OnInit {
         });
     }
 
-    private estaDisponibleAhora(eq: any, ref: Date = new Date()): boolean {
-        if (!eq.horaInicio || !eq.horaFin) {
-            return true;
-        }
-        const inicio = this.parseTimeAtDate(eq.horaInicio, ref);
-        const fin = this.parseTimeAtDate(eq.horaFin, ref);
-        if (fin <= inicio) {
-            return ref >= inicio || ref <= fin;
-        }
-        return ref >= inicio && ref <= fin;
-    }
 
     private parseTimeAtDate(time: string, base: Date): Date {
         const [h, m] = time.split(':').map((n: any) => parseInt(n, 10));
@@ -490,6 +477,7 @@ export class ModalRegularizarComponent implements OnInit {
         d.setHours(h, m, 0, 0);
         return d;
     }
+
 
     private autocompletarEquipo(equipo: any, destino: FormGroup) {
         if (!equipo?.id) {
@@ -505,19 +493,30 @@ export class ModalRegularizarComponent implements OnInit {
             this.duracionSeleccionada = null;
             return;
         }
-        this.materialBibliograficoService.listarEquipos(String(equipo.id)).subscribe({
+        this.bibliotecaVirtualService.listarEquiposPrestamo(String(equipo.id)).subscribe({
             next: (lista: any[]) => {
                 const detalle = lista?.[0];
                 this.maxHoras = detalle?.maxHoras ?? null;
                 this.duracionSeleccionada = this.maxHoras;
-                const fechaPrestamo = detalle?.fechaPrestamo ? new Date(detalle.fechaPrestamo) : null;
-                const fechaDevolucion = detalle?.fechaDevolucion ? new Date(detalle.fechaDevolucion) : null;
+
+                let fechaPrestamo = detalle?.fechaPrestamo ? new Date(detalle.fechaPrestamo) : null;
+                let fechaDevolucion = detalle?.fechaDevolucion ? new Date(detalle.fechaDevolucion) : null;
+
+                if (!fechaPrestamo && detalle?.horaInicio) {
+                    fechaPrestamo = this.parseTimeAtDate(detalle.horaInicio, new Date());
+                }
+                if (!fechaDevolucion && detalle?.horaFin) {
+                    const base = fechaPrestamo ?? new Date();
+                    fechaDevolucion = this.parseTimeAtDate(detalle.horaFin, base);
+                }
+
                 destino.patchValue({
                     fechaPrestamo,
                     fechaDevolucion,
                     horaInicio: fechaPrestamo,
                     horaFin: fechaDevolucion
                 }, { emitEvent: false });
+
                 const estado = (detalle?.estado?.descripcion ?? '').toUpperCase();
                 const prestado = estado === 'PRESTADO' || estado === 'RESERVADO' ||
                     (fechaDevolucion != null && fechaDevolucion.getTime() > Date.now());
@@ -762,11 +761,14 @@ export class ModalRegularizarComponent implements OnInit {
             horaFin: this.aIsoLocal(datos.horaFin),
             fechaDevolucion: this.aIsoLocal(datos.fechaDevolucion)
         };
+        const disponible = datos.horaFin ? this.formatearFechaHora(datos.horaFin) :
+            (datos.fechaDevolucion ? this.formatearFechaHora(datos.fechaDevolucion) : '');
         this.materialBibliograficoService.regularizarPrestamo(payload).subscribe({
             next: (resp: any) => {
                 this.loading = false;
                 this.display = false;
-                this.messageService.add({ severity: 'success', summary: 'Listo', detail: 'Préstamo regularizado.' });
+                const detail = disponible ? `Préstamo regularizado. Disponible nuevamente: ${disponible}.` : 'Préstamo regularizado.';
+                this.messageService.add({ severity: 'success', summary: 'Listo', detail });
                 this.saved.emit(resp?.data);
             },
             error: (e: HttpErrorResponse) => {
