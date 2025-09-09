@@ -381,10 +381,10 @@ openForEdit(ocurrencia: OcurrenciaDTO) {
 
         // Tabla de materiales:
         this.materiales = [{
-          codigoEquipo: dp.equipo.idEquipo!,
-          nombre: dp.equipo.nombreEquipo!,
+          codigoEquipo: dp.equipo!.idEquipo!,
+          nombre: dp.equipo!.nombreEquipo!,
           cantidad: 1,
-          ip: dp.equipo.ip!
+          ip: dp.equipo!.ip!
         }];
       });
   } else if (ocurrencia.idDetalleBiblioteca) {

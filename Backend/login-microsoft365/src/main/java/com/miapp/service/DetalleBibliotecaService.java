@@ -13,6 +13,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Optional;
@@ -103,11 +107,70 @@ public class DetalleBibliotecaService {
         };
     }
 
-    /** Devuelve los detalles en estado prestado (idEstado = 4) */
-    public List<DetalleBibliotecaDTO> findDetallesPrestados() {
-        List<DetalleBiblioteca> lista = detalleBibliotecaRepository.findByIdEstado(4L);
-        return lista.stream()
-                .map(mapper::toDetalleDto)
+    /**
+     * Devuelve los detalles prestados filtrando opcionalmente por sede, usuario y otros criterios.
+     */
+    public List<DetalleBibliotecaDTO> findDetallesPrestados(
+            String fechaInicio,
+            String fechaFin,
+            Long sedeId,
+            Long tipoUsuarioId,
+            String tipoPrestamo,
+            Long escuelaId,
+            Long programaId,
+            String ciclo) {
+
+        LocalDateTime inicio = null;
+        LocalDateTime fin    = null;
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        try {
+            if (fechaInicio != null && !fechaInicio.isBlank()) {
+                inicio = LocalDate.parse(fechaInicio, fmt).atStartOfDay();
+            }
+            if (fechaFin != null && !fechaFin.isBlank()) {
+                fin = LocalDate.parse(fechaFin, fmt).atTime(LocalTime.MAX);
+            }
+        } catch (Exception ignored) {
+        }
+
+        String tipoNormalizado = normalizeTipoPrestamo(tipoPrestamo);
+
+        return detalleBibliotecaRepository.findPrestadosBetween(inicio, fin).stream()
+                // Filtra por sede del detalle
+                .filter(det -> sedeId == null || (det.getSede() != null && sedeId.equals(det.getSede().getId())))
+                // Filtra por tipo de préstamo si corresponde
+                .filter(det -> tipoNormalizado == null ||
+                        tipoNormalizado.equalsIgnoreCase(normalizeTipoPrestamo(det.getTipoPrestamo())))
+                // Asocia usuario para aplicar filtros adicionales
+                .map(det -> new AbstractMap.SimpleEntry<>(det,
+                        usuarioRepository.findByLoginIgnoreCase(det.getCodigoUsuario())))
+                .filter(entry -> {
+                    Usuario u = entry.getValue().orElse(null);
+                    if (tipoUsuarioId != null) {
+                        if (u == null || u.getRoles().stream().noneMatch(r -> r.getIdRol().equals(tipoUsuarioId))) {
+                            return false;
+                        }
+                    }
+                    if (escuelaId != null) {
+                        if (u == null || u.getEspecialidad() == null ||
+                                !u.getEspecialidad().getIdEspecialidad().equals(escuelaId)) {
+                            return false;
+                        }
+                    }
+                    if (programaId != null) {
+                        if (u == null || u.getPrograma() == null ||
+                                !u.getPrograma().getIdPrograma().equals(programaId)) {
+                            return false;
+                        }
+                    }
+                    if (ciclo != null && !ciclo.isBlank()) {
+                        if (u == null || u.getCiclo() == null || !u.getCiclo().equalsIgnoreCase(ciclo)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                })
+                .map(entry -> mapper.toDetalleDto(entry.getKey()))
                 .collect(Collectors.toList());
     }
 

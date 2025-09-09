@@ -361,12 +361,12 @@ async reporte() {
       ]],
       body: this.resultados.map(r => [
         r.equipo?.nombreEquipo ?? '',
-        r.alcance,
+        r.alcance ?? '',
         r.codigoUsuario ?? r.usuarioPrestamo ?? '',
-        r.especialidad,
+        r.especialidad ?? '',
         r.equipo?.sede?.descripcion ?? '',
-        r.usuarioPrestamo,
-        r.fechaPrestamo,
+        r.usuarioPrestamo ?? '',
+        r.fechaPrestamo ?? '',
         r.usuarioRecepcion || '-',
         r.fechaRecepcion || '-'
       ]),

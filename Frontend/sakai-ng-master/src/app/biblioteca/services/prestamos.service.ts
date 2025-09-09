@@ -1,11 +1,11 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
 import { Notificacion } from '../interfaces/notificacion';
 import { DetallePrestamo } from '../interfaces/detalle-prestamo';
-import { map } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
 import { UsuarioPrestamosDTO } from '../interfaces/reportes/usuario-prestamos';
 import { EquipoUsoTiempoDTO } from '../interfaces/reportes/equipo-uso-tiempo';
 import { UsuarioPrestamosEquipoDTO } from '../interfaces/reportes/usuario-prestamos-equipo';
@@ -94,7 +94,7 @@ export class PrestamosService {
             headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`)
         });
     }
-  listar(
+  public listar(
     sede?: number | string,
     tipoUsuario?: number | string,
     tipoPrestamo?: string,
@@ -119,13 +119,85 @@ export class PrestamosService {
     agregarParam('escuela', escuela);
     agregarParam('programa', programa);
     agregarParam('ciclo', ciclo);
-    if (fechaInicio)            params = params.set('fechaPrestamoInicio', fechaInicio);
-    if (fechaFin)               params = params.set('fechaPrestamoFin', fechaFin);
+    if (fechaInicio)            params = params.set('fechaInicio', fechaInicio);
+    if (fechaFin)               params = params.set('fechaFin', fechaFin);
 
-    const endpoint = `${this.apiUrl}/api/prestamos/reporte/${tipo}`;
+    const endpoint = `${this.apiUrl}/api/prestamos/reporte`;
     return this.http
-      .get<{ status: string; data: DetallePrestamo[] }>(endpoint, { params })
-      .pipe(map(resp => resp.data ?? []));
+      .get<{ status: string; data: DetallePrestamo[] }>(endpoint, {
+        params,
+        headers: new HttpHeaders().set(
+          'Authorization',
+          `Bearer ${this.authService.getToken()}`
+        ),
+      })
+      .pipe(
+        map((resp) => {
+          const data = resp.data ?? [];
+          return tipo === 'materiales'
+            ? data.filter((d) => !d.equipo)
+            : data.filter((d) => d.equipo);
+        })
+      );
+  }
+
+  public listarMaterialesPrestados(
+    sede?: number | string,
+    tipoUsuario?: number | string,
+    tipoPrestamo?: string,
+    escuela?: number | string,
+    programa?: number | string,
+    ciclo?: number | string,
+    fechaInicio?: string,
+    fechaFin?: string
+  ): Observable<DetallePrestamo[]> {
+    let params = new HttpParams();
+
+    const agregarParam = (clave: string, valor?: number | string | null) => {
+      if (valor != null && valor !== 0 && valor !== '0') {
+        params = params.set(clave, String(valor));
+      }
+    };
+
+    agregarParam('sede', sede);
+    agregarParam('tipoUsuario', tipoUsuario);
+    agregarParam('estado', tipoPrestamo);
+    agregarParam('escuela', escuela);
+    agregarParam('programa', programa);
+    agregarParam('ciclo', ciclo);
+    if (fechaInicio) params = params.set('fechaPrestamoInicio', fechaInicio);
+    if (fechaFin) params = params.set('fechaPrestamoFin', fechaFin);
+
+    return this.http
+      .get<{ status: string; data: any[] }>(`${this.apiUrl}/api/biblioteca/prestados`, {
+        params,
+        headers: new HttpHeaders().set(
+          'Authorization',
+          `Bearer ${this.authService.getToken()}`
+        ),
+      })
+      .pipe(
+        map((resp) =>
+          (resp.data ?? []).map((d: any) => ({
+            id: d.idDetalleBiblioteca,
+            material: {
+              titulo: d.biblioteca?.titulo,
+              numeroIngreso: d.numeroIngreso != null ? String(d.numeroIngreso) : undefined,
+              especialidad: { descripcion: d.biblioteca?.especialidadDescripcion ?? '' },
+            },
+            titulo: d.biblioteca?.titulo,
+            numeroIngreso: d.numeroIngreso != null ? String(d.numeroIngreso) : undefined,
+            codigoUsuario: d.codigoUsuario,
+            codigoSede: d.sede?.descripcion ?? d.codigoSede,
+            tipoPrestamo: d.tipoPrestamo,
+            fechaPrestamo: d.fechaPrestamo,
+            usuarioPrestamo: d.usuarioPrestamo,
+            usuarioRecepcion: d.usuarioRecepcion,
+            fechaRecepcion: d.fechaDevolucion,
+          }))
+        ),
+        catchError(() => of<DetallePrestamo[]>([]))
+      );
   }
 
   listarEstados(): Observable<any> {
