@@ -125,6 +125,12 @@ public class OcurrenciaBibliotecaServiceImpl implements OcurrenciaBibliotecaServ
         return repo.findById(id).map(this::toDTO).orElse(null);
     }
 
+    @Override
+    public Long obtenerSiguienteId() {
+        Long max = repo.findMaxId();
+        return (max != null ? max : 0L) + 1L;
+    }
+
     private OcurrenciaBibliotecaDTO toDTO(OcurrenciaBiblioteca e) {
         OcurrenciaBibliotecaDTO dto = new OcurrenciaBibliotecaDTO();
         dto.setId(e.getId());
@@ -226,24 +232,35 @@ public class OcurrenciaBibliotecaServiceImpl implements OcurrenciaBibliotecaServ
 
     @Override
     public List<OcurrenciaUsuarioDTO> listarUsuariosDeOcurrencia(Long idOcurrencia) {
-        // 1) Traer el usuario original del DetallePrestamo
         OcurrenciaBiblioteca oc = repo.findById(idOcurrencia).orElseThrow();
         DetallePrestamo dp = oc.getDetallePrestamo();
         List<OcurrenciaUsuarioDTO> lista = new ArrayList<>();
 
         if (dp != null) {
-            // usuario que ya venía en el préstamo
+            Usuario u = usuarioRepository.findByLoginIgnoreCase(dp.getCodigoUsuario()).orElse(null);
             lista.add(new OcurrenciaUsuarioDTO(
-                    /* id */    null,
-                    /* login */ dp.getCodigoUsuario(),
-                    /* tipo */  dp.getTipoUsuario()
+                    null,
+                    dp.getCodigoUsuario(),
+                    dp.getTipoUsuario(),
+                    u != null ? u.getIdUsuario() : null,
+                    u != null ? u.getNombreUsuario() : null,
+                    u != null ? u.getApellidoPaterno() : null,
+                    u != null ? u.getApellidoMaterno() : null
             ));
         }
 
-        // 2) luego todos los que tú hayas insertado en OCURRENCIA_USUARIO
-        repoU.findByIdocurrencia(idOcurrencia).forEach(u ->
-                lista.add(new OcurrenciaUsuarioDTO(u.getId(), u.getCodigoUsuario(), u.getTipoUsuario()))
-        );
+        repoU.findByIdocurrencia(idOcurrencia).forEach(u -> {
+            Usuario usr = usuarioRepository.findByLoginIgnoreCase(u.getCodigoUsuario()).orElse(null);
+            lista.add(new OcurrenciaUsuarioDTO(
+                    u.getId(),
+                    u.getCodigoUsuario(),
+                    u.getTipoUsuario(),
+                    usr != null ? usr.getIdUsuario() : null,
+                    usr != null ? usr.getNombreUsuario() : null,
+                    usr != null ? usr.getApellidoPaterno() : null,
+                    usr != null ? usr.getApellidoMaterno() : null
+            ));
+        });
 
         return lista;
     }

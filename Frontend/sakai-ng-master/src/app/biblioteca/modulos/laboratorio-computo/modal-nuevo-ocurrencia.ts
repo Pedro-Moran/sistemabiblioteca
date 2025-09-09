@@ -24,7 +24,7 @@ import { OcurrenciaEventService } from '../../services/ocurrencia-event.service'
         <form [formGroup]="form">
         <div class="grid grid-cols-12 gap-4">
                     <div class="flex flex-col gap-2 col-span-12 sm:col-span-6 md:col-span-3">
-                    <label for="codigo">Código</label>
+                    <label for="codigo">Código de la ocurrencia</label>
                     <input pInputText id="codigo" type="text" formControlName="id" class="w-full" />
                     </div>
                     <div class="flex flex-col gap-2 col-span-12 sm:col-span-6 md:col-span-3">
@@ -97,10 +97,10 @@ import { OcurrenciaEventService } from '../../services/ocurrencia-event.service'
         </ng-template>
         <ng-template pTemplate="body" let-u>
             <tr>
-                <td>{{ u.codigoUsuario  }}</td>
-                <td>{{ u.tipoUsuario  }}</td>
+                <td>{{ u.idUsuario ?? u.codigoUsuario }}</td>
+                <td>{{ nombreCompleto(u) }}</td>
                 <td>
-                <p-button icon="pi pi-trash" rounded outlined (click)="eliminarInvolucrado(objeto)"pTooltip="Eliminar" tooltipPosition="bottom"/>
+                <p-button icon="pi pi-trash" rounded outlined (click)="eliminarInvolucrado(u)" pTooltip="Eliminar" tooltipPosition="bottom"/>
                 </td>
             </tr>
         </ng-template>
@@ -129,11 +129,11 @@ import { OcurrenciaEventService } from '../../services/ocurrencia-event.service'
         </ng-template>
         <ng-template pTemplate="body" let-m>
             <tr>
-                <td>{{ m.codigoEquipo  }}</td>
+                <td>{{ m.codigoLocalizacion || m.codigoEquipo }}</td>
                 <td>{{ m.nombre }}</td>
                 <td>{{ m.cantidad }}</td>
                 <td>
-                <p-button icon="pi pi-trash" rounded outlined (click)="eliminarInvolucrado(objeto)"pTooltip="Eliminar" tooltipPosition="bottom"/>
+                <p-button icon="pi pi-trash" rounded outlined (click)="eliminarInvolucrado(m)" pTooltip="Eliminar" tooltipPosition="bottom"/>
                 </td>
             </tr>
         </ng-template>
@@ -210,7 +210,7 @@ constructor(private fb: FormBuilder,
         this.guardado=false;
     this.form = this.fb.group({
       // — campos de sólo lectura (inician vacíos, deshabilitados) —
-      id               : [null, Validators.required],
+      id               : [{ value: null, disabled: true }, Validators.required],
       fechaCreacion    : [null, Validators.required],
       sedePrestamo     : [null, Validators.required],
       usuarioCreacion  : [null, Validators.required],
@@ -242,26 +242,32 @@ constructor(private fb: FormBuilder,
       ''
     );
 
-    // Parcheamos el formulario para que el campo "ID" muestre el valor:
+    // Inicializamos el formulario y obtenemos el siguiente ID desde el servidor
     this.form.patchValue({
-      id: idDetectado,
+      id: null,
       fechaCreacion: new Date(),
       sedePrestamo: objeto.sedePrestamo ?? objeto.sede?.id ?? null,
       usuarioCreacion: fullName,
       descripcion: ''
     });
 
+    this.materialBibliograficoService
+      .obtenerSiguienteIdOcurrencia()
+      .subscribe(id => this.form.patchValue({ id }));
+
     this.involucrados = [];
     this.materiales = [];
     if (objeto.nombreEquipo) {
       this.materiales.push({
         codigoEquipo: objeto.idEquipo ?? objeto.numeroEquipo,
+        codigoLocalizacion: objeto.codigoLocalizacion ?? '',
         nombre: objeto.nombreEquipo,
         cantidad: 1
       });
     } else if (objeto.idDetalleBiblioteca) {
       this.materiales.push({
         codigoEquipo: objeto.numeroIngreso ?? objeto.idDetalleBiblioteca,
+        codigoLocalizacion: objeto.biblioteca?.codigoLocalizacion ?? '',
         nombre:
           objeto.biblioteca?.titulo ||
           objeto.tipoMaterial?.descripcion ||
@@ -382,6 +388,7 @@ openForEdit(ocurrencia: OcurrenciaDTO) {
         // Tabla de materiales:
         this.materiales = [{
           codigoEquipo: dp.equipo!.idEquipo!,
+          codigoLocalizacion: (dp.equipo as any)?.codigoLocalizacion ?? '',
           nombre: dp.equipo!.nombreEquipo!,
           cantidad: 1,
           ip: dp.equipo!.ip!
@@ -394,6 +401,7 @@ openForEdit(ocurrencia: OcurrenciaDTO) {
         this.sourceItem = det;
         this.materiales = [{
           codigoEquipo: det.numeroIngreso ?? det.idDetalleBiblioteca,
+          codigoLocalizacion: det.biblioteca?.codigoLocalizacion ?? '',
           nombre: det.biblioteca?.titulo || det.tipoMaterial?.descripcion || 'Material',
           cantidad: 1
         }];
@@ -420,6 +428,7 @@ openForEdit(ocurrencia: OcurrenciaDTO) {
         if (dtos.length > 0) {
           this.materiales = dtos.map((dto) => ({
             codigoEquipo: dto.codigoEquipo,
+            codigoLocalizacion: dto.codigoEquipo,
             nombre: dto.nombreEquipo,
             cantidad: dto.cantidad,
             costo: dto.costo ?? 0,
@@ -429,6 +438,7 @@ openForEdit(ocurrencia: OcurrenciaDTO) {
         } else if (this.idDetalleBiblioteca != null && this.sourceItem) {
           this.materiales = [{
             codigoEquipo: this.sourceItem.numeroIngreso ?? this.sourceItem.idDetalleBiblioteca,
+            codigoLocalizacion: this.sourceItem.biblioteca?.codigoLocalizacion ?? '',
             nombre:
               this.sourceItem.biblioteca?.titulo ||
               this.sourceItem.tipoMaterial?.descripcion ||
@@ -459,6 +469,12 @@ openForEdit(ocurrencia: OcurrenciaDTO) {
     this.materialBibliograficoService
       .addMaterial(this.idNormalizado, { idEquipo: e.idEquipo, cantidad: 1, esBiblioteca: false })
       .subscribe(() => this.loadMateriales());
+  }
+
+  nombreCompleto(u: OcurrenciaUsuario): string {
+    return [u.nombres, u.apellidoPaterno, u.apellidoMaterno]
+      .filter(Boolean)
+      .join(' ');
   }
 
     }

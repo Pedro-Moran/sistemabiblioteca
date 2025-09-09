@@ -23,6 +23,10 @@ public interface OcurrenciaBibliotecaRepository
     /** Lista todas las ocurrencias ordenadas de forma descendente */
     List<OcurrenciaBiblioteca> findAllByOrderByIdDesc();
 
+    /** Obtiene el máximo ID registrado */
+    @Query("SELECT COALESCE(MAX(o.id),0) FROM OcurrenciaBiblioteca o")
+    Long findMaxId();
+
     /** Ocurrencias registradas para un usuario dado */
     List<OcurrenciaBiblioteca> findByCodigoUsuario(String codigoUsuario);
 

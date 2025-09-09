@@ -10,6 +10,7 @@ import { Sedes } from '../../interfaces/sedes';
 import { OcurrenciaDTO } from '../../interfaces/ocurrenciaDTO';
 import { OcurrenciaMaterial } from '../../interfaces/OcurrenciaMaterial';
 import { OcurrenciaMaterialDTO } from '../../interfaces/OcurrenciaMaterialDTO';
+import { OcurrenciaUsuario } from '../../interfaces/OcurrenciaUsuario';
 @Component({
     selector: 'app-modal-detalle-ocurrencia',
     standalone: true,
@@ -78,8 +79,8 @@ import { OcurrenciaMaterialDTO } from '../../interfaces/OcurrenciaMaterialDTO';
         </ng-template>
         <ng-template pTemplate="body" let-u>
                     <tr>
-                        <td>{{ u.codigoUsuario  }}</td>
-                        <td>{{ u.tipoUsuario  }}</td>
+                        <td>{{ u.idUsuario ?? u.codigoUsuario }}</td>
+                        <td>{{ nombreCompleto(u) }}</td>
                 <td>
                 <p-button icon="pi pi-trash" severity="secondary" rounded outlined disabled pTooltip="Eliminar" tooltipPosition="bottom"/>
                 </td>
@@ -194,7 +195,7 @@ export class ModalDetalleOcurencia implements OnInit {
         docenteLista: ClaseGeneral[] = [];
         cursoLista: ClaseGeneral[] = [];
         turnoLista: ClaseGeneral[] = [];
-        involucrados: any[] = [];
+        involucrados: OcurrenciaUsuario[] = [];
        materiales:   OcurrenciaMaterial[] = [];
         guardado:boolean=false;
         actualizar: boolean = true;
@@ -360,6 +361,12 @@ loadInvolucrados(ocurrenciaId: number) {
     mat.costo = costoUnitario;
     mat.subTotal = (costoUnitario * mat.cantidad) || 0;
     this.recalcularTotal();
+  }
+
+  nombreCompleto(u: OcurrenciaUsuario): string {
+    return [u.nombres, u.apellidoPaterno, u.apellidoMaterno]
+      .filter(Boolean)
+      .join(' ');
   }
 
   private recalcularTotal() {
