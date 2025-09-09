@@ -8,6 +8,7 @@ import { ButtonModule }   from 'primeng/button';
 import { TooltipModule }  from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { ToolbarModule }  from 'primeng/toolbar';
+import { ToastModule }    from 'primeng/toast';
 
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -32,9 +33,11 @@ import { HttpClient } from '@angular/common/http';
                                    DropdownModule,
                                    ButtonModule,
                                    TooltipModule,
-                                   ToolbarModule],
+                                   ToolbarModule,
+                                   ToastModule],
     template: `
 <div class="card w-full p-4">
+  <p-toast></p-toast>
   <p-toolbar class="mb-4">
     <div class="card w-full">
       <h2 class="mb-4">Préstamo detallado de materiales bibliográficos</h2>
@@ -203,7 +206,11 @@ export class ReportePrestamoMatBibliografico implements OnInit {
 
 async reporte() {
   if (!this.fechaInicio || !this.fechaFin) {
-    this.messageService.add({ severity: 'warn', detail: 'Seleccione fecha inicio y fin.' });
+    this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: 'Debe seleccionar un rango de fechas.' });
+    return;
+  }
+  if (this.fechaInicio > this.fechaFin) {
+    this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: 'La fecha de inicio no puede ser posterior a la fecha fin.' });
     return;
   }
 
@@ -255,7 +262,7 @@ async reporte() {
 
   async exportExcel() {
     if (!this.resultados.length) {
-      this.messageService.add({ severity:'warn', detail:'No hay datos para exportar.' });
+      this.messageService.add({ severity:'warn', summary:'Aviso', detail:'No hay datos para exportar.' });
       return;
     }
 
@@ -321,7 +328,7 @@ async reporte() {
 
     exportPdf() {
   if (!this.resultados.length) {
-    this.messageService.add({ severity: 'warn', detail: 'No hay datos para exportar.' });
+    this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: 'No hay datos para exportar.' });
     return;
   }
 
