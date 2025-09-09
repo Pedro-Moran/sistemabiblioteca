@@ -39,7 +39,7 @@ export class MaterialBibliograficoService {
     );
   }
 api_libros_lista(modulo: any): Observable<any> {
-  return this.http.get<any[]>(`${this.apiUrl}/${modulo}`,
+  return this.http.get<any>(`${this.apiUrl}/${modulo}`,
     { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
   );
 }
