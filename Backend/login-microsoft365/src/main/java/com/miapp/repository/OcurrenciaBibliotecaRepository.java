@@ -63,9 +63,16 @@ public interface OcurrenciaBibliotecaRepository
             "SELECT new com.miapp.model.dto.EjemplarPrestadoDTO(" +
                     " d.idDetalle," +
                     " b.titulo," +
-                    " coalesce(d.cantidadPrestamos, 0)" +
+                    " coalesce(d.cantidadPrestamos, 0)," +
+                    " c.ciclo," +
+                    " b.codigoLocalizacion," +
+                    " d.numeroIngreso," +
+                    " b.anioPublicacion," +
+                    " b.autorPersonal" +
                     ") " +
-                    "FROM DetalleBiblioteca d JOIN d.biblioteca b " +
+                    "FROM DetalleBiblioteca d " +
+                    "JOIN d.biblioteca b " +
+                    "LEFT JOIN b.ciclos c " +
                     "WHERE coalesce(d.cantidadPrestamos, 0) > 0 " +
                     "AND d.idEstado = 2 " +
                     "AND b.idEstado = 2 " +
