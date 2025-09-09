@@ -7,6 +7,7 @@ import { ClaseGeneral } from '../../interfaces/clase-general';
 import { MaterialBibliograficoService } from '../../services/material-bibliografico.service';
 import { EjemplarNoPrestadoDTO } from '../../interfaces/reportes/ejemplar-no-prestado';
 import { HttpClient } from '@angular/common/http';
+import { construirCabeceraFiltros, formatearFecha } from '../../utils/exportacion';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as ExcelJS from 'exceljs';
@@ -184,11 +185,26 @@ export class ReporteEjemplarNoPrestado {
         const buffer = await this.http.get('/assets/logo.png', { responseType: 'arraybuffer' }).toPromise();
         const logoId = wb.addImage({ buffer, extension: 'png' });
         ws.addImage(logoId, { tl: { col: 0.2, row: 0.2 }, ext: { width: 220, height: 80 } });
-        ws.mergeCells('C1', 'H2');
-        const title = ws.getCell('C1');
-        title.value = 'Ejemplares no prestados';
+        ws.addRows([[], [], [], []]); // espacio para la imagen
+        ws.mergeCells('C5', 'H6');
+        const title = ws.getCell('C5');
+        title.value = this.titulo;
         title.alignment = { vertical: 'middle', horizontal: 'center' };
         title.font = { size: 16, bold: true };
+        ws.addRow([]);
+        const filtrosCabecera = construirCabeceraFiltros([
+            { etiqueta: 'Sede', valor: this.sedeFiltro?.descripcion, defecto: 'Todas' },
+            { etiqueta: 'Tipo Material', valor: this.tipoMaterialFiltro?.descripcion, defecto: 'Todos' },
+            { etiqueta: 'Especialidad', valor: this.especialidadFiltro?.descripcion, defecto: 'Todas' },
+            { etiqueta: 'Programa', valor: this.programaFiltro?.descripcion, defecto: 'Todos' },
+            { etiqueta: 'Ciclo', valor: this.cicloFiltro?.descripcion, defecto: 'Todos' },
+            { etiqueta: 'N° ingreso', valor: this.nroIngreso || undefined, defecto: 'Todos' },
+            { etiqueta: 'Fecha Inicio', valor: formatearFecha(this.fechaInicio), defecto: 'Todos' },
+            { etiqueta: 'Fecha Fin', valor: formatearFecha(this.fechaFin), defecto: 'Todos' },
+            { etiqueta: 'Fecha emisión', valor: new Date().toLocaleString() }
+        ]);
+        ws.addRow(filtrosCabecera.etiquetas);
+        ws.addRow(filtrosCabecera.valores);
         ws.addRow([]);
         const headerRow = ws.addRow(['ID', 'Título', 'Código localización', 'N° ingreso', 'Autor personal', 'Año']);
         headerRow.font = { bold: true };
@@ -217,10 +233,26 @@ export class ReporteEjemplarNoPrestado {
         img.onload = () => {
             doc.addImage(img, 'PNG', 10, 10, 60, 25);
             doc.setFontSize(16);
-            doc.text('Ejemplares no prestados', 80, 20);
-            doc.setFontSize(10);
-            const hoy = new Date();
-            doc.text(`Fecha de emisión: ${hoy.toLocaleDateString()}`, 80, 25);
+            const pageWidth = doc.internal.pageSize.getWidth();
+            doc.text(this.titulo, pageWidth / 2, 20, { align: 'center' });
+            const filtrosCabecera = construirCabeceraFiltros([
+                { etiqueta: 'Sede', valor: this.sedeFiltro?.descripcion, defecto: 'Todas' },
+                { etiqueta: 'Tipo Material', valor: this.tipoMaterialFiltro?.descripcion, defecto: 'Todos' },
+                { etiqueta: 'Especialidad', valor: this.especialidadFiltro?.descripcion, defecto: 'Todas' },
+                { etiqueta: 'Programa', valor: this.programaFiltro?.descripcion, defecto: 'Todos' },
+                { etiqueta: 'Ciclo', valor: this.cicloFiltro?.descripcion, defecto: 'Todos' },
+                { etiqueta: 'N° ingreso', valor: this.nroIngreso || undefined, defecto: 'Todos' },
+                { etiqueta: 'Fecha Inicio', valor: formatearFecha(this.fechaInicio), defecto: 'Todos' },
+                { etiqueta: 'Fecha Fin', valor: formatearFecha(this.fechaFin), defecto: 'Todos' },
+                { etiqueta: 'Fecha emisión', valor: new Date().toLocaleString() }
+            ]);
+            autoTable(doc, {
+                head: [filtrosCabecera.etiquetas],
+                body: [filtrosCabecera.valores],
+                startY: 40,
+                styles: { fontSize: 9 }
+            });
+            const inicioTabla = (doc as any).lastAutoTable.finalY + 5;
             autoTable(doc, {
                 head: [['ID', 'Título', 'Código localización', 'N° ingreso', 'Autor personal', 'Año']],
                 body: this.resultados.map((r) => [
@@ -231,7 +263,7 @@ export class ReporteEjemplarNoPrestado {
                     r.autor,
                     r.anio ?? ''
                 ]),
-                startY: 35,
+                startY: inicioTabla,
                 styles: { fontSize: 8 },
                 headStyles: { fillColor: [41, 128, 185] }
             });

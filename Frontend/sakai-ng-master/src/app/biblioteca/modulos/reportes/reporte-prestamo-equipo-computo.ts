@@ -22,6 +22,7 @@ import { ReportesFiltroService } from '../../services/reportes-filtro.service';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { HttpClient } from '@angular/common/http';
+import { construirCabeceraFiltros, formatearFecha } from '../../utils/exportacion';
 @Component({
     selector: 'app-reporte-prestamo-equipo-computo',
     standalone: true,
@@ -284,22 +285,35 @@ async reporte() {
         tl: { col: 0.2, row: 0.2 },
         ext: { width: 220, height: 80 }
       });
+      ws.addRows([[], [], [], []]); // espacio para la imagen
 
-
-    // 2) Título y fecha
-    ws.mergeCells('C1', 'G2');
-    const tituloCell = ws.getCell('C1');
-    tituloCell.value = 'ESTADÍSTICA MENSUAL DEL SERVICIO';
+    // 2) Título
+    ws.mergeCells('C5', 'G6');
+    const tituloCell = ws.getCell('C5');
+    tituloCell.value = this.titulo;
     tituloCell.alignment = { vertical: 'middle', horizontal: 'center' };
     tituloCell.font = { size: 16, bold: true };
-
-    ws.getCell('C3').value = `Fecha de emisión: ${new Date().toLocaleDateString()}`;
+    ws.addRow([]);
 
     // 3) Filtros
-    ws.getCell('C4').value = `Sede: ${this.sedeFiltroLabel}`;
-    ws.getCell('G3').value = `Programa: ${this.programaFiltroLabel}`;
-    ws.getCell('A5').value = ``;
-    // …
+    const filtrosCabecera = construirCabeceraFiltros([
+      { etiqueta: 'Sede', valor: this.sedeFiltro?.descripcion, defecto: 'Todas' },
+      { etiqueta: 'Tipo Usuario', valor: this.tipoUsuarioFiltro?.descripcion, defecto: 'Todos' },
+      {
+        etiqueta: 'Estado',
+        valor: this.tipoPrestamoLista.find((t) => t.value === this.tipoPrestamoFiltro)?.label,
+        defecto: 'Todos'
+      },
+      { etiqueta: 'Escuela', valor: this.escuelaFiltro?.descripcion, defecto: 'Todas' },
+      { etiqueta: 'Programa', valor: this.programaFiltro?.descripcion, defecto: 'Todos' },
+      { etiqueta: 'Ciclo', valor: this.cicloFiltro?.descripcion, defecto: 'Todos' },
+      { etiqueta: 'Fecha Inicio', valor: formatearFecha(this.fechaInicio), defecto: 'Todos' },
+      { etiqueta: 'Fecha Fin', valor: formatearFecha(this.fechaFin), defecto: 'Todos' },
+      { etiqueta: 'Fecha emisión', valor: new Date().toLocaleString() }
+    ]);
+    ws.addRow(filtrosCabecera.etiquetas);
+    ws.addRow(filtrosCabecera.valores);
+    ws.addRow([]);
 
     // 4) Encabezados de la tabla
     const headerRow = ws.addRow([ 'Equipo', 'Alcance', 'Usuario', 'Especialidad',
@@ -339,28 +353,38 @@ async reporte() {
 
   const doc = new jsPDF({ orientation: 'landscape' });
 
-  // 1) Crear un elemento Image y apuntar a tu logo en assets
   const img = new Image();
   img.src = '/assets/logo.png';
 
   img.onload = () => {
-    // 2) Añadir la imagen al PDF (x=10, y=10, width=40, height=15)
     doc.addImage(img, 'PNG', 10, 10, 60, 25);
-
-    // 3) Escribir título y fecha
     doc.setFontSize(16);
-    doc.text('ESTADÍSTICA MENSUAL DEL SERVICIO', 80, 20);
-    doc.setFontSize(10);
-    const hoy = new Date();
-    doc.text(`Fecha de emisión: ${hoy.toLocaleDateString()}`, 80, 25);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    doc.text(this.titulo, pageWidth / 2, 20, { align: 'center' });
 
-    // 4) Repetir filtros si quieres
-    doc.setFontSize(9);
-    doc.text(`Sede: ${this.sedeFiltroLabel}`, 80, 30);
-    doc.text(`Programa: ${this.programaFiltroLabel}`, 120, 30);
-    // … más filtros …
+    const filtrosCabecera = construirCabeceraFiltros([
+      { etiqueta: 'Sede', valor: this.sedeFiltro?.descripcion, defecto: 'Todas' },
+      { etiqueta: 'Tipo Usuario', valor: this.tipoUsuarioFiltro?.descripcion, defecto: 'Todos' },
+      {
+        etiqueta: 'Estado',
+        valor: this.tipoPrestamoLista.find((t) => t.value === this.tipoPrestamoFiltro)?.label,
+        defecto: 'Todos'
+      },
+      { etiqueta: 'Escuela', valor: this.escuelaFiltro?.descripcion, defecto: 'Todas' },
+      { etiqueta: 'Programa', valor: this.programaFiltro?.descripcion, defecto: 'Todos' },
+      { etiqueta: 'Ciclo', valor: this.cicloFiltro?.descripcion, defecto: 'Todos' },
+      { etiqueta: 'Fecha Inicio', valor: formatearFecha(this.fechaInicio), defecto: 'Todos' },
+      { etiqueta: 'Fecha Fin', valor: formatearFecha(this.fechaFin), defecto: 'Todos' },
+      { etiqueta: 'Fecha emisión', valor: new Date().toLocaleString() }
+    ]);
+    autoTable(doc, {
+      head: [filtrosCabecera.etiquetas],
+      body: [filtrosCabecera.valores],
+      startY: 40,
+      styles: { fontSize: 9 }
+    });
+    const inicioTabla = (doc as any).lastAutoTable.finalY + 5;
 
-    // 5) Generar la tabla con autoTable
     autoTable(doc, {
       head: [[
         'Equipo', 'Alcance', 'Usuario', 'Especialidad',
@@ -378,21 +402,16 @@ async reporte() {
         r.usuarioRecepcion || '-',
         r.fechaRecepcion || '-'
       ]),
-      startY: 35,
+      startY: inicioTabla,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [41, 128, 185] }
     });
 
-    // 6) Guardar el PDF
     doc.save('estadistica_mensual.pdf');
   };
 
   img.onerror = () => {
     console.error('No se pudo cargar /assets/logo.png');
-    // Si quieres, puedes seguir sin logo:
-    // doc.text('ESTADÍSTICA MENSUAL DEL SERVICIO', 10, 20);
-    // autoTable(...)
-    // doc.save(...)
   };
     }
 }
