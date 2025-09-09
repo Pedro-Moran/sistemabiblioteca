@@ -30,8 +30,8 @@ import { MessageService, ConfirmationService } from 'primeng/api';
             <p-tag [value]="sede.activo ? 'Sí' : 'No'" [severity]="sede.activo ? 'success' : 'danger'"></p-tag>
           </td>
           <td>
-            <p-button icon="pi pi-pencil" rounded outlined class="mr-2" (click)="editSede(sede)"></p-button>
-            <p-button icon="pi pi-trash" severity="danger" rounded outlined (click)="confirmDelete(sede)"></p-button>
+            <p-button icon="pi pi-pencil" rounded outlined class="mr-2" (onClick)="editSede(sede)"></p-button>
+            <p-button icon="pi pi-trash" severity="danger" rounded outlined (onClick)="confirmDelete(sede)"></p-button>
           </td>
         </tr>
       </ng-template>
@@ -51,6 +51,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
         <p-button label="Guardar" (onClick)="save()" />
       </ng-template>
     </p-dialog>
+    <p-confirmDialog></p-confirmDialog>
   `
 })
 export class SedesComponent implements OnInit {
@@ -103,7 +104,7 @@ export class SedesComponent implements OnInit {
 
   delete(s: Sedes) {
     this.sedeService.delete(s.id).subscribe(() => {
-      this.load();
+      this.sedes = this.sedes.filter(item => item.id !== s.id);
       this.messageService.add({severity:'success', summary:'Eliminado'});
     });
   }
