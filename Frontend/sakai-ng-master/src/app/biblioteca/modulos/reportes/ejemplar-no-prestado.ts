@@ -71,12 +71,20 @@ import { ReportesFiltroService } from '../../services/reportes-filtro.service';
                     <tr>
                         <th>ID</th>
                         <th>Título</th>
+                        <th>Código localización</th>
+                        <th>N° ingreso</th>
+                        <th>Autor personal</th>
+                        <th>Año</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-row>
                     <tr>
                         <td>{{ row.idDetalle }}</td>
                         <td>{{ row.titulo }}</td>
+                        <td>{{ row.codigoLocalizacion }}</td>
+                        <td>{{ row.numeroIngreso }}</td>
+                        <td>{{ row.autor }}</td>
+                        <td>{{ row.anio }}</td>
                     </tr>
                 </ng-template>
             </p-table>
@@ -161,16 +169,23 @@ export class ReporteEjemplarNoPrestado {
         const buffer = await this.http.get('/assets/logo.png', { responseType: 'arraybuffer' }).toPromise();
         const logoId = wb.addImage({ buffer, extension: 'png' });
         ws.addImage(logoId, { tl: { col: 0.2, row: 0.2 }, ext: { width: 220, height: 80 } });
-        ws.mergeCells('C1', 'E2');
+        ws.mergeCells('C1', 'H2');
         const title = ws.getCell('C1');
         title.value = 'Ejemplares no prestados';
         title.alignment = { vertical: 'middle', horizontal: 'center' };
         title.font = { size: 16, bold: true };
         ws.addRow([]);
-        const headerRow = ws.addRow(['ID', 'Título']);
+        const headerRow = ws.addRow(['ID', 'Título', 'Código localización', 'N° ingreso', 'Autor personal', 'Año']);
         headerRow.font = { bold: true };
         headerRow.alignment = { horizontal: 'center' };
-        this.resultados.forEach((r) => ws.addRow([r.idDetalle, r.titulo]));
+        this.resultados.forEach((r) => ws.addRow([
+            r.idDetalle,
+            r.titulo,
+            r.codigoLocalizacion,
+            r.numeroIngreso ?? '',
+            r.autor,
+            r.anio ?? ''
+        ]));
         ws.columns.forEach((col) => (col.width = 25));
         const buf = await wb.xlsx.writeBuffer();
         saveAs(new Blob([buf]), 'ejemplares_no_prestados.xlsx');
@@ -192,8 +207,15 @@ export class ReporteEjemplarNoPrestado {
             const hoy = new Date();
             doc.text(`Fecha de emisión: ${hoy.toLocaleDateString()}`, 80, 25);
             autoTable(doc, {
-                head: [['ID', 'Título']],
-                body: this.resultados.map((r) => [r.idDetalle, r.titulo]),
+                head: [['ID', 'Título', 'Código localización', 'N° ingreso', 'Autor personal', 'Año']],
+                body: this.resultados.map((r) => [
+                    r.idDetalle,
+                    r.titulo,
+                    r.codigoLocalizacion,
+                    r.numeroIngreso ?? '',
+                    r.autor,
+                    r.anio ?? ''
+                ]),
                 startY: 35,
                 styles: { fontSize: 8 },
                 headStyles: { fillColor: [41, 128, 185] }

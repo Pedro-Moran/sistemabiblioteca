@@ -99,7 +99,11 @@ public interface OcurrenciaBibliotecaRepository
     @Query(
             "SELECT new com.miapp.model.dto.EjemplarNoPrestadoDTO(" +
                     " d.idDetalle," +
-                    " b.titulo" +
+                    " b.titulo," +
+                    " b.codigoLocalizacion," +
+                    " d.numeroIngreso," +
+                    " b.autorPersonal," +
+                    " b.anioPublicacion" +
                     ") " +
                     "FROM DetalleBiblioteca d " +
                     "JOIN d.biblioteca b " +
