@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/auth/api/biblioteca")
@@ -169,10 +168,7 @@ public class BibliotecaController {
             @RequestParam(value="opcion",      required = false) String opcion
     ) {
         List<BibliotecaDTO> dtos = bibliotecaService
-                .buscarParaCatalogo(valor, sedeId, tipoMaterialId, opcion)
-                .stream()
-                .map(bibliotecaService::mapToDto)
-                .collect(Collectors.toList());
+                .buscarParaCatalogo(valor, sedeId, tipoMaterialId, opcion);
 
         return ResponseEntity.ok(Map.of("status", 0, "data", dtos));
     }

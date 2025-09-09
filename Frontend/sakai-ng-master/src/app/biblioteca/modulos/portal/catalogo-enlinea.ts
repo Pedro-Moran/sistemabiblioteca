@@ -108,15 +108,18 @@ import { map } from 'rxjs/operators';
                             #dt1
                             [value]="data"
                             dataKey="id"
-                            [rows]="10"
+                            [rows]="rows"
                             [showCurrentPageReport]="true"
                             [expandedRowKeys]="expandedRows"
                             (onRowExpand)="onRowExpand($event)"
                             (onRowCollapse)="onRowCollapse($event)"
+                            (onLazyLoad)="loadData($event)"
                             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
                             [rowsPerPageOptions]="[10, 25, 50]"
                             [loading]="loading"
                             [rowHover]="true"
+                            [lazy]="true"
+                            [totalRecords]="totalRecords"
                             styleClass="p-datatable-gridlines"
                             [paginator]="true"
                             [globalFilterFields]="['id', 'codigoLocalizacion', 'titulo', 'autorPersonal', 'autorSecundario', 'anioPublicacion', 'coleccion.descripcion']"
@@ -287,6 +290,8 @@ export class CatalogoEnLineaComponent {
     dataColeccion: ClaseGeneral[] = [];
     @ViewChild('filter') filter!: ElementRef;
     data: any[] = [];
+    rows: number = 10;
+    totalRecords: number = 0;
     expandedRows = {};
     detallesPorBiblioteca: { [id: number]: any[] } = {};
     reservas: any[] = [];
@@ -414,10 +419,10 @@ export class CatalogoEnLineaComponent {
         this.user = this.authService.getUser();
         await Promise.all([this.cargarSedes(), this.cargarColecciones()]);
         this.listaFiltros();
-        this.listar();
+        this.listar(0, this.rows);
         this.detallesPorBiblioteca = {};
     }
-    listar() {
+    listar(page: number = 0, size: number = this.rows) {
         const opcion = this.opcionFiltro?.valor;
         const valor  = this.palabraClave?.trim() || '';
 
@@ -454,16 +459,20 @@ export class CatalogoEnLineaComponent {
         if (opcion) {
             params.set('opcion', opcion);
         }
+        params.set('page', page.toString());
+        params.set('size', size.toString());
 
-        const url = params.toString() ? `api/biblioteca/catalogo?${params}` : 'api/biblioteca/catalogo';
+        const url = `api/biblioteca/catalogo?${params.toString()}`;
 
         // Recupera solo las cabeceras disponibles
         this.loading = true;
         this.materialBibliograficoService.api_libros_lista(url).subscribe({
             next: (result: any) => {
-                const cabeceras = (Array.isArray(result) ? result : result?.data || []).filter(
+                const resp = Array.isArray(result) ? { data: result, total: result.length } : result;
+                const cabeceras = (resp?.data || []).filter(
                     (b: any) => b.estadoId === 2 || b.estado?.descripcion === 'DISPONIBLE'
                 );
+                this.totalRecords = resp?.total ?? cabeceras.length;
 
                 if (cabeceras.length === 0) {
                     this.data = [];
@@ -508,6 +517,12 @@ export class CatalogoEnLineaComponent {
                 this.loading = false;
             }
         });
+    }
+
+    loadData(event: any) {
+        const page = event.first / event.rows;
+        const size = event.rows;
+        this.listar(page, size);
     }
 
     limpiar() {

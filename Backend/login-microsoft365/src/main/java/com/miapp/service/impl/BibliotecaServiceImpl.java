@@ -8,6 +8,8 @@ import com.miapp.service.BibliotecaService;
 import com.miapp.service.EmailService;
 import com.miapp.service.NotificacionService;
 import com.miapp.service.FileStorageService;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Subquery;
 import jakarta.transaction.Transactional;
@@ -544,81 +546,91 @@ public class BibliotecaServiceImpl implements BibliotecaService {
         }
     }
 
-    public List<Biblioteca> buscarParaCatalogo(
+    public List<BibliotecaDTO> buscarParaCatalogo(
             String valor,
             Long sedeId,
             Long tipoMaterialId,
             String opcion
     ) {
-        String v = valor == null ? "" : valor.trim().toLowerCase();
+        Specification<Biblioteca> spec = (root, query, cb) -> {
+            List<Predicate> preds = new ArrayList<>();
+            preds.add(cb.notEqual(root.get("idEstado"), 1L));
 
-        return bibliotecaRepository
-                .findAll()
-                .stream()
-                .filter(b -> !Objects.equals(b.getIdEstado(), 1L))
-                .filter(b -> {
-                    if (v.isEmpty()) {
-                        return true;
-                    }
-
-                    // Cuando no se especifica una opción, buscamos en todos los campos relevantes
-                    if (opcion == null || opcion.isBlank() || opcion.trim().equalsIgnoreCase("Cualquier campo")) {
-                        return (b.getTitulo() != null && b.getTitulo().toLowerCase().contains(v))
-                                || (b.getAutorPersonal() != null && b.getAutorPersonal().toLowerCase().contains(v))
-                                || (b.getCodigoLocalizacion() != null && b.getCodigoLocalizacion().toLowerCase().contains(v))
-                                || (b.getEditorialPublicacion() != null && b.getEditorialPublicacion().toLowerCase().contains(v))
-                                || (b.getDescriptor() != null && b.getDescriptor().toLowerCase().contains(v))
-                                || (b.getNotaGeneral() != null && b.getNotaGeneral().toLowerCase().contains(v))
-                                || (b.getEspecialidad() != null
-                                && b.getEspecialidad().getDescripcion() != null
-                                && b.getEspecialidad().getDescripcion().toLowerCase().contains(v));
-                    }
-                    return true;
-                })
-                .filter(b -> {
-                    if (sedeId == null || sedeId == 0) {
-                        return true;
-                    }
-                    // La sede real se encuentra en los detalles del material
-                    return detalleBibliotecaRepository
-                            .existsByBiblioteca_IdAndSede_Id(b.getId(), sedeId);
-                })
-                .filter(b -> {
-                    if (tipoMaterialId == null || tipoMaterialId == 0) {
-                        return true;
-                    }
-                    // El tipo de material también se encuentra en los detalles
-                    return detalleBibliotecaRepository
-                            .existsByBiblioteca_IdAndTipoMaterial_IdTipoMaterial(b.getId(), tipoMaterialId);
-                })
-                .filter(b -> {
-                    if (opcion == null || opcion.isBlank() || opcion.trim().equalsIgnoreCase("Cualquier campo")) {
-                        return true;
-                    }
-                    // normalizamos el nombre de la opción también
-                    switch (opcion.trim().toUpperCase()) {
+            String v = valor == null ? null : valor.trim().toLowerCase();
+            String opt = opcion == null ? "" : opcion.trim().toUpperCase();
+            if (v != null && !v.isEmpty()) {
+                String pattern = "%" + v + "%";
+                if (opt.isBlank() || opt.equals("CUALQUIER CAMPO")) {
+                    Join<Biblioteca, Especialidad> esp = root.join("especialidad", JoinType.LEFT);
+                    preds.add(cb.or(
+                            cb.like(cb.lower(root.get("titulo")), pattern),
+                            cb.like(cb.lower(root.get("autorPersonal")), pattern),
+                            cb.like(cb.lower(root.get("codigoLocalizacion")), pattern),
+                            cb.like(cb.lower(root.get("editorialPublicacion")), pattern),
+                            cb.like(cb.lower(root.get("descriptor")), pattern),
+                            cb.like(cb.lower(root.get("notaGeneral")), pattern),
+                            cb.like(cb.lower(esp.get("descripcion")), pattern)
+                    ));
+                } else {
+                    switch (opt) {
                         case "TITULO":
                         case "NOMBRE":
-                            return b.getTitulo() != null && b.getTitulo().toLowerCase().contains(v);
+                            preds.add(cb.like(cb.lower(root.get("titulo")), pattern));
+                            break;
                         case "AUTOR":
-                            return b.getAutorPersonal() != null && b.getAutorPersonal().toLowerCase().contains(v);
+                            preds.add(cb.like(cb.lower(root.get("autorPersonal")), pattern));
+                            break;
                         case "CODIGO":
-                            return b.getCodigoLocalizacion() != null && b.getCodigoLocalizacion().toLowerCase().contains(v);
+                            preds.add(cb.like(cb.lower(root.get("codigoLocalizacion")), pattern));
+                            break;
                         case "EDITORIAL":
-                            return b.getEditorialPublicacion() != null && b.getEditorialPublicacion().toLowerCase().contains(v);
+                            preds.add(cb.like(cb.lower(root.get("editorialPublicacion")), pattern));
+                            break;
                         case "TEMA":
-                            return b.getDescriptor() != null && b.getDescriptor().toLowerCase().contains(v);
+                            preds.add(cb.like(cb.lower(root.get("descriptor")), pattern));
+                            break;
                         case "DESCRIPCION":
-                            return b.getNotaGeneral() != null && b.getNotaGeneral().toLowerCase().contains(v);
+                            preds.add(cb.like(cb.lower(root.get("notaGeneral")), pattern));
+                            break;
                         case "GENERO":
-                            return b.getEspecialidad() != null
-                                    && b.getEspecialidad().getDescripcion() != null
-                                    && b.getEspecialidad().getDescripcion().toLowerCase().contains(v);
-                        default:
-                            return true;
+                            Join<Biblioteca, Especialidad> esp = root.join("especialidad", JoinType.LEFT);
+                            preds.add(cb.like(cb.lower(esp.get("descripcion")), pattern));
+                            break;
                     }
-                })
+                }
+            }
+
+            if ((sedeId != null && sedeId != 0) || (tipoMaterialId != null && tipoMaterialId != 0)) {
+                Subquery<Long> sub = query.subquery(Long.class);
+                var det = sub.from(DetalleBiblioteca.class);
+                sub.select(det.get("biblioteca").get("id"));
+
+                Predicate subPred = cb.equal(det.get("biblioteca").get("id"), root.get("id"));
+                if (sedeId != null && sedeId != 0) {
+                    subPred = cb.and(subPred, cb.equal(det.get("sede").get("id"), sedeId));
+                }
+                if (tipoMaterialId != null && tipoMaterialId != 0) {
+                    subPred = cb.and(subPred, cb.equal(det.get("tipoMaterial").get("idTipoMaterial"), tipoMaterialId));
+                }
+                sub.where(subPred);
+                preds.add(cb.exists(sub));
+            }
+
+            return cb.and(preds.toArray(new Predicate[0]));
+        };
+
+        return bibliotecaRepository
+                .findAll(spec, Pageable.unpaged())
+                .stream()
+                .map(this::mapToDtoSinDetalles)
                 .toList();
+    }
+
+    private BibliotecaDTO mapToDtoSinDetalles(Biblioteca b) {
+        BibliotecaDTO dto = mapper.toDto(b);
+        dto.setId(b.getId());
+        dto.setDetalles(List.of());
+        return dto;
     }
 
     public List<BibliotecaDTO> findReservados() {
