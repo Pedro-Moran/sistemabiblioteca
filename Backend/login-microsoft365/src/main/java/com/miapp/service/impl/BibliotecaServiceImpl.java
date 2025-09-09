@@ -674,7 +674,20 @@ public class BibliotecaServiceImpl implements BibliotecaService {
     }
 
     @Override
-    public List<EjemplarNoPrestadoDTO> reporteEjemplarNoPrestado() {
-        return ocurrenciaBibliotecaRepository.reporteEjemplarNoPrestado();
+    public List<EjemplarNoPrestadoDTO> reporteEjemplarNoPrestado(Long sede,
+                                                                 Long tipoMaterial,
+                                                                 Long especialidad,
+                                                                 Integer ciclo,
+                                                                 Long numeroIngreso,
+                                                                 java.time.LocalDate fechaInicio,
+                                                                 java.time.LocalDate fechaFin) {
+        return ocurrenciaBibliotecaRepository.reporteEjemplarNoPrestado(
+                sede,
+                tipoMaterial,
+                especialidad,
+                ciclo,
+                numeroIngreso,
+                fechaInicio,
+                fechaFin);
     }
 }

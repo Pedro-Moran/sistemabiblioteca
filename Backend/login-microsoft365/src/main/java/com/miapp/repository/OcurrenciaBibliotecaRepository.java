@@ -94,7 +94,8 @@ public interface OcurrenciaBibliotecaRepository
             @Param("fechaFin") java.time.LocalDate fechaFin);
 
     /**
-     * Devuelve los ejemplares de material bibliográfico que nunca se han prestado.
+     * Devuelve los ejemplares de material bibliográfico que nunca se han prestado
+     * filtrando por los parámetros indicados.
      */
     @Query(
             "SELECT new com.miapp.model.dto.EjemplarNoPrestadoDTO(" +
@@ -107,7 +108,25 @@ public interface OcurrenciaBibliotecaRepository
                     ") " +
                     "FROM DetalleBiblioteca d " +
                     "JOIN d.biblioteca b " +
-                    "WHERE coalesce(d.cantidadPrestamos,0) = 0 ORDER BY d.idDetalle DESC")
-    List<EjemplarNoPrestadoDTO> reporteEjemplarNoPrestado();
+                    "LEFT JOIN b.ciclos c " +
+                    "WHERE coalesce(d.cantidadPrestamos,0) = 0 " +
+                    "AND d.idEstado = 2 " +
+                    "AND b.idEstado = 2 " +
+                    "AND (:sede IS NULL OR d.sede.id = :sede) " +
+                    "AND (:tipoMaterial IS NULL OR d.tipoMaterial.idTipoMaterial = :tipoMaterial) " +
+                    "AND (:especialidad IS NULL OR b.especialidad.idEspecialidad = :especialidad) " +
+                    "AND (:ciclo IS NULL OR c.ciclo = :ciclo) " +
+                    "AND (:numeroIngreso IS NULL OR d.numeroIngreso = :numeroIngreso) " +
+                    "AND (:fechaInicio IS NULL OR d.fechaInicio >= :fechaInicio) " +
+                    "AND (:fechaFin IS NULL OR d.fechaInicio <= :fechaFin) " +
+                    "ORDER BY d.idDetalle DESC")
+    List<EjemplarNoPrestadoDTO> reporteEjemplarNoPrestado(
+            @Param("sede") Long sede,
+            @Param("tipoMaterial") Long tipoMaterial,
+            @Param("especialidad") Long especialidad,
+            @Param("ciclo") Integer ciclo,
+            @Param("numeroIngreso") Long numeroIngreso,
+            @Param("fechaInicio") java.time.LocalDate fechaInicio,
+            @Param("fechaFin") java.time.LocalDate fechaFin);
 
 }
