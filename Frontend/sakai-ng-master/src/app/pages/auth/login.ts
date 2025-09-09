@@ -32,6 +32,11 @@ export interface LoginCredentials {
     RippleModule,
     AppFloatingConfigurator
   ],
+  styles: [`
+    :host ::ng-deep .full-width-options .p-dropdown-item {
+      width: 100%;
+    }
+  `],
   template: `
     <app-floating-configurator />
     <p-dialog header="Selecciona el tipo de usuario" [(visible)]="roleDialogVisible" [modal]="true" [closable]="false">
@@ -41,20 +46,21 @@ export interface LoginCredentials {
         optionValue="value"
         [(ngModel)]="credentials.role"
         appendTo="body"
+        panelStyleClass="full-width-options"
       ></p-dropdown>
       <div class="flex justify-end mt-4">
         <p-button label="Continuar" (click)="confirmRoleSelection()"></p-button>
       </div>
     </p-dialog>
-    <div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-[100vw] overflow-hidden">
-      <div class="flex flex-col items-center justify-center">
-        <div style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%)">
-          <div class="w-full bg-surface-0 dark:bg-surface-900 py-20 px-8 sm:px-20" style="border-radius: 53px">
+    <div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-[100vw] overflow-hidden p-4">
+      <div class="flex flex-col items-center justify-center w-full">
+        <div class="w-full max-w-xl" style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%)">
+          <div class="w-full bg-surface-0 dark:bg-surface-900 py-12 px-8 sm:px-12" style="border-radius: 53px">
             <div class="text-center mb-8">
               <img src="assets/logo.png" alt="Logo" class="mb-8 w-30 shrink-0 mx-auto" />
               <span class="text-muted-color font-medium mb-4">Inicia sesión para continuar</span>
-              <div class="flex flex-col sm:flex-row gap-2 w-full mt-4">
-                <p-button label="Iniciar sesión con Microsoft365" styleClass="w-full flex-1" (click)="loginWithMicrosoft()"></p-button>
+              <div class="flex justify-center w-full mt-4">
+                <p-button label="Iniciar sesión con Microsoft365" styleClass="w-full sm:w-auto" (click)="loginWithMicrosoft()"></p-button>
               </div>
               <div class="flex items-center my-4">
                 <div class="flex-grow border-t border-gray-300"></div>
@@ -62,27 +68,34 @@ export interface LoginCredentials {
                 <div class="flex-grow border-t border-gray-300"></div>
               </div>
             </div>
-            <div>
-              <label for="email" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Correo electrónico</label>
-              <input pInputText id="email" type="text" placeholder="Email address" class="w-full md:w-[30rem] mb-4" [(ngModel)]="credentials.email" name="email" (ngModelChange)="onEmailChange()" />
+            <div class="flex flex-col gap-4">
+              <div>
+                <label for="email" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Correo electrónico</label>
+                <input pInputText id="email" type="text" placeholder="Email address" class="w-full" [(ngModel)]="credentials.email" name="email" (ngModelChange)="onEmailChange()" />
+              </div>
 
-              <label for="password" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Contraseña</label>
-              <p-password id="password" [(ngModel)]="credentials.password" placeholder="Contraseña" [toggleMask]="true" styleClass="mb-4" [fluid]="true" [feedback]="false"></p-password>
+              <div>
+                <label for="password" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Contraseña</label>
+                <p-password id="password" [(ngModel)]="credentials.password" placeholder="Contraseña" [toggleMask]="true" [fluid]="true" [feedback]="false"></p-password>
+              </div>
 
-              <label for="role" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Tipo de usuario</label>
-              <p-dropdown
-                id="role"
-                [options]="userRoles"
-                optionLabel="label"
-                optionValue="value"
-                [(ngModel)]="credentials.role"
-                placeholder="Seleccione un rol"
-                class="w-full md:w-[30rem] mb-4"
-                [disabled]="roleDisabled"
-                appendTo="body"
-              ></p-dropdown>
+              <div>
+                <label for="role" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Tipo de usuario</label>
+                <p-dropdown
+                  id="role"
+                  [options]="userRoles"
+                  optionLabel="label"
+                  optionValue="value"
+                  [(ngModel)]="credentials.role"
+                  placeholder="Seleccione un rol"
+                  class="w-full"
+                  [disabled]="roleDisabled"
+                  appendTo="body"
+                  panelStyleClass="full-width-options"
+                ></p-dropdown>
+              </div>
 
-              <div class="flex items-center justify-between mt-2 mb-8 gap-8">
+              <div class="flex items-center justify-between mt-2 mb-4 gap-4">
                 <div class="flex items-center">
                   <p-checkbox [(ngModel)]="checked" id="rememberme1" binary class="mr-2"></p-checkbox>
                   <label for="rememberme1">Recordarme</label>
