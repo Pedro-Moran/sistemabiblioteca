@@ -821,9 +821,48 @@ listarUsuariosOcurrencia(id: number): Observable<OcurrenciaUsuario[]> {
       { headers }
     );
   }
-  reporteEjemplarMasPrestado(): Observable<EjemplarPrestadoDTO[]> {
+  reporteEjemplarMasPrestado(filtros: {
+    sede?: number;
+    tipoMaterial?: number;
+    especialidad?: number;
+    programa?: number;
+    ciclo?: number;
+    numeroIngreso?: string;
+    fechaInicio?: string;
+    fechaFin?: string;
+  } = {}): Observable<EjemplarPrestadoDTO[]> {
     const headers = new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`);
-    return this.http.get<{ status: number; data: EjemplarPrestadoDTO[] }>(`${this.apiUrl}/api/biblioteca/reporte/ejemplar-mas-prestado`, { headers }).pipe(map(resp => resp.data));
+    let params = new HttpParams();
+    if (filtros.sede) {
+      params = params.set('sede', filtros.sede);
+    }
+    if (filtros.tipoMaterial) {
+      params = params.set('tipoMaterial', filtros.tipoMaterial);
+    }
+    if (filtros.especialidad) {
+      params = params.set('especialidad', filtros.especialidad);
+    }
+    if (filtros.programa) {
+      params = params.set('programa', filtros.programa);
+    }
+    if (filtros.ciclo) {
+      params = params.set('ciclo', filtros.ciclo);
+    }
+    if (filtros.numeroIngreso) {
+      params = params.set('numeroIngreso', filtros.numeroIngreso);
+    }
+    if (filtros.fechaInicio) {
+      params = params.set('fechaInicio', filtros.fechaInicio);
+    }
+    if (filtros.fechaFin) {
+      params = params.set('fechaFin', filtros.fechaFin);
+    }
+    return this.http
+      .get<{ status: number; data: EjemplarPrestadoDTO[] }>(
+        `${this.apiUrl}/api/biblioteca/reporte/ejemplar-mas-prestado`,
+        { headers, params }
+      )
+      .pipe(map(resp => resp.data));
   }
 
   reporteEjemplarNoPrestado(): Observable<EjemplarNoPrestadoDTO[]> {

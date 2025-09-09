@@ -32,7 +32,13 @@ public interface BibliotecaService {
     List<DetalleBibliotecaDTO> listarTodosDetallesReservados();
 
     /** Reporte de ejemplares más prestados */
-    List<EjemplarPrestadoDTO> reporteEjemplarMasPrestado();
+    List<EjemplarPrestadoDTO> reporteEjemplarMasPrestado(Long sede,
+                                                         Long tipoMaterial,
+                                                         Long especialidad,
+                                                         Integer ciclo,
+                                                         Long numeroIngreso,
+                                                         java.time.LocalDate fechaInicio,
+                                                         java.time.LocalDate fechaFin);
 
     /** Reporte de ejemplares que nunca fueron prestados */
     List<EjemplarNoPrestadoDTO> reporteEjemplarNoPrestado();
