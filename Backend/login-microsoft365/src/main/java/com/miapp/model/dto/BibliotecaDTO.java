@@ -85,4 +85,5 @@ public class BibliotecaDTO {
     private SedeDTO sede;
     private TipoAdquisicionDTO tipoAdquisicion;
     private List<DetalleBibliotecaDTO> detalles = new ArrayList<>();
+    private List<Integer> ciclos = new ArrayList<>();
 }

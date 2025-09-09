@@ -78,6 +78,7 @@ export interface BibliotecaDTO {
     sede?: Sedes | null;
     tipoAdquisicion?: TipoAdquisicion | null;
     detalles?: DetalleBibliotecaDTO[];
+    ciclos?: number[];
 }
 
 export interface DetalleBibliotecaDTO {

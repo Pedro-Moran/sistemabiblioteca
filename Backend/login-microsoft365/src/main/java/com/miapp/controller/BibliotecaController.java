@@ -201,7 +201,7 @@ public class BibliotecaController {
             @RequestParam(value = "sede",                required = false) Long sedeId,
             @RequestParam(value = "tipoUsuario",         required = false) Long tipoUsuarioId,
             @RequestParam(value = "estado",              required = false) String tipoPrestamo,
-            @RequestParam(value = "escuela",             required = false) Long escuelaId,
+            @RequestParam(value = "especialidad",        required = false) Long especialidadId,
             @RequestParam(value = "programa",            required = false) Long programaId,
             @RequestParam(value = "ciclo",               required = false) String ciclo) {
 
@@ -211,7 +211,7 @@ public class BibliotecaController {
                 sedeId,
                 tipoUsuarioId,
                 tipoPrestamo,
-                escuelaId,
+                especialidadId,
                 programaId,
                 ciclo
         );

@@ -64,19 +64,19 @@ import { environment } from '../../../../../environments/environment';
                           <app-input-validation [form]="formLibro" modelo="especialidad" ver="especialidad"></app-input-validation>
                         </div>
                       </div>
-                      <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
-                        <div class="flex flex-col gap-4 w-full">
+                        <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
+                          <div class="flex items-center gap-2 w-full">
+                            <p-checkbox inputId="enSilabo" formControlName="enSilabo" (onChange)="toggleCiclos()"></p-checkbox>
+                            <label for="enSilabo">¿El material bibliográfico está incluido dentro del sílabo?</label>
+                          </div>
                         </div>
-                      </div>
-                      <div class="flex flex-col md:flex-row gap-x-4 gap-y-2" *ngIf="formLibro.get('enSilabo')?.value">
+                        <div class="flex flex-col md:flex-row gap-x-4 gap-y-2" *ngIf="formLibro.get('enSilabo')?.value">
                         <div class="flex flex-col gap-2 w-full py-2">
                           <label class="font-semibold">Seleccione los ciclos:</label>
                           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-2">
                             <div class="flex items-center" *ngFor="let ciclo of ciclos">
-                              <p-checkbox [id]="'checkCiclo' + ciclo.label" name="option" [value]="ciclo.value"
-                                formControlName="{{ ciclo.formControl }}"></p-checkbox>
+                              <p-checkbox [inputId]="'checkCiclo' + ciclo.label" binary="true" [formControlName]="ciclo.formControl"></p-checkbox>
                               <label [for]="'checkCiclo' + ciclo.label" class="ml-2">{{ ciclo.label }}</label>
-
                             </div>
                           </div>
 
@@ -513,7 +513,8 @@ export class ModalLibroComponent implements OnInit {
         { label: 'XI', value: 11, formControl: 'cicloXI' },
         { label: 'XII', value: 12, formControl: 'cicloXII' },
         { label: 'XIII', value: 13, formControl: 'cicloXIII' },
-        { label: 'XIV', value: 14, formControl: 'cicloXIV' }
+        { label: 'XIV', value: 14, formControl: 'cicloXIV' },
+        { label: 'XV', value: 15, formControl: 'cicloXV' }
     ];
     isEdit = false;
     selectedIndex!: number;
@@ -550,6 +551,8 @@ export class ModalLibroComponent implements OnInit {
             especialidad: [this.objetoLibro.especialidad, Validators.required],
             tipoMaterialId: [null],
 
+            enSilabo: [this.objetoLibro.enSilabo || false],
+            formatoDigital: [this.objetoLibro.formatoDigital || false],
             urlPublicacion: [this.objetoLibro.urlPublicacion],
             descripcion: [this.objetoLibro.descriptores, [
                 Validators.required,
@@ -564,6 +567,22 @@ export class ModalLibroComponent implements OnInit {
                 Validators.maxLength(100),
                 Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\\s./()-]+$') // Permite letras, números, espacios, punto, guion, slash y paréntesis
             ]]
+            ,
+            cicloI: [false],
+            cicloII: [false],
+            cicloIII: [false],
+            cicloIV: [false],
+            cicloV: [false],
+            cicloVI: [false],
+            cicloVII: [false],
+            cicloVIII: [false],
+            cicloIX: [false],
+            cicloX: [false],
+            cicloXI: [false],
+            cicloXII: [false],
+            cicloXIII: [false],
+            cicloXIV: [false],
+            cicloXV: [false]
         });
         this.formEditorial = this.fb.group({
             autorOpcion:[null,Validators.required],
@@ -913,6 +932,9 @@ private buildDto(): BibliotecaDTO {
     };
   });
 
+  const ciclosSeleccionados = this.ciclos
+    .filter(c => this.formLibro.get(c.formControl)?.value)
+    .map(c => c.value);
 
   return {
     /* ------ claves y datos propios de Biblioteca ------ */
@@ -948,6 +970,8 @@ private buildDto(): BibliotecaDTO {
     flasyllabus     : !!libro.enSilabo,
     fladigitalizado : !!libro.formatoDigital,
     linkPublicacion : libro.urlPublicacion,
+
+    ciclos          : ciclosSeleccionados,
 
     usuarioCreacion   : decoded.sub,
     fechaCreacion     : new Date().toISOString(),
@@ -1487,10 +1511,14 @@ public setData(material: BibliotecaDTO, omitPaisCiudad = false): void {
     notasContenido:clone.notaContenido,
     notaGeneral:   clone.notaGeneral,
     especialidad:  clone.idEspecialidad,
-    enSilabo:      clone.enSilabo,
-    formatoDigital:clone.formatoDigital,
+    enSilabo:      clone.flasyllabus,
+    formatoDigital:clone.fladigitalizado,
     urlPublicacion:clone.urlPublicacion,
     descriptores:  clone.descriptores
+  });
+
+  this.ciclos.forEach(c => {
+    this.formLibro.get(c.formControl)?.setValue(clone.ciclos?.includes(c.value) ?? false);
   });
 
   /*-------------------------------------------------------
