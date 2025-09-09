@@ -66,7 +66,7 @@ import { environment } from '../../../../../environments/environment';
                       </div>
                         <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
                           <div class="flex items-center gap-2 w-full">
-                            <p-checkbox inputId="enSilabo" formControlName="enSilabo" (onChange)="toggleCiclos()"></p-checkbox>
+                            <p-checkbox inputId="enSilabo" binary="true" formControlName="enSilabo" (onChange)="toggleCiclos()"></p-checkbox>
                             <label for="enSilabo">¿El material bibliográfico está incluido dentro del sílabo?</label>
                           </div>
                         </div>
@@ -1511,7 +1511,7 @@ public setData(material: BibliotecaDTO, omitPaisCiudad = false): void {
     notasContenido:clone.notaContenido,
     notaGeneral:   clone.notaGeneral,
     especialidad:  clone.idEspecialidad,
-    enSilabo:      clone.flasyllabus,
+    enSilabo:      !!clone.flasyllabus || (clone.ciclos?.length ?? 0) > 0,
     formatoDigital:clone.fladigitalizado,
     urlPublicacion:clone.urlPublicacion,
     descriptores:  clone.descriptores
