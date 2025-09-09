@@ -145,7 +145,7 @@ export class PrestamosService {
     sede?: number | string,
     tipoUsuario?: number | string,
     tipoPrestamo?: string,
-    escuela?: number | string,
+    especialidad?: number | string,
     programa?: number | string,
     ciclo?: number | string,
     fechaInicio?: string,
@@ -162,7 +162,7 @@ export class PrestamosService {
     agregarParam('sede', sede);
     agregarParam('tipoUsuario', tipoUsuario);
     agregarParam('estado', tipoPrestamo);
-    agregarParam('escuela', escuela);
+    agregarParam('especialidad', especialidad);
     agregarParam('programa', programa);
     agregarParam('ciclo', ciclo);
     if (fechaInicio) params = params.set('fechaPrestamoInicio', fechaInicio);

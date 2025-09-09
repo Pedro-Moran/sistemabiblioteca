@@ -107,6 +107,19 @@ public class BibliotecaMapper {
             b.setTipoAdquisicion(ta);
         }
 
+        if (dto.getCiclos() != null) {
+            List<BibliotecaCiclo> ciclos = dto.getCiclos().stream()
+                    .distinct()
+                    .map(c -> {
+                        BibliotecaCiclo bc = new BibliotecaCiclo();
+                        bc.setCiclo(c);
+                        bc.setBiblioteca(b);
+                        bc.setIdEstado(1L);
+                        return bc;
+                    }).collect(Collectors.toList());
+            b.setCiclos(ciclos);
+        }
+
         return b;
     }
 
@@ -212,6 +225,13 @@ public class BibliotecaMapper {
                     b.getEspecialidad().getIdEspecialidad(),
                     b.getEspecialidad().getDescripcion()
             ));
+        }
+        if (b.getCiclos() != null) {
+            dto.setCiclos(
+                    b.getCiclos().stream()
+                            .map(BibliotecaCiclo::getCiclo)
+                            .collect(Collectors.toList())
+            );
         }
         return dto;
     }

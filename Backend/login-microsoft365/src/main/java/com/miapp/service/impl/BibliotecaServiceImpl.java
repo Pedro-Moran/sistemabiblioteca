@@ -46,6 +46,7 @@ public class BibliotecaServiceImpl implements BibliotecaService {
     private final NotificacionService notificacionService;
     private final EmailService emailService;
     private final FileStorageService fileStorageService;
+    private final BibliotecaCicloRepository bibliotecaCicloRepository;
 
     public BibliotecaServiceImpl(BibliotecaRepository bibliotecaRepository,
                                  TipoAdquisicionRepository tipoAdquisicionRepository,
@@ -62,7 +63,8 @@ public class BibliotecaServiceImpl implements BibliotecaService {
                                  OcurrenciaBibliotecaRepository ocurrenciaBibliotecaRepository,
                                  NotificacionService notificacionService,
                                  EmailService emailService,
-                                 FileStorageService fileStorageService) {
+                                 FileStorageService fileStorageService,
+                                 BibliotecaCicloRepository bibliotecaCicloRepository) {
         this.bibliotecaRepository = bibliotecaRepository;
         this.tipoAdquisicionRepository  = tipoAdquisicionRepository;
         this.especialidadRepository = especialidadRepository;
@@ -79,6 +81,7 @@ public class BibliotecaServiceImpl implements BibliotecaService {
         this.notificacionService = notificacionService;
         this.emailService = emailService;
         this.fileStorageService = fileStorageService;
+        this.bibliotecaCicloRepository = bibliotecaCicloRepository;
     }
 
     @Override
@@ -108,6 +111,8 @@ public class BibliotecaServiceImpl implements BibliotecaService {
     public Biblioteca update(Long id, BibliotecaDTO dto, MultipartFile portada) {
         Biblioteca existente = bibliotecaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("No existe Biblioteca " + id));
+        // Eliminamos los ciclos existentes para evitar duplicidades
+        bibliotecaCicloRepository.deleteByBibliotecaId(id);
 
         // Volvemos a mapearlo por completo (incluyendo detalles)
         Biblioteca bib = mapToEntity(dto);
@@ -231,6 +236,20 @@ public class BibliotecaServiceImpl implements BibliotecaService {
                     .orElseThrow(() -> new RuntimeException("TipoMaterial no encontrado: " + dto.getTipoMaterialId()));
             b.setTipoMaterial(tm);
         }
+
+        b.getCiclos().clear();
+        if (dto.getCiclos() != null) {
+            List<BibliotecaCiclo> ciclos = dto.getCiclos().stream()
+                    .map(c -> {
+                        BibliotecaCiclo bc = new BibliotecaCiclo();
+                        bc.setCiclo(c);
+                        bc.setBiblioteca(b);
+                        bc.setIdEstado(1L);
+                        return bc;
+                    }).collect(Collectors.toList());
+            b.getCiclos().addAll(ciclos);
+        }
+
         List<DetalleBiblioteca> lista = dto.getDetalles() == null
                 ? List.of()
                 : dto.getDetalles().stream().map(det -> {

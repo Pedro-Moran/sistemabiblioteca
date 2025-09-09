@@ -116,7 +116,7 @@ public class DetalleBibliotecaService {
             Long sedeId,
             Long tipoUsuarioId,
             String tipoPrestamo,
-            Long escuelaId,
+            Long especialidadId,
             Long programaId,
             String ciclo) {
 
@@ -141,6 +141,10 @@ public class DetalleBibliotecaService {
                 // Filtra por tipo de préstamo si corresponde
                 .filter(det -> tipoNormalizado == null ||
                         tipoNormalizado.equalsIgnoreCase(normalizeTipoPrestamo(det.getTipoPrestamo())))
+                // Filtra por especialidad de la cabecera Biblioteca
+                .filter(det -> especialidadId == null ||
+                        (det.getBiblioteca() != null && det.getBiblioteca().getEspecialidad() != null &&
+                                especialidadId.equals(det.getBiblioteca().getEspecialidad().getIdEspecialidad())))
                 // Asocia usuario para aplicar filtros adicionales
                 .map(det -> new AbstractMap.SimpleEntry<>(det,
                         usuarioRepository.findByLoginIgnoreCase(det.getCodigoUsuario())))
@@ -148,12 +152,6 @@ public class DetalleBibliotecaService {
                     Usuario u = entry.getValue().orElse(null);
                     if (tipoUsuarioId != null) {
                         if (u == null || u.getRoles().stream().noneMatch(r -> r.getIdRol().equals(tipoUsuarioId))) {
-                            return false;
-                        }
-                    }
-                    if (escuelaId != null) {
-                        if (u == null || u.getEspecialidad() == null ||
-                                !u.getEspecialidad().getIdEspecialidad().equals(escuelaId)) {
                             return false;
                         }
                     }

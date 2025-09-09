@@ -128,4 +128,10 @@ public class Biblioteca {
             orphanRemoval = true,
             fetch = FetchType.LAZY)
     private List<DetalleBiblioteca> detalles = new ArrayList<>();
+
+    @OneToMany(mappedBy = "biblioteca",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    private List<BibliotecaCiclo> ciclos = new ArrayList<>();
 }

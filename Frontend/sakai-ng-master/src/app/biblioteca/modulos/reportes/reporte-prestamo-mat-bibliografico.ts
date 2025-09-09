@@ -70,10 +70,10 @@ import { HttpClient } from '@angular/common/http';
           </p-dropdown>
         </div>
         <div class="field col-12 md:col-3">
-          <label>Escuela</label>
+          <label>Especialidad</label>
           <p-dropdown
             class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
-            [options]="dataEscuela" optionLabel="descripcion" [(ngModel)]="escuelaFiltro" placeholder="Todas">
+            [options]="dataEspecialidad" optionLabel="descripcion" [(ngModel)]="especialidadFiltro" placeholder="Todas">
           </p-dropdown>
         </div>
         <div class="field col-12 md:col-3">
@@ -162,13 +162,13 @@ export class ReportePrestamoMatBibliografico implements OnInit {
   dataSede: Sedes[]               = [];
   dataTipoUsuario: ClaseGeneral[] = [];
   dataEstado: ClaseGeneral[]      = [];
-  dataEscuela: ClaseGeneral[]     = [];
+  dataEspecialidad: ClaseGeneral[] = [];
   dataPrograma: ClaseGeneral[]    = [];
   dataCiclo: ClaseGeneral[]       = [];
 
   sedeFiltro?:        Sedes;
   tipoUsuarioFiltro?: ClaseGeneral;
-  escuelaFiltro?:     ClaseGeneral;
+  especialidadFiltro?: ClaseGeneral;
   programaFiltro?:    ClaseGeneral;
   cicloFiltro?:       ClaseGeneral;
 
@@ -199,7 +199,7 @@ export class ReportePrestamoMatBibliografico implements OnInit {
         const filtros = await this.filtrosService.cargarFiltros();
         this.dataSede        = filtros.sedes;
         this.dataTipoUsuario = filtros.tipoUsuarios;
-        this.dataEscuela     = filtros.especialidades;
+        this.dataEspecialidad = filtros.especialidades;
         this.dataPrograma    = filtros.programas;
         this.dataCiclo       = filtros.ciclos;
       }
@@ -227,7 +227,7 @@ async reporte() {
         this.sedeFiltro?.id,
         this.tipoUsuarioFiltro?.id,
         estado,
-        this.escuelaFiltro?.id,
+        this.especialidadFiltro?.id,
         this.programaFiltro?.id,
         this.cicloFiltro?.id,
         fi,
