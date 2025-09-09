@@ -19,7 +19,6 @@ import { MaterialBibliograficoService } from '../../../services/material-bibliog
 import { TemplateModule } from '../../../template.module';
 import { BibliotecaVirtualService } from '../../../services/biblioteca-virtual.service';
 import { Tipo } from '../../../interfaces/prestamos/tipo';
-import { DevolucionesService } from '../../../services/devoluciones.service';
 import { PrestamosService } from '../../../services/prestamos.service';
 import { ModalNuevoOcurencia } from '../../laboratorio-computo/modal-nuevo-ocurrencia';
 
@@ -107,7 +106,6 @@ import { ModalNuevoOcurencia } from '../../laboratorio-computo/modal-nuevo-ocurr
                             <th pSortableColumn="fechaPrestamo" style="width: 8rem">Fecha de préstamo<p-sortIcon
                                 field="fechaPrestamo"></p-sortIcon></th>
                             <th style="width: 8rem">Devolver</th>
-                            <th style="width: 8rem">Cancelar</th>
                             <th style="width:8rem">Ocurrencia</th>
                           </tr>
                         </ng-template>
@@ -143,10 +141,6 @@ import { ModalNuevoOcurencia } from '../../laboratorio-computo/modal-nuevo-ocurr
 
                             </td>
                             <td>
-                              <p-button icon="pi pi-times" rounded outlined (click)="cancelar(objeto)" pTooltip="Cancelar"
-                                tooltipPosition="bottom" />
-                            </td>
-                            <td>
                                <p-button
                                  icon="pi pi-file"
                                  rounded
@@ -161,12 +155,12 @@ import { ModalNuevoOcurencia } from '../../laboratorio-computo/modal-nuevo-ocurr
 
                         <ng-template pTemplate="emptymessage">
                           <tr>
-                            <td colspan="8">No se encontraron registros.</td>
+                            <td colspan="9">No se encontraron registros.</td>
                           </tr>
                         </ng-template>
                         <ng-template pTemplate="loadingbody">
                           <tr>
-                            <td colspan="8">Cargando datos. Espere por favor.</td>
+                            <td colspan="9">Cargando datos. Espere por favor.</td>
                           </tr>
                         </ng-template>
                       </p-table>
@@ -186,7 +180,6 @@ export class DevolucionBibliotecaVirtual implements OnInit {
     titulo: string = "Devoluciones";
     data: any[] = [];
     detalle: any[] = [];
-    modulo: string = "aceptaciones";
     loading: boolean = true;
     objeto: Ejemplar = new Ejemplar();
     objetoDialog!: boolean;
@@ -208,7 +201,7 @@ export class DevolucionBibliotecaVirtual implements OnInit {
     todosPrestamos: any[] = [];
     @ViewChild('modalOcurrencia') modal!: ModalNuevoOcurencia;
 
-    constructor(private bibliotecaVirtualService: BibliotecaVirtualService,private devolucionesService: DevolucionesService,private prestamosService: PrestamosService,private materialBibliograficoService: MaterialBibliograficoService, private genericoService: GenericoService, private fb: FormBuilder,
+    constructor(private bibliotecaVirtualService: BibliotecaVirtualService, private prestamosService: PrestamosService,private materialBibliograficoService: MaterialBibliograficoService, private genericoService: GenericoService, private fb: FormBuilder,
         private router: Router, private authService: AuthService, private confirmationService: ConfirmationService, private messageService: MessageService) { }
     async ngOnInit() {
         // this.user = this.authService.getUser();
@@ -395,7 +388,7 @@ onAbrirOcurrencia(item: any) {
             rejectLabel: 'NO',
             accept: () => {
             this.loading = true;
-            this.bibliotecaVirtualService.devolver(objeto.id)     // <-- Llamas a tu DevolucionesService
+            this.bibliotecaVirtualService.devolver(objeto.id)
               .subscribe({
                 next: res => {
                   if (res.status === '0') {
@@ -413,43 +406,6 @@ onAbrirOcurrencia(item: any) {
           }
         });
       }
-    cancelar(objeto: any) {
-        this.confirmationService.confirm({
-            message: '¿Estás seguro(a) de cancelar el prestamo del equipo de computo?',
-            header: 'Confirmar',
-            icon: 'pi pi-exclamation-triangle',
-            acceptLabel: 'SI',
-            rejectLabel: 'NO',
-            accept: () => {
-            this.loading = true;
-            this.bibliotecaVirtualService.cancelar(objeto.id)
-              .subscribe({
-                next: res => {
-                  if (res.status === '0') {
-                    this.messageService.add({
-                      severity: 'success',
-                      detail: 'Préstamo cancelado.'
-                    });
-                    this.listar();    // vuelve a cargar la lista
-                  } else {
-                    this.messageService.add({
-                      severity: 'error',
-                      detail: 'No se pudo cancelar el préstamo.'
-                    });
-                  }
-                },
-                error: () => {
-                  this.messageService.add({
-                    severity: 'error',
-                    detail: 'Error de red al cancelar.'
-                  });
-                }
-              })
-              .add(() => this.loading = false);
-          }
-        });
-      }
-
 
     onRowExpand(event: TableRowExpandEvent) {
     }

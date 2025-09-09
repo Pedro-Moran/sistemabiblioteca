@@ -148,7 +148,6 @@ interface PrestamoUsuario {
                 <th>Fecha de préstamo</th>
                 <th>Hora de préstamo</th>
                 <th>Devolver</th>
-                <th>Cancelar</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-bib>
@@ -166,9 +165,6 @@ interface PrestamoUsuario {
                 </td>
                 <td>
                 <p-button icon="pi pi-check" rounded outlined (click)="devolver(bib)" pTooltip="Devolver" tooltipPosition="bottom"/>
-                </td>
-                <td>
-                <p-button icon="pi pi-times" rounded outlined (click)="cancelar(bib)"pTooltip="Cancelar" tooltipPosition="bottom"/>
                 </td>
             </tr>
         </ng-template>
@@ -203,7 +199,6 @@ export class DevolucionMaterialBibliografico implements OnInit {
     prestadosDetalle: PrestamoUsuario[] = [];
     expandedRows: { [key: string]: boolean } = {};
 
-    modulo: string = "aceptaciones";
     loading: boolean = true;
 
     objetoDialog!: boolean;
@@ -494,35 +489,6 @@ export class DevolucionMaterialBibliografico implements OnInit {
             }
           });
     }
-    cancelar(objeto: any) {
-        this.confirmationService.confirm({
-            message: '¿Estás seguro(a) de cancelar la reserva del ejemplar?',
-            header: 'Confirmar',
-            icon: 'pi pi-exclamation-triangle',
-            acceptLabel: 'SI',
-            rejectLabel: 'NO',
-            accept: () => {
-              this.loading = true;
-              const data = { id: objeto.idDetalleBiblioteca };
-              this.genericoService.conf_event_delete(data, this.modulo + '/cancelar')
-                .subscribe(result => {
-                  if (result.p_status == 0) {
-                    this.objetoDialog = false;
-                    this.messageService.add({ severity: 'success', summary: 'Satisfactorio', detail: 'Registro cancelado.' });
-                    this.listar();
-                  } else {
-                    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo realizar el proceso.' });
-                  }
-                  this.loading = false;
-                }
-                  , (error: HttpErrorResponse) => {
-                    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrio un error. Intentelo más tarde' });
-                    this.loading = false;
-                  });
-            }
-          });
-    }
-
     regularizarPrestamo(){
 
     }
