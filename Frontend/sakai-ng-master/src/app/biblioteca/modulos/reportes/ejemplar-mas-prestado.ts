@@ -96,6 +96,11 @@ import { ReportesFiltroService } from '../../services/reportes-filtro.service';
             <tr>
                 <th>ID</th>
                 <th>Título</th>
+                <th>Ciclo</th>
+                <th>Código de localización</th>
+                <th>Nro Ingreso</th>
+                <th>Año</th>
+                <th>Autor</th>
                 <th>Préstamos</th>
             </tr>
         </ng-template>
@@ -103,6 +108,11 @@ import { ReportesFiltroService } from '../../services/reportes-filtro.service';
             <tr>
                 <td>{{ row.idDetalle }}</td>
                 <td>{{ row.titulo }}</td>
+                <td>{{ row.ciclo }}</td>
+                <td>{{ row.codigoLocalizacion }}</td>
+                <td>{{ row.numeroIngreso }}</td>
+                <td>{{ row.anio }}</td>
+                <td>{{ row.autor }}</td>
                 <td>{{ row.totalPrestamos }}</td>
             </tr>
         </ng-template>
@@ -196,10 +206,21 @@ export class ReporteEjemplarMasPrestado {
         title.alignment = { vertical: 'middle', horizontal: 'center' };
         title.font = { size: 16, bold: true };
         ws.addRow([]);
-        const headerRow = ws.addRow(['ID', 'Título', 'Préstamos']);
+        const headerRow = ws.addRow(['ID', 'Título', 'Ciclo', 'Código de localización', 'Nro Ingreso', 'Año', 'Autor', 'Préstamos']);
         headerRow.font = { bold: true };
         headerRow.alignment = { horizontal: 'center' };
-        this.resultados.forEach(r => ws.addRow([r.idDetalle, r.titulo, r.totalPrestamos]));
+        this.resultados.forEach(r =>
+            ws.addRow([
+                r.idDetalle,
+                r.titulo,
+                r.ciclo,
+                r.codigoLocalizacion,
+                r.numeroIngreso,
+                r.anio,
+                r.autor,
+                r.totalPrestamos,
+            ])
+        );
         ws.columns.forEach(col => (col.width = 25));
         const buf = await wb.xlsx.writeBuffer();
         saveAs(new Blob([buf]), 'ejemplares_mas_prestados.xlsx');
@@ -221,8 +242,17 @@ export class ReporteEjemplarMasPrestado {
             const hoy = new Date();
             doc.text(`Fecha de emisión: ${hoy.toLocaleDateString()}`, 80, 25);
             autoTable(doc, {
-                head: [['ID', 'Título', 'Préstamos']],
-                body: this.resultados.map(r => [r.idDetalle, r.titulo, r.totalPrestamos]),
+                head: [['ID', 'Título', 'Ciclo', 'Código de localización', 'Nro Ingreso', 'Año', 'Autor', 'Préstamos']],
+                body: this.resultados.map(r => [
+                    r.idDetalle,
+                    r.titulo,
+                    r.ciclo,
+                    r.codigoLocalizacion,
+                    r.numeroIngreso,
+                    r.anio,
+                    r.autor,
+                    r.totalPrestamos,
+                ]),
                 startY: 35,
                 styles: { fontSize: 8 },
                 headStyles: { fillColor: [41, 128, 185] }
