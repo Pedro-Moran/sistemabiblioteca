@@ -8,6 +8,7 @@ import { ClaseGeneral } from '../../interfaces/clase-general';
 import { PrestamosService } from '../../services/prestamos.service';
 import { VisitanteBibliotecaVirtualDTO } from '../../interfaces/reportes/visitante-biblioteca-virtual';
 import { ReportesFiltroService } from '../../services/reportes-filtro.service';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 @Component({
     selector: 'app-reporte-visitantes-biblioteca',
@@ -16,7 +17,7 @@ import { ReportesFiltroService } from '../../services/reportes-filtro.service';
         <div class="card flex flex-col gap-4 w-full">
     <h5>{{titulo}}</h5>
     <p-toolbar styleClass="mb-6">
-    <div class="flex flex-col w-full gap-4">
+    <form [formGroup]="form" class="flex flex-col w-full gap-4">
                 <!-- Primera fila: Sede (2 col), Programa (2 col) y Escuela (3 col) -->
                 <div class="grid grid-cols-7 gap-4">
                     <div class="flex flex-col gap-2 col-span-7 md:col-span-2 lg:col-span-2">
@@ -79,7 +80,7 @@ import { ReportesFiltroService } from '../../services/reportes-filtro.service';
                     </div>
                 </div>
 
-            </div>
+            </form>
 
     </p-toolbar>
     <p-table [value]="resultados" [paginator]="true" [rows]="10" [loading]="loading">
@@ -101,6 +102,13 @@ import { ReportesFiltroService } from '../../services/reportes-filtro.service';
                 <td>{{ row.apellidosNombres }}</td>
                 <td>{{ row.tipoUsuario }}</td>
                 <td>{{ row.totalVisitas }}</td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="6">
+                    {{ busquedaRealizada ? 'No se encontraron registros.' : 'Seleccione un rango de fechas para mostrar resultados.' }}
+                </td>
             </tr>
         </ng-template>
     </p-table>
@@ -129,13 +137,19 @@ export class ReporteVisitantesBibliotecaVirtual {
     basededatosFiltro: ClaseGeneral = new ClaseGeneral();
     dataTipoPrestamo: ClaseGeneral[] = [];
     tipoPrestamoFiltro: ClaseGeneral = new ClaseGeneral();
-    loading: boolean = true;
+    loading: boolean = false;
     resultados: VisitanteBibliotecaVirtualDTO[] = [];
+    busquedaRealizada: boolean = false;
+    form: FormGroup;
 
-    constructor(private svc: PrestamosService, private messageService: MessageService, private filtrosService: ReportesFiltroService) {}
+    constructor(private svc: PrestamosService, private messageService: MessageService, private filtrosService: ReportesFiltroService, private fb: FormBuilder) {
+        this.form = this.fb.group({
+            fechaInicio: [null, Validators.required],
+            fechaFin: [null, Validators.required],
+        });
+    }
     async ngOnInit() {
         await this.cargarFiltros();
-        await this.reporte();
     }
     private async cargarFiltros() {
         const filtros = await this.filtrosService.cargarFiltros();
@@ -151,10 +165,16 @@ export class ReporteVisitantesBibliotecaVirtual {
         this.cicloFiltro = this.dataCiclo[0];
     }
     async reporte() {
+        if (this.form.invalid) {
+            this.messageService.add({ severity: 'warn', detail: 'Seleccione un rango de fechas.' });
+            return;
+        }
         this.loading = true;
+        this.busquedaRealizada = true;
+        const { fechaInicio, fechaFin } = this.form.value;
         try {
             this.resultados =
-                (await firstValueFrom(this.svc.reporteVisitantesBibliotecaVirtual())) ?? [];
+                (await firstValueFrom(this.svc.reporteVisitantesBibliotecaVirtual(fechaInicio, fechaFin))) ?? [];
         } catch (error: any) {
             const msg = error?.status === 403 ? 'No autorizado para ver el reporte.' : 'No fue posible cargar los datos.';
             this.messageService.add({ severity: 'error', detail: msg });

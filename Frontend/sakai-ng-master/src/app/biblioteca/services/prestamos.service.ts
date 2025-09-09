@@ -229,10 +229,15 @@ export class PrestamosService {
             .pipe(map((resp) => resp.data ?? []));
     }
     /** Obtiene los visitantes de biblioteca virtual */
-    reporteVisitantesBibliotecaVirtual(): Observable<VisitanteBibliotecaVirtualDTO[]> {
+    reporteVisitantesBibliotecaVirtual(fechaInicio?: string, fechaFin?: string): Observable<VisitanteBibliotecaVirtualDTO[]> {
+        let params = new HttpParams();
+        if (fechaInicio) params = params.set('fechaInicio', fechaInicio);
+        if (fechaFin) params = params.set('fechaFin', fechaFin);
+
         return this.http
             .get<{ status: string; data: VisitanteBibliotecaVirtualDTO[] }>(
-                `${this.apiUrl}/api/prestamos/reporte/visitantes-biblioteca-virtual`
+                `${this.apiUrl}/api/prestamos/reporte/visitantes-biblioteca-virtual`,
+                { params }
             )
             .pipe(map((resp) => resp.data ?? []));
     }
