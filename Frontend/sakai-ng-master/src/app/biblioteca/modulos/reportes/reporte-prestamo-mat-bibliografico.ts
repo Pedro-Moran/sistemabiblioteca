@@ -124,7 +124,7 @@ import { HttpClient } from '@angular/common/http';
       <ng-template pTemplate="header">
         <tr>
           <th>Material</th>
-          <th>Alcance</th>
+          <th>N° Ingreso</th>
           <th>Usuario</th>
           <th>Especialidad</th>
           <th>Sede</th>
@@ -136,11 +136,11 @@ import { HttpClient } from '@angular/common/http';
       </ng-template>
       <ng-template pTemplate="body" let-row>
         <tr>
-          <td>{{ row.material?.titulo }}</td>
-          <td>{{ row.alcance }}</td>
+          <td>{{ row.material?.titulo ?? row.titulo }}</td>
+          <td>{{ row.material?.numeroIngreso ?? row.numeroIngreso }}</td>
           <td>{{ row.codigoUsuario }}</td>
-          <td>{{ row.especialidad }}</td>
-          <td>{{ row.equipo?.sede?.descripcion }}</td>
+          <td>{{ row.material?.especialidad?.descripcion ?? row.especialidad }}</td>
+          <td>{{ row.equipo?.sede?.descripcion ?? row.codigoSede }}</td>
           <td>{{ row.usuarioPrestamo }}</td>
           <td>{{ row.fechaPrestamo | date:'dd/MM/yyyy HH:mm' }}</td>
           <td>{{ row.usuarioRecepcion || '-' }}</td>
@@ -190,7 +190,6 @@ export class ReportePrestamoMatBibliografico implements OnInit {
       async ngOnInit() {
         await this.cargarFiltros();
         await this.cargarEstados();
-        await this.reporte();
       }
 
       private async cargarFiltros() {
@@ -203,21 +202,21 @@ export class ReportePrestamoMatBibliografico implements OnInit {
       }
 
 async reporte() {
+  if (!this.fechaInicio || !this.fechaFin) {
+    this.messageService.add({ severity: 'warn', detail: 'Seleccione fecha inicio y fin.' });
+    return;
+  }
+
   this.loading = true;
 
   const pad = (n: number) => n.toString().padStart(2, '0');
-  const fi = this.fechaInicio
-    ? `${pad(this.fechaInicio.getDate())}/${pad(this.fechaInicio.getMonth()+1)}/${this.fechaInicio.getFullYear()}`
-    : undefined;
-  const ff = this.fechaFin
-    ? `${pad(this.fechaFin.getDate())}/${pad(this.fechaFin.getMonth()+1)}/${this.fechaFin.getFullYear()}`
-    : undefined;
+  const fi = `${pad(this.fechaInicio.getDate())}/${pad(this.fechaInicio.getMonth()+1)}/${this.fechaInicio.getFullYear()}`;
+  const ff = `${pad(this.fechaFin.getDate())}/${pad(this.fechaFin.getMonth()+1)}/${this.fechaFin.getFullYear()}`;
   const estado = this.tipoPrestamoFiltro ?? undefined;
 
   try {
-    // Forzamos un array vacío si la llamada devolviera undefined
     const data = (await this.svc
-      .listar(
+      .listarMaterialesPrestados(
         this.sedeFiltro?.id,
         this.tipoUsuarioFiltro?.id,
         estado,
@@ -225,8 +224,7 @@ async reporte() {
         this.programaFiltro?.id,
         this.cicloFiltro?.id,
         fi,
-        ff,
-        'materiales'
+        ff
       )
       .toPromise()) ?? [];
 
@@ -292,7 +290,7 @@ async reporte() {
     // …
 
     // 4) Encabezados de la tabla
-    const headerRow = ws.addRow([ 'Material', 'Alcance', 'Usuario', 'Especialidad',
+    const headerRow = ws.addRow([ 'Material', 'N° Ingreso', 'Usuario', 'Especialidad',
                                                 'Sede', 'Usuario Préstamo', 'Fecha Préstamo',
                                                 'Usuario Recepción', 'Fecha Recepción' ]);
     headerRow.font = { bold: true };
@@ -301,11 +299,11 @@ async reporte() {
     // 5) Filas de datos
     this.resultados.forEach(r => {
       ws.addRow([
-        r.material?.titulo ?? '',
-        r.alcance,
+        r.material?.titulo ?? r.titulo ?? '',
+        r.material?.numeroIngreso ?? r.numeroIngreso ?? '',
         r.codigoUsuario ?? r.usuarioPrestamo ?? '',
-        r.especialidad,
-        r.equipo?.sede?.descripcion ?? '',
+        r.material?.especialidad?.descripcion ?? r.especialidad ?? '',
+        r.equipo?.sede?.descripcion ?? r.codigoSede ?? '',
         r.usuarioPrestamo,
         r.fechaPrestamo,
         r.usuarioRecepcion || '-',
@@ -353,16 +351,16 @@ async reporte() {
     // 5) Generar la tabla con autoTable
     autoTable(doc, {
       head: [[
-        'Material', 'Alcance', 'Usuario', 'Especialidad',
+        'Material', 'N° Ingreso', 'Usuario', 'Especialidad',
         'Sede', 'Usuario Préstamo', 'Fecha Préstamo',
         'Usuario Recepción', 'Fecha Recepción'
       ]],
       body: this.resultados.map(r => [
-        r.material?.titulo ?? '',
-        r.alcance,
+        r.material?.titulo ?? r.titulo ?? '',
+        r.material?.numeroIngreso ?? r.numeroIngreso ?? '',
         r.codigoUsuario ?? r.usuarioPrestamo ?? '',
-        r.especialidad,
-        r.equipo?.sede?.descripcion ?? '',
+        r.material?.especialidad?.descripcion ?? r.especialidad ?? '',
+        r.equipo?.sede?.descripcion ?? r.codigoSede ?? '',
         r.usuarioPrestamo,
         r.fechaPrestamo,
         r.usuarioRecepcion || '-',

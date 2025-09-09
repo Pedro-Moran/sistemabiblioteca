@@ -193,10 +193,28 @@ public class BibliotecaController {
 
 
 
-    /** Lista los ejemplares prestados (idEstado = 4) */
+    /** Lista los ejemplares prestados filtrando por los parámetros indicados */
     @GetMapping("/prestados")
-    public ResponseEntity<?> listPrestados() {
-        List<DetalleBibliotecaDTO> dtos = detalleService.findDetallesPrestados();
+    public ResponseEntity<?> listPrestados(
+            @RequestParam(value = "fechaPrestamoInicio", required = false) String fechaInicio,
+            @RequestParam(value = "fechaPrestamoFin",    required = false) String fechaFin,
+            @RequestParam(value = "sede",                required = false) Long sedeId,
+            @RequestParam(value = "tipoUsuario",         required = false) Long tipoUsuarioId,
+            @RequestParam(value = "estado",              required = false) String tipoPrestamo,
+            @RequestParam(value = "escuela",             required = false) Long escuelaId,
+            @RequestParam(value = "programa",            required = false) Long programaId,
+            @RequestParam(value = "ciclo",               required = false) String ciclo) {
+
+        List<DetalleBibliotecaDTO> dtos = detalleService.findDetallesPrestados(
+                fechaInicio,
+                fechaFin,
+                sedeId,
+                tipoUsuarioId,
+                tipoPrestamo,
+                escuelaId,
+                programaId,
+                ciclo
+        );
         return ResponseEntity.ok(Map.of("status", 0, "data", dtos));
     }
 
