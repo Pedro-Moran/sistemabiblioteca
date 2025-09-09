@@ -178,12 +178,24 @@ export class ReporteEjemplarMasPrestado {
         this.dataCiclo = filtros.ciclos;
         this.cicloFiltro = this.dataCiclo[0];
     }
+    private formatDate(fecha: Date | null): string | undefined {
+        return fecha ? fecha.toISOString().split('T')[0] : undefined;
+    }
     async reporte() {
         this.loading = true;
         try {
             this.resultados =
                 (await this.svc
-                    .reporteEjemplarMasPrestado()
+                    .reporteEjemplarMasPrestado({
+                        sede: this.sedeFiltro?.id,
+                        tipoMaterial: this.tipoMaterialFiltro?.id,
+                        especialidad: this.especialidadFiltro?.id,
+                        programa: this.programaFiltro?.id,
+                        ciclo: this.cicloFiltro?.id,
+                        numeroIngreso: this.nroIngreso || undefined,
+                        fechaInicio: this.formatDate(this.fechaInicio),
+                        fechaFin: this.formatDate(this.fechaFin)
+                    })
                     .toPromise()) ?? [];
         } finally {
             this.loading = false;

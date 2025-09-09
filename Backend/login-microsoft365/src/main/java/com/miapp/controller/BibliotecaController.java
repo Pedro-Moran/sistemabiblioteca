@@ -13,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
@@ -269,8 +270,22 @@ public class BibliotecaController {
     }
 
     @GetMapping("/reporte/ejemplar-mas-prestado")
-    public ResponseEntity<?> reporteEjemplarMasPrestado() {
-        return ResponseEntity.ok(Map.of("status", 0, "data", bibliotecaService.reporteEjemplarMasPrestado()));
+    public ResponseEntity<?> reporteEjemplarMasPrestado(@RequestParam(required = false) Long sede,
+                                                        @RequestParam(required = false) Long tipoMaterial,
+                                                        @RequestParam(required = false) Long especialidad,
+                                                        @RequestParam(required = false) Integer ciclo,
+                                                        @RequestParam(required = false) Long numeroIngreso,
+                                                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate fechaInicio,
+                                                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate fechaFin) {
+        return ResponseEntity.ok(Map.of("status", 0, "data",
+                bibliotecaService.reporteEjemplarMasPrestado(
+                        sede,
+                        tipoMaterial,
+                        especialidad,
+                        ciclo,
+                        numeroIngreso,
+                        fechaInicio,
+                        fechaFin)));
     }
 
     @GetMapping("/reporte/ejemplar-no-prestados")
