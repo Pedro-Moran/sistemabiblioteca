@@ -11,18 +11,22 @@ import { DialogModule } from 'primeng/dialog';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { OverlayBadgeModule } from 'primeng/overlaybadge';
+import { BadgeModule } from 'primeng/badge';
 import { MenuModule } from 'primeng/menu';
+import { TabViewModule } from 'primeng/tabview';
 import { Menu } from 'primeng/menu';
 import { Notificacion } from '../../biblioteca/interfaces/notificacion';
-import { OcurrenciaDTO } from '../../biblioteca/interfaces/ocurrenciaDTO';
+import { DetallePrestamo } from '../../biblioteca/interfaces/detalle-prestamo';
 import { PrestamosService } from '../../biblioteca/services/prestamos.service';
-import { OcurrenciasService } from '../../biblioteca/services/ocurrencias.service';
 import { AuthService } from '../../biblioteca/services/auth.service';
+import { OcurrenciasService } from '../../biblioteca/services/ocurrencias.service';
+import { MaterialBibliograficoService } from '../../biblioteca/services/material-bibliografico.service';
+import { OcurrenciaDTO } from '../../biblioteca/interfaces/ocurrenciaDTO';
 
 @Component({
     selector: 'app-topbar',
     standalone: true,
-    imports: [RouterModule, CommonModule, StyleClassModule, StyleClassModule, OverlayPanelModule, DialogModule, TableModule, ButtonModule, OverlayBadgeModule, MenuModule],
+    imports: [RouterModule, CommonModule, StyleClassModule, StyleClassModule, OverlayPanelModule, DialogModule, TableModule, ButtonModule, OverlayBadgeModule, BadgeModule, MenuModule, TabViewModule],
     styles: [
       `.highlight-row { animation: fadeHighlight 2s ease-in-out forwards; }
        @keyframes fadeHighlight { from { background-color: #ffe08a; } to { background-color: transparent; } }`
@@ -69,90 +73,120 @@ import { AuthService } from '../../biblioteca/services/auth.service';
                     <p-menu #profileMenu [popup]="true" [model]="profileItems" appendTo="body"></p-menu>
 
                     <p-overlayPanel #op [dismissable]="true">
-                      <ng-container>
-                        <p-overlaybadge *ngIf="solicitudesNuevas" [value]="solicitudesNuevas" severity="danger">
-                          <button
-                            pButton
-                            type="button"
-                            class="w-full text-left p-button-text"
-                            (click)="abrirSolicitudes(); op.hide()"
-                          >
-                            Solicitudes
-                          </button>
-                        </p-overlaybadge>
+                      <p-overlaybadge *ngIf="prestamosNuevos" [value]="prestamosNuevos" severity="danger">
                         <button
-                          *ngIf="!solicitudesNuevas"
                           pButton
                           type="button"
                           class="w-full text-left p-button-text"
-                          (click)="abrirSolicitudes(); op.hide()"
+                          (click)="abrirMisPrestamos(); op.hide()"
                         >
-                          Solicitudes
+                          Mis Préstamos
                         </button>
-                      </ng-container>
-                      <ng-container>
-                        <p-overlaybadge *ngIf="ocurrenciasNuevas" [value]="ocurrenciasNuevas" severity="danger">
+                      </p-overlaybadge>
                       <button
+                        *ngIf="!prestamosNuevos"
                         pButton
-                            type="button"
-                            class="w-full text-left p-button-text"
-                            (click)="abrirOcurrencias(); op.hide()"
-                          >
-                            Ocurrencias
+                        type="button"
+                        class="w-full text-left p-button-text"
+                        (click)="abrirMisPrestamos(); op.hide()"
+                      >
+                        Mis Préstamos
                       </button>
-                        </p-overlaybadge>
-                        <button
-                          *ngIf="!ocurrenciasNuevas"
-                          pButton
-                          type="button"
-                          class="w-full text-left p-button-text"
-                          (click)="abrirOcurrencias(); op.hide()"
-                        >
-                          Ocurrencias
-                        </button>
-                      </ng-container>
                     </p-overlayPanel>
                 </div>
             </div>
         </div>
-        <p-dialog header="Solicitudes" [(visible)]="displayDialog" [modal]="true" [style]="{width: '70vw'}" appendTo="body" [baseZIndex]="1100">
-          <p-table [value]="solicitudes" *ngIf="solicitudes.length">
-            <ng-template pTemplate="header">
-              <tr>
-                <th>Recurso</th>
-                <th>Estado</th>
-                <th>Fecha</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-s let-i="rowIndex">
-              <tr [ngClass]="{ 'highlight-row': highlightSolicitudes.includes(i) }">
-                <td>{{ recursoNotificacion(s) }}</td>
-                <td>{{ estadoNotificacion(s) }}</td>
-                <td>{{ s.fechaCreacion | date:'short' }}</td>
-              </tr>
-            </ng-template>
-          </p-table>
-          <div *ngIf="!solicitudes.length" class="p-2 text-center text-gray-600">No hay solicitudes</div>
-        </p-dialog>
-
-        <p-dialog header="Ocurrencias" [(visible)]="displayOcurrencias" [modal]="true" [style]="{width: '70vw'}" appendTo="body" [baseZIndex]="1100">
-          <p-table [value]="ocurrencias" *ngIf="ocurrencias.length">
-            <ng-template pTemplate="header">
-              <tr>
-                <th>Descripción</th>
-                <th>Estado</th>
-                <th>Fecha</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-o let-i="rowIndex">
-              <tr [ngClass]="{ 'highlight-row': highlightOcurrencias.includes(i) }">
-                <td>{{ o.descripcion }}</td>
-                <td>{{ o.estadoCosto === 1 ? 'Costeada' : 'Pendiente' }}</td>
-                <td>{{ o.fechaOcurrencia || (o.fechaCreacion | date:'short') }}</td>
-              </tr>
-            </ng-template>
-          </p-table>
-          <div *ngIf="!ocurrencias.length" class="p-2 text-center text-gray-600">No hay ocurrencias</div>
+        <p-dialog header="Mis Préstamos" [(visible)]="displayPrestamos" [modal]="true" [style]="{width: '70vw'}" appendTo="body" [baseZIndex]="1100">
+          <p-tabView>
+            <p-tabPanel>
+              <ng-template pTemplate="header">
+                Aprobados
+                <p-badge *ngIf="nuevosAprobados" [value]="nuevosAprobados" severity="danger" class="ml-2"></p-badge>
+              </ng-template>
+              <p-table [value]="aprobados" *ngIf="aprobados.length">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th>Recurso</th>
+                    <th>Fecha</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-a let-i="rowIndex">
+                  <tr [ngClass]="{ 'highlight-row': highlightAprobados.includes(i) }">
+                    <td>{{ recursoNotificacion(a) }}</td>
+                    <td>{{ a.fechaCreacion | date:'short' }}</td>
+                  </tr>
+                </ng-template>
+              </p-table>
+              <div *ngIf="!aprobados.length" class="p-2 text-center text-gray-600">No hay aprobados</div>
+            </p-tabPanel>
+            <p-tabPanel>
+              <ng-template pTemplate="header">
+                Rechazados
+                <p-badge *ngIf="nuevosRechazados" [value]="nuevosRechazados" severity="danger" class="ml-2"></p-badge>
+              </ng-template>
+              <p-table [value]="rechazados" *ngIf="rechazados.length">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th>Recurso</th>
+                    <th>Fecha</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-r let-i="rowIndex">
+                  <tr [ngClass]="{ 'highlight-row': highlightRechazados.includes(i) }">
+                    <td>{{ recursoNotificacion(r) }}</td>
+                    <td>{{ r.fechaCreacion | date:'short' }}</td>
+                  </tr>
+                </ng-template>
+              </p-table>
+              <div *ngIf="!rechazados.length" class="p-2 text-center text-gray-600">No hay rechazados</div>
+            </p-tabPanel>
+            <p-tabPanel>
+              <ng-template pTemplate="header">
+                Solicitudes
+                <p-badge *ngIf="nuevasSolicitudes" [value]="nuevasSolicitudes" severity="danger" class="ml-2"></p-badge>
+              </ng-template>
+              <p-table [value]="solicitudes" *ngIf="solicitudes.length">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th>Recurso</th>
+                    <th>Fecha</th>
+                    <th></th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-s let-i="rowIndex">
+                  <tr [ngClass]="{ 'highlight-row': highlightSolicitudes.includes(i) }">
+                    <td>{{ recursoSolicitud(s) }}</td>
+                    <td>{{ s.fechaPrestamo | date:'short' }}</td>
+                    <td>
+                      <button pButton icon="pi pi-times" class="p-button-text p-button-danger" (click)="cancelarSolicitud(s, i)"></button>
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+              <div *ngIf="!solicitudes.length" class="p-2 text-center text-gray-600">No hay solicitudes</div>
+            </p-tabPanel>
+            <p-tabPanel>
+              <ng-template pTemplate="header">
+                Ocurrencias
+                <p-badge *ngIf="nuevasOcurrencias" [value]="nuevasOcurrencias" severity="danger" class="ml-2"></p-badge>
+              </ng-template>
+              <p-table [value]="ocurrencias" *ngIf="ocurrencias.length">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th>Recurso</th>
+                    <th>Fecha</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-o let-i="rowIndex">
+                  <tr [ngClass]="{ 'highlight-row': highlightOcurrencias.includes(i) }">
+                    <td>{{ o.equipoNombre || o.ejemplar || o.descripcion }}</td>
+                    <td>{{ o.fechaOcurrencia | date:'short' }}</td>
+                  </tr>
+                </ng-template>
+              </p-table>
+              <div *ngIf="!ocurrencias.length" class="p-2 text-center text-gray-600">No hay ocurrencias</div>
+            </p-tabPanel>
+          </p-tabView>
         </p-dialog>
     </div>`
 })
@@ -162,31 +196,34 @@ export class AppTopbar implements OnInit {
     items!: MenuItem[];
     notificaciones: Notificacion[] = [];
     loadingNotifications = false;
-    displayDialog = false;
-    solicitudes: Notificacion[] = [];
-    displayOcurrencias = false;
+    displayPrestamos = false;
+    solicitudes: DetallePrestamo[] = [];
+    aprobados: Notificacion[] = [];
+    rechazados: Notificacion[] = [];
     ocurrencias: OcurrenciaDTO[] = [];
     profileItems: MenuItem[] = [];
     highlightSolicitudes: number[] = [];
+    highlightAprobados: number[] = [];
+    highlightRechazados: number[] = [];
     highlightOcurrencias: number[] = [];
     userEmail = '';
 
-    get solicitudesNuevas(): number {
-      return this.notificaciones.filter(n => !n.leida && !n.mensaje.toLowerCase().includes('ocurrencia')).length;
+    get prestamosNuevos(): number {
+      return this.notificaciones.filter(n => !n.leida).length;
     }
-
-    get ocurrenciasNuevas(): number {
-      return this.notificaciones.filter(n => !n.leida && n.mensaje.toLowerCase().includes('ocurrencia')).length;
-    }
-
 
     unreadCount = 0;
+    nuevosAprobados = 0;
+    nuevosRechazados = 0;
+    nuevasSolicitudes = 0;
+    nuevasOcurrencias = 0;
 
     constructor(
       public layoutService: LayoutService,
       private prestamoService: PrestamosService,
+      private authService: AuthService,
       private ocurrenciasService: OcurrenciasService,
-      private authService: AuthService
+      private materialService: MaterialBibliograficoService
     ) {}
 
     ngOnInit() {
@@ -222,45 +259,48 @@ export class AppTopbar implements OnInit {
       }
 
 
-  abrirSolicitudes() {
-    const lista = this.notificaciones
-      .filter(n => !n.mensaje.toLowerCase().includes('ocurrencia'))
+  abrirMisPrestamos() {
+    const todas = this.notificaciones
       .sort((a, b) => new Date(b.fechaCreacion).getTime() - new Date(a.fechaCreacion).getTime());
+    this.aprobados = todas.filter(n => this.estadoNotificacion(n) === 'Aprobado');
+    this.rechazados = todas.filter(n => this.estadoNotificacion(n) === 'Rechazado');
 
-    this.solicitudes = lista;
-    const count = this.solicitudesNuevas;
-    this.displayDialog = true;
-    if (count > 0) {
-      this.highlightSolicitudes = Array.from({ length: count }, (_, i) => i);
-      setTimeout(() => (this.highlightSolicitudes = []), 2000);
-    } else {
-      this.highlightSolicitudes = [];
-    }
-    const ids = lista.map(n => n.id);
+    const newAprob = this.aprobados.filter(n => !n.leida).length;
+    this.nuevosAprobados = newAprob;
+    this.highlightAprobados = newAprob > 0 ? Array.from({ length: newAprob }, (_, i) => i) : [];
+    if (newAprob > 0) setTimeout(() => (this.highlightAprobados = []), 2000);
+
+    const newRech = this.rechazados.filter(n => !n.leida).length;
+    this.nuevosRechazados = newRech;
+    this.highlightRechazados = newRech > 0 ? Array.from({ length: newRech }, (_, i) => i) : [];
+    if (newRech > 0) setTimeout(() => (this.highlightRechazados = []), 2000);
+
+    const ids = todas.map(n => n.id);
     this.marcarLeidas(ids);
-  }
-  abrirOcurrencias() {
-    const usuario = this.authService.getUser().sub;
-    this.ocurrenciasService.api_ocurrencias_usuario(usuario).subscribe(lista => {
-      this.ocurrencias = (lista as OcurrenciaDTO[])
-        .sort((a, b) => {
-          const dA = a.fechaOcurrencia ? new Date(a.fechaOcurrencia).getTime() : a.fechaCreacion ? new Date(a.fechaCreacion).getTime() : 0;
-          const dB = b.fechaOcurrencia ? new Date(b.fechaOcurrencia).getTime() : b.fechaCreacion ? new Date(b.fechaCreacion).getTime() : 0;
-          return dB - dA;
+
+    const codigo = String(this.authService.getUser()?.sub || '');
+    this.ocurrenciasService.api_ocurrencias_usuario(codigo).subscribe({
+      next: occs => {
+        this.ocurrencias = occs;
+        this.nuevasOcurrencias = occs.length;
+        this.highlightOcurrencias = occs.length ? Array.from({ length: occs.length }, (_, i) => i) : [];
+        if (occs.length) setTimeout(() => (this.highlightOcurrencias = []), 2000);
+      },
+      error: () => {}
     });
-      const count = this.ocurrenciasNuevas;
-      this.displayOcurrencias = true;
-      if (count > 0) {
-        this.highlightOcurrencias = Array.from({ length: count }, (_, i) => i);
-        setTimeout(() => (this.highlightOcurrencias = []), 2000);
-      } else {
-        this.highlightOcurrencias = [];
-      }
-      const ids = this.notificaciones
-        .filter(n => n.mensaje.toLowerCase().includes('ocurrencia'))
-        .map(n => n.id);
-      this.marcarLeidas(ids);
+
+    this.prestamoService.getMisPrestamos().subscribe({
+      next: resp => {
+        const data: DetallePrestamo[] = resp.data || [];
+        this.solicitudes = data.filter(p => (p.estado?.descripcion || '').toLowerCase() === 'reservado');
+        this.nuevasSolicitudes = this.solicitudes.length;
+        this.highlightSolicitudes = this.solicitudes.length ? Array.from({ length: this.solicitudes.length }, (_, i) => i) : [];
+        if (this.highlightSolicitudes.length) setTimeout(() => (this.highlightSolicitudes = []), 2000);
+      },
+      error: () => {}
     });
+
+    this.displayPrestamos = true;
   }
 
   private marcarLeidas(ids: number[]) {
@@ -271,10 +311,28 @@ export class AppTopbar implements OnInit {
     });
   }
 
+  cancelarSolicitud(n: DetallePrestamo, index: number) {
+    const req$ = n.material
+      ? this.materialService.cancelarDetalle(n.id)
+      : this.prestamoService.cancelarSolicitud(n.id);
+    req$.subscribe({
+      next: () => {
+        this.solicitudes.splice(index, 1);
+        this.nuevasSolicitudes = this.solicitudes.length;
+      },
+      error: () => {}
+    });
+  }
+
   /** Devuelve el recurso mencionado en la notificación */
   recursoNotificacion(n: Notificacion): string {
     const match = n.mensaje.match(/(?:de|del)\s+(.+?)\s+fue/i);
     return match ? match[1] : n.mensaje;
+  }
+
+  /** Nombre legible del recurso solicitado */
+  recursoSolicitud(s: DetallePrestamo): string {
+    return s.equipo?.nombreEquipo || s.material?.titulo || s.titulo || '';
   }
 
   /** Traduce el mensaje a un estado legible */

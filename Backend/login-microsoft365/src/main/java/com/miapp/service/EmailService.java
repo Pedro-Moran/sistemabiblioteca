@@ -76,6 +76,18 @@ public class EmailService {
         mailSender.send(msg);
     }
 
+    public void sendLoanCancellation(DetallePrestamo dp) {
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(from);
+        msg.setTo("moranpedro0398@gmail.com");
+        msg.setSubject("Solicitud de préstamo cancelada");
+        msg.setText("Hola " + dp.getCodigoUsuario() + ",\n\n" +
+                "Has cancelado tu solicitud de préstamo del equipo \"" +
+                dp.getEquipo().getNombreEquipo() + "\".\n\n" +
+                "Saludos,\nTu App de Préstamos");
+        mailSender.send(msg);
+    }
+
     public void sendMaterialConfirmation(DetalleBiblioteca detalle) {
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setFrom(from);
@@ -105,6 +117,18 @@ public class EmailService {
                 + "” ha sido rechazada.\n\n"
                 + "Si necesitas más información, contacta con el administrador.\n\n"
                 + "Saludos,\nTu App de Préstamos");
+        mailSender.send(msg);
+    }
+
+    public void sendMaterialCancellation(DetalleBiblioteca detalle, String codigoUsuario) {
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(from);
+        msg.setTo("moranpedro0398@gmail.com");
+        msg.setSubject("Solicitud de préstamo cancelada");
+        msg.setText("Hola " + codigoUsuario + ",\n\n" +
+                "Has cancelado tu solicitud del material \"" +
+                detalle.getBiblioteca().getTitulo() + "\".\n\n" +
+                "Saludos,\nTu App de Préstamos");
         mailSender.send(msg);
     }
 
