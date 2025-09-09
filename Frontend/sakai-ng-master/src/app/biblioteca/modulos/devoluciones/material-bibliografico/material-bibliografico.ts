@@ -16,6 +16,7 @@ import { AuthService } from '../../../services/auth.service';
 import { GenericoService } from '../../../services/generico.service';
 import { MaterialBibliograficoService } from '../../../services/material-bibliografico.service';
 import { TemplateModule } from '../../../template.module';
+import { ModalNuevoOcurencia } from '../../laboratorio-computo/modal-nuevo-ocurrencia';
 
 import { Tipo } from '../../../interfaces/prestamos/tipo';
 import { PrestamosService } from '../../../services/prestamos.service';
@@ -148,6 +149,7 @@ interface PrestamoUsuario {
                 <th>Fecha de préstamo</th>
                 <th>Hora de préstamo</th>
                 <th>Devolver</th>
+                <th>Ocurrencia</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-bib>
@@ -166,6 +168,9 @@ interface PrestamoUsuario {
                 <td>
                 <p-button icon="pi pi-check" rounded outlined (click)="devolver(bib)" pTooltip="Devolver" tooltipPosition="bottom"/>
                 </td>
+                <td>
+                <p-button icon="pi pi-file" rounded outlined pTooltip="Registrar ocurrencia" tooltipPosition="bottom" (click)="onAbrirOcurrencia(bib)" />
+                </td>
             </tr>
         </ng-template>
 </p-table>
@@ -183,6 +188,7 @@ interface PrestamoUsuario {
                                 </tr>
                             </ng-template>
                         </p-table>
+                    <app-modal-nuevo-ocurrencia #modalOcurrencia></app-modal-nuevo-ocurrencia>
                     </div>
 
                 </div>
@@ -191,7 +197,7 @@ interface PrestamoUsuario {
 
             <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
             <p-toast></p-toast>`,
-    imports: [TemplateModule, TooltipModule],
+    imports: [TemplateModule, TooltipModule, ModalNuevoOcurencia],
     providers: [MessageService, ConfirmationService]
 })
 export class DevolucionMaterialBibliografico implements OnInit {
@@ -207,6 +213,7 @@ export class DevolucionMaterialBibliografico implements OnInit {
     user: any;
 
     @ViewChild('filter') filter!: ElementRef;
+    @ViewChild('modalOcurrencia') modal!: ModalNuevoOcurencia;
     dataSede: Sedes[] = [];
     sedeFiltro: Sedes = new Sedes();
     dataTipo: Tipo[] = [];
@@ -465,6 +472,10 @@ export class DevolucionMaterialBibliografico implements OnInit {
             default:
                 return tipo ?? '';
         }
+    }
+
+    onAbrirOcurrencia(item: any) {
+        this.modal.openModal(item);
     }
 
     devolver(objeto: any) {

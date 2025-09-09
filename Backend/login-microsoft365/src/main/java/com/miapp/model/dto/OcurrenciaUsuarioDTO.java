@@ -1,7 +1,11 @@
 package com.miapp.model.dto;
 
 public record OcurrenciaUsuarioDTO(
-        Long   id,
+        Long id,
         String codigoUsuario,
-        Integer tipoUsuario
+        Integer tipoUsuario,
+        Long idUsuario,
+        String nombres,
+        String apellidoPaterno,
+        String apellidoMaterno
 ) {}

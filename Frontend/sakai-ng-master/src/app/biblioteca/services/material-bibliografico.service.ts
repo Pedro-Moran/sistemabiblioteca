@@ -548,6 +548,13 @@ crearOcurrencia(dto: OcurrenciaDTO): Observable<OcurrenciaDTO> {
     );
   }
 
+  obtenerSiguienteIdOcurrencia(): Observable<number> {
+    return this.http.get<number>(
+      `${this.apiUrl}/api/ocurrencias-biblio/next-id`,
+      { headers: this.headers }
+    );
+  }
+
   getDetallePrestamo(id: number): Observable<DetallePrestamo> {
     return this.http
       .get<{status:string, data: DetallePrestamo}>(`${this.apiUrl}/api/prestamos/${id}`, { headers: this.headers })
