@@ -160,14 +160,22 @@ public class PrestamoService {
             // revertir estado del equipo
             dp.getEquipo().setEstado(nuevoEstado);
             equipoRepository.save(dp.getEquipo());
-
-            notificacionService.crearNotificacion(
-                    dp.getCodigoUsuario(),
-                    "Tu solicitud de préstamo de " + dp.getEquipo().getNombreEquipo() +
-                            " fue rechazada."
-            );
-            // envio de correo al usuario notificando el rechazo
-            emailService.sendLoanRejection(dp);
+            boolean canceladoPorUsuario = adminUsuario != null && adminUsuario.equals(dp.getCodigoUsuario());
+            if (canceladoPorUsuario) {
+                notificacionService.crearNotificacion(
+                        dp.getCodigoUsuario(),
+                        "Cancelaste tu solicitud de préstamo de " + dp.getEquipo().getNombreEquipo() + "."
+                );
+                emailService.sendLoanCancellation(dp);
+            } else {
+                notificacionService.crearNotificacion(
+                        dp.getCodigoUsuario(),
+                        "Tu solicitud de préstamo de " + dp.getEquipo().getNombreEquipo() +
+                                " fue rechazada."
+                );
+                // envio de correo al usuario notificando el rechazo
+                emailService.sendLoanRejection(dp);
+            }
         }
 
         dp.setEstado(nuevoEstado);

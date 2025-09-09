@@ -78,9 +78,19 @@ export class PrestamosService {
       return this.http.put<void>(`${this.apiUrl}/api/prestamos/${id}/leer`, {});
     }
 
+  cancelarSolicitud(id: number): Observable<void> {
+      const headers = new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`);
+      return this.http.post<void>(
+        `${this.apiUrl}/api/prestamos/procesar`,
+        { id, aprobar: false },
+        { headers }
+      );
+    }
+
   getMisPrestamos() {
       return this.http.get<{status:string,data:any[]}>(
-         `${this.apiUrl}/api/prestamos/mis-prestamos`
+         `${this.apiUrl}/api/prestamos/mis-prestamos`,
+         { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
       );
     }
   getNotificacionesNoLeidas(): Observable<Notificacion[]> {
