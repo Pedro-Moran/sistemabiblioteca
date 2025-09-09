@@ -41,5 +41,11 @@ public interface BibliotecaService {
                                                          java.time.LocalDate fechaFin);
 
     /** Reporte de ejemplares que nunca fueron prestados */
-    List<EjemplarNoPrestadoDTO> reporteEjemplarNoPrestado();
+    List<EjemplarNoPrestadoDTO> reporteEjemplarNoPrestado(Long sede,
+                                                          Long tipoMaterial,
+                                                          Long especialidad,
+                                                          Integer ciclo,
+                                                          Long numeroIngreso,
+                                                          java.time.LocalDate fechaInicio,
+                                                          java.time.LocalDate fechaFin);
 }

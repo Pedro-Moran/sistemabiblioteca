@@ -289,8 +289,26 @@ public class BibliotecaController {
     }
 
     @GetMapping("/reporte/ejemplar-no-prestados")
-    public ResponseEntity<?> reporteEjemplarNoPrestado() {
-        return ResponseEntity.ok(Map.of("status", 0, "data", bibliotecaService.reporteEjemplarNoPrestado()));
+    public ResponseEntity<?> reporteEjemplarNoPrestado(@RequestParam(required = false) Long sede,
+                                                       @RequestParam(required = false) Long tipoMaterial,
+                                                       @RequestParam(required = false) Long especialidad,
+                                                       @RequestParam(required = false) Integer ciclo,
+                                                       @RequestParam(required = false) Long numeroIngreso,
+                                                       @RequestParam(required = false)
+                                                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                                                       java.time.LocalDate fechaInicio,
+                                                       @RequestParam(required = false)
+                                                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                                                       java.time.LocalDate fechaFin) {
+        return ResponseEntity.ok(Map.of("status", 0, "data",
+                bibliotecaService.reporteEjemplarNoPrestado(
+                        sede,
+                        tipoMaterial,
+                        especialidad,
+                        ciclo,
+                        numeroIngreso,
+                        fechaInicio,
+                        fechaFin)));
     }
 
 }
