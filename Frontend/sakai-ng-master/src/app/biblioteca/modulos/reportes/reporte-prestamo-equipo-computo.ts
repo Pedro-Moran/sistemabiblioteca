@@ -6,6 +6,7 @@ import { TableModule }    from 'primeng/table';
 import { DropdownModule } from 'primeng/dropdown';
 import { ButtonModule }   from 'primeng/button';
 import { TooltipModule }  from 'primeng/tooltip';
+import { ToastModule }    from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { ToolbarModule }  from 'primeng/toolbar';
 
@@ -31,8 +32,10 @@ import { HttpClient } from '@angular/common/http';
                                    DropdownModule,
                                    ButtonModule,
                                    TooltipModule,
+                                   ToastModule,
                                    ToolbarModule],
     template: `
+<p-toast></p-toast>
 <div class="card w-full p-4">
   <p-toolbar class="mb-4">
     <div class="card w-full">
@@ -205,15 +208,20 @@ export class ReportePrestamoEquipoComputo implements OnInit {
       }
 
 async reporte() {
+  if (!this.fechaInicio || !this.fechaFin) {
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Advertencia',
+      detail: 'Debe seleccionar un rango de fechas.'
+    });
+    return;
+  }
+
   this.loading = true;
 
   const pad = (n: number) => n.toString().padStart(2, '0');
-  const fi = this.fechaInicio
-    ? `${pad(this.fechaInicio.getDate())}/${pad(this.fechaInicio.getMonth()+1)}/${this.fechaInicio.getFullYear()}`
-    : undefined;
-  const ff = this.fechaFin
-    ? `${pad(this.fechaFin.getDate())}/${pad(this.fechaFin.getMonth()+1)}/${this.fechaFin.getFullYear()}`
-    : undefined;
+  const fi = `${pad(this.fechaInicio.getDate())}/${pad(this.fechaInicio.getMonth()+1)}/${this.fechaInicio.getFullYear()}`;
+  const ff = `${pad(this.fechaFin.getDate())}/${pad(this.fechaFin.getMonth()+1)}/${this.fechaFin.getFullYear()}`;
   const estado = this.tipoPrestamoFiltro ?? undefined;
 
   try {
