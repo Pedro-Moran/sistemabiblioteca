@@ -13,6 +13,7 @@ import autoTable from 'jspdf-autotable';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { ReportesFiltroService } from '../../services/reportes-filtro.service';
+import { construirCabeceraFiltros } from '../../utils/exportacion';
 
 @Component({
     selector: 'app-reporte-inventario-material-bibliografico',
@@ -158,11 +159,20 @@ export class ReporteInventarioMaterialBibliografico {
         const buffer = await this.http.get('/assets/logo.png', { responseType: 'arraybuffer' }).toPromise();
         const logoId = wb.addImage({ buffer, extension: 'png' });
         ws.addImage(logoId, { tl: { col: 0.2, row: 0.2 }, ext: { width: 220, height: 80 } });
-        ws.mergeCells('C1', 'H2');
-        const title = ws.getCell('C1');
+        ws.addRows([[], [], [], []]); // espacio para la imagen
+        ws.mergeCells('C5', 'H6');
+        const title = ws.getCell('C5');
         title.value = this.titulo;
         title.alignment = { vertical: 'middle', horizontal: 'center' };
         title.font = { size: 16, bold: true };
+        ws.addRow([]);
+        const filtrosCabecera = construirCabeceraFiltros([
+            { etiqueta: 'Sede', valor: this.sedeFiltro?.descripcion, defecto: 'Todas' },
+            { etiqueta: 'Colección', valor: this.coleccionFiltro?.descripcion, defecto: 'Todas' },
+            { etiqueta: 'Fecha emisión', valor: new Date().toLocaleString() }
+        ]);
+        ws.addRow(filtrosCabecera.etiquetas);
+        ws.addRow(filtrosCabecera.valores);
         ws.addRow([]);
         const headerRow = ws.addRow(['N°', 'ID', 'N° Ingreso', 'Tipo Material', 'Título', 'Autor', 'Estado', 'Verificar', 'Observaciones']);
         headerRow.font = { bold: true };
@@ -186,14 +196,24 @@ export class ReporteInventarioMaterialBibliografico {
         img.onload = () => {
             doc.addImage(img, 'PNG', 10, 10, 60, 25);
             doc.setFontSize(16);
-            doc.text(this.titulo, 80, 20);
-            doc.setFontSize(10);
-            const hoy = new Date();
-            doc.text(`Fecha de emisión: ${hoy.toLocaleDateString()}`, 80, 25);
+            const pageWidth = doc.internal.pageSize.getWidth();
+            doc.text(this.titulo, pageWidth / 2, 20, { align: 'center' });
+            const filtrosCabecera = construirCabeceraFiltros([
+                { etiqueta: 'Sede', valor: this.sedeFiltro?.descripcion, defecto: 'Todas' },
+                { etiqueta: 'Colección', valor: this.coleccionFiltro?.descripcion, defecto: 'Todas' },
+                { etiqueta: 'Fecha emisión', valor: new Date().toLocaleString() }
+            ]);
+            autoTable(doc, {
+                head: [filtrosCabecera.etiquetas],
+                body: [filtrosCabecera.valores],
+                startY: 40,
+                styles: { fontSize: 9 }
+            });
+            const inicioTabla = (doc as any).lastAutoTable.finalY + 5;
             autoTable(doc, {
                 head: [['N°', 'ID', 'N° Ingreso', 'Tipo Material', 'Título', 'Autor', 'Estado', 'Verificar', 'Observaciones']],
                 body: this.resultados.map((r, idx) => [idx + 1, r.id, r.numeroIngreso ?? '-', r.tipoMaterial ?? '-', r.titulo ?? '-', r.autor ?? '-', r.estado ?? '-', '', '']),
-                startY: 35,
+                startY: inicioTabla,
                 styles: { fontSize: 8 },
                 headStyles: { fillColor: [41, 128, 185] }
             });
