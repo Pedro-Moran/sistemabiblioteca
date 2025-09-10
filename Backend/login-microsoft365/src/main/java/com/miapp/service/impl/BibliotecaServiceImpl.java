@@ -563,22 +563,22 @@ public class BibliotecaServiceImpl implements BibliotecaService {
                 if (opt.isBlank() || opt.equals("CUALQUIER CAMPO")) {
                     Join<Biblioteca, Especialidad> esp = root.join("especialidad", JoinType.LEFT);
                     preds.add(cb.or(
-                            cb.like(cb.lower(root.get("titulo")), pattern),
-                            cb.like(cb.lower(root.get("autorPersonal")), pattern),
+                            cb.like(cb.lower(root.get("titulo").as(String.class)), pattern),
+                            cb.like(cb.lower(root.get("autorPersonal").as(String.class)), pattern),
                             cb.like(cb.lower(root.get("codigoLocalizacion")), pattern),
                             cb.like(cb.lower(root.get("editorialPublicacion")), pattern),
-                            cb.like(cb.lower(root.get("descriptor")), pattern),
-                            cb.like(cb.lower(root.get("notaGeneral")), pattern),
+                            cb.like(cb.lower(root.get("descriptor").as(String.class)), pattern),
+                            cb.like(cb.lower(root.get("notaGeneral").as(String.class)), pattern),
                             cb.like(cb.lower(esp.get("descripcion")), pattern)
                     ));
                 } else {
                     switch (opt) {
                         case "TITULO":
                         case "NOMBRE":
-                            preds.add(cb.like(cb.lower(root.get("titulo")), pattern));
+                            preds.add(cb.like(cb.lower(root.get("titulo").as(String.class)), pattern));
                             break;
                         case "AUTOR":
-                            preds.add(cb.like(cb.lower(root.get("autorPersonal")), pattern));
+                            preds.add(cb.like(cb.lower(root.get("autorPersonal").as(String.class)), pattern));
                             break;
                         case "CODIGO":
                             preds.add(cb.like(cb.lower(root.get("codigoLocalizacion")), pattern));
@@ -587,10 +587,10 @@ public class BibliotecaServiceImpl implements BibliotecaService {
                             preds.add(cb.like(cb.lower(root.get("editorialPublicacion")), pattern));
                             break;
                         case "TEMA":
-                            preds.add(cb.like(cb.lower(root.get("descriptor")), pattern));
+                            preds.add(cb.like(cb.lower(root.get("descriptor").as(String.class)), pattern));
                             break;
                         case "DESCRIPCION":
-                            preds.add(cb.like(cb.lower(root.get("notaGeneral")), pattern));
+                            preds.add(cb.like(cb.lower(root.get("notaGeneral").as(String.class)), pattern));
                             break;
                         case "GENERO":
                             Join<Biblioteca, Especialidad> esp = root.join("especialidad", JoinType.LEFT);

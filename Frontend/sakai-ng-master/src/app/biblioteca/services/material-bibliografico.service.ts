@@ -481,7 +481,7 @@ registrarEspecialidad(especialidad: any): Observable<any> {
     return det;
   }
 
-catalogo(
+  catalogo(
     valor?: string,
     sedeId?: number,
     tipoMaterial?: number,
@@ -509,6 +509,25 @@ catalogo(
           return [];
         })
       );
+  }
+
+  catalogoPaginado(
+    valor?: string,
+    sedeId?: number,
+    tipoMaterial?: number,
+    opcion?: string,
+    page?: number,
+    size?: number
+  ): Observable<any> {
+    let params = new HttpParams();
+    if (valor) params = params.set('valor', valor);
+    if (sedeId != null) params = params.set('sedeId', sedeId.toString());
+    if (tipoMaterial != null) params = params.set('tipoMaterial', tipoMaterial.toString());
+    if (opcion) params = params.set('opcion', opcion);
+    if (page != null) params = params.set('page', page.toString());
+    if (size != null) params = params.set('size', size.toString());
+
+    return this.http.get<any>(`${this.apiUrl}/api/biblioteca/catalogo`, { params });
   }
     private get headers(): HttpHeaders {
       return new HttpHeaders().set(
