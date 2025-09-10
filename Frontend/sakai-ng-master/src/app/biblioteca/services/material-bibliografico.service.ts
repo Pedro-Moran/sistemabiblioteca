@@ -207,11 +207,34 @@ registrarEspecialidad(especialidad: any): Observable<any> {
 
       list(): Observable<BibliotecaDTO[]> {
         return this.http
-          .get<{ status: number; data: BibliotecaDTO[] }>(
-            `${this.apiUrl}/api/biblioteca/list`,
-            { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) }
-          )
-          .pipe(map(r => r.data));
+          .get<any>(`${this.apiUrl}/api/biblioteca/list`, {
+            headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`)
+          })
+          .pipe(
+            map(res => {
+              // Posibles contenedores donde podría venir la lista
+              const posibles = [res, res?.data, res?.data?.data];
+
+              for (const candidato of posibles) {
+                if (Array.isArray(candidato)) {
+                  return candidato as BibliotecaDTO[];
+                }
+                if (candidato && typeof candidato === 'object') {
+                  if (Array.isArray(candidato.lista)) {
+                    return candidato.lista as BibliotecaDTO[];
+                  }
+                  if (Array.isArray(candidato.data)) {
+                    return candidato.data as BibliotecaDTO[];
+                  }
+                  if (Array.isArray((candidato as any).content)) {
+                    return (candidato as any).content as BibliotecaDTO[];
+                  }
+                }
+              }
+
+              return [] as BibliotecaDTO[];
+            })
+          );
       }
 
       get(id: number): Observable<BibliotecaDTO | undefined> {
