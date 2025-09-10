@@ -338,8 +338,8 @@ export class CatalogoEnLineaComponent {
         try {
             const res: any = await this.genericoService.sedes_get('api/equipos/sedes').toPromise();
             const rawList: any[] = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-            this.dataSede = rawList.map((s) => new Sedes(s));
-            this.sedeFiltro = this.dataSede[0] ?? new Sedes();
+            this.dataSede = [new Sedes({ id: 0, descripcion: 'Todos', activo: true }), ...rawList.map((s) => new Sedes(s))];
+            this.sedeFiltro = this.dataSede[0];
         } catch (err) {
             this.messageService.add({ severity: 'error', detail: 'Error al cargar sedes' });
         }
@@ -350,16 +350,19 @@ export class CatalogoEnLineaComponent {
         try {
             const res: any = await this.materialBibliograficoService.lista_tipo_material('catalogos/tipomaterial/activos').toPromise();
             const rawList: any[] = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-            this.dataColeccion = rawList.map(
-                (t) =>
-                    new ClaseGeneral({
-                        id: t.id ?? t.tipo?.id,
-                        descripcion: t.descripcion ?? t.tipo?.descripcion,
-                        activo: t.activo ?? true,
-                        estado: 1
-                    })
-            );
-            this.coleccionFiltro = this.dataColeccion[0] ?? new ClaseGeneral();
+            this.dataColeccion = [
+                new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 }),
+                ...rawList.map(
+                    (t) =>
+                        new ClaseGeneral({
+                            id: t.id ?? t.tipo?.id,
+                            descripcion: t.descripcion ?? t.tipo?.descripcion,
+                            activo: t.activo ?? true,
+                            estado: 1
+                        })
+                )
+            ];
+            this.coleccionFiltro = this.dataColeccion[0];
         } catch (err) {
             this.messageService.add({ severity: 'error', detail: 'Error al cargar colecciones' });
         }
@@ -424,7 +427,7 @@ export class CatalogoEnLineaComponent {
     }
     listar(page: number = 0, size: number = this.rows) {
         const opcion = this.opcionFiltro?.valor;
-        const valor  = this.palabraClave?.trim() || '';
+        const valor = this.palabraClave?.trim() || '';
 
         if (opcion === 'codigoLocalizacion') {
             if (valor && !/^\d+$/.test(valor)) {
@@ -469,9 +472,7 @@ export class CatalogoEnLineaComponent {
         this.materialBibliograficoService.api_libros_lista(url).subscribe({
             next: (result: any) => {
                 const resp = Array.isArray(result) ? { data: result, total: result.length } : result;
-                const cabeceras = (resp?.data || []).filter(
-                    (b: any) => b.estadoId === 2 || b.estado?.descripcion === 'DISPONIBLE'
-                );
+                const cabeceras = (resp?.data || []).filter((b: any) => b.estadoId === 2 || b.estado?.descripcion === 'DISPONIBLE');
                 this.totalRecords = resp?.total ?? cabeceras.length;
 
                 if (cabeceras.length === 0) {
@@ -540,9 +541,9 @@ export class CatalogoEnLineaComponent {
         table.clear();
         this.filter.nativeElement.value = '';
     }
-  verDetalle(objeto:any){
-    this.modalDetalle.openModal(objeto);
-  }
+    verDetalle(objeto: any) {
+        this.modalDetalle.openModal(objeto);
+    }
     onRowExpand(event: TableRowExpandEvent) {
         const row = event.data;
         if (!row || !row.id) {
@@ -581,12 +582,7 @@ export class CatalogoEnLineaComponent {
     }
 
     onDateRangeChange() {
-        if (
-            this.prestamo.fechaInicioDate &&
-            this.prestamo.fechaFinDate &&
-            this.prestamo.fechaInicioTime &&
-            this.prestamo.fechaFinTime
-        ) {
+        if (this.prestamo.fechaInicioDate && this.prestamo.fechaFinDate && this.prestamo.fechaInicioTime && this.prestamo.fechaFinTime) {
             const dtInicio = new Date(
                 this.prestamo.fechaInicioDate.getFullYear(),
                 this.prestamo.fechaInicioDate.getMonth(),
@@ -594,13 +590,7 @@ export class CatalogoEnLineaComponent {
                 this.prestamo.fechaInicioTime.getHours(),
                 this.prestamo.fechaInicioTime.getMinutes()
             );
-            const dtFin = new Date(
-                this.prestamo.fechaFinDate.getFullYear(),
-                this.prestamo.fechaFinDate.getMonth(),
-                this.prestamo.fechaFinDate.getDate(),
-                this.prestamo.fechaFinTime.getHours(),
-                this.prestamo.fechaFinTime.getMinutes()
-            );
+            const dtFin = new Date(this.prestamo.fechaFinDate.getFullYear(), this.prestamo.fechaFinDate.getMonth(), this.prestamo.fechaFinDate.getDate(), this.prestamo.fechaFinTime.getHours(), this.prestamo.fechaFinTime.getMinutes());
             if (dtFin <= dtInicio) {
                 dtFin.setDate(dtFin.getDate() + 1);
                 this.prestamo.fechaFinDate = new Date(dtFin);
@@ -688,23 +678,11 @@ export class CatalogoEnLineaComponent {
 
         const inicioDate = this.prestamo.fechaInicioDate;
         const inicioTime = this.prestamo.fechaInicioTime;
-        const dtInicio = new Date(
-            inicioDate.getFullYear(),
-            inicioDate.getMonth(),
-            inicioDate.getDate(),
-            inicioTime.getHours(),
-            inicioTime.getMinutes()
-        );
+        const dtInicio = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate(), inicioTime.getHours(), inicioTime.getMinutes());
 
         const finDate = this.prestamo.fechaFinDate;
         const finTime = this.prestamo.fechaFinTime;
-        const dtFin = new Date(
-            finDate.getFullYear(),
-            finDate.getMonth(),
-            finDate.getDate(),
-            finTime.getHours(),
-            finTime.getMinutes()
-        );
+        const dtFin = new Date(finDate.getFullYear(), finDate.getMonth(), finDate.getDate(), finTime.getHours(), finTime.getMinutes());
 
         if (dtFin <= dtInicio) {
             dtFin.setDate(dtFin.getDate() + 1);
