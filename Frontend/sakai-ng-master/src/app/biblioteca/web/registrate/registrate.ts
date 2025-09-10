@@ -373,6 +373,35 @@ export class PortalRegistrate implements OnInit {
         }
     }
 
+    private resetDocumentoForm(): void {
+        this.form.patchValue({
+            id: 0,
+            nombreUsuario: '',
+            apellidoPaterno: '',
+            apellidoMaterno: '',
+            fechaNacimiento: '',
+            email: '',
+            ADDRESS: '',
+            AGE: 0,
+            CAMPUS: '',
+            CELL: '',
+            CITY: '',
+            COUNTRY: '',
+            COUNTY: '',
+            EMAIL_INST: '',
+            EMPLID: '',
+            FEC_NAC: '',
+            NAME: '',
+            NATIONAL_ID: '',
+            NATIONAL_ID_TYPE: '',
+            PHONE: '',
+            SEX: '',
+            STATE: ''
+        });
+        this.fieldsDisabled = false;
+        this.form.get('fechaNacimiento')?.enable();
+    }
+
     registrar() {
         if (this.form.invalid) {
           this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Por favor complete el formulario correctamente.' });
@@ -423,6 +452,11 @@ export class PortalRegistrate implements OnInit {
       }
       this.documentoService.consultar(tipo, numero).subscribe({
           next: (data) => {
+              if (!data) {
+                  this.resetDocumentoForm();
+                  this.messageService.add({severity:'warn', summary:'Sin resultados', detail:'Documento no encontrado. Complete los datos manualmente.'});
+                  return;
+              }
               const nombres = data.NAME ? data.NAME.split(',')[1]?.trim() || '' : '';
               const apellidos = data.NAME ? data.NAME.split(',')[0]?.trim() || '' : '';
               const apellidoParts = apellidos.split(' ');
@@ -457,33 +491,8 @@ export class PortalRegistrate implements OnInit {
               this.form.get('fechaNacimiento')?.disable();
           },
           error: () => {
-              this.form.patchValue({
-                  id: 0,
-                  nombreUsuario: '',
-                  apellidoPaterno: '',
-                  apellidoMaterno: '',
-                  fechaNacimiento: '',
-                  email: '',
-                  ADDRESS: '',
-                  AGE: 0,
-                  CAMPUS: '',
-                  CELL: '',
-                  CITY: '',
-                  COUNTRY: '',
-                  COUNTY: '',
-                  EMAIL_INST: '',
-                  EMPLID: '',
-                  FEC_NAC: '',
-                  NAME: '',
-                  NATIONAL_ID: '',
-                  NATIONAL_ID_TYPE: '',
-                  PHONE: '',
-                  SEX: '',
-                  STATE: ''
-              });
+              this.resetDocumentoForm();
               this.messageService.add({severity:'warn', summary:'Sin resultados', detail:'Documento no encontrado. Complete los datos manualmente.'});
-              this.fieldsDisabled = false;
-              this.form.get('fechaNacimiento')?.enable();
           }
       });
   }
