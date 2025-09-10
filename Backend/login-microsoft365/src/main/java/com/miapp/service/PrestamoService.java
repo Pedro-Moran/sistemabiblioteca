@@ -486,11 +486,19 @@ public class PrestamoService {
     }
 
     public List<com.miapp.model.dto.EquipoUsoTiempoDTO> reporteUsoTiempoBiblioteca(
+            String sede,
+            Integer tipoUsuario,
+            String ciclo,
+            String escuela,
             LocalDateTime fechaInicio,
             LocalDateTime fechaFin
     ) {
         List<DetallePrestamo> prestamos = detallePrestamoRepository.findAll(
                 Specification.where(conFetchEquipoYSede())
+                        .and(DetallePrestamoSpecs.porSede(sede))
+                        .and(DetallePrestamoSpecs.porTipoUsuario(tipoUsuario))
+                        .and(DetallePrestamoSpecs.porCiclo(ciclo))
+                        .and(DetallePrestamoSpecs.porEscuela(escuela))
                         .and(DetallePrestamoSpecs.entreFechas(fechaInicio, fechaFin))
                         // se ignoran los préstamos en estado "RESERVADO"
                         .and(DetallePrestamoSpecs.excluirEstadoDescripcion("RESERVADO"))

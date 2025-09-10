@@ -118,14 +118,21 @@ export class ReporteUsoTiempoBiblioteca {
         await this.reporte();
     }
     private async cargarFiltros() {
-        const filtros = await this.filtrosService.cargarFiltros();
-        this.dataSede = filtros.sedes;
+        const [sedes, tipoUsuarios, ciclos, especialidades] = await Promise.all([
+            this.filtrosService.getSedes(),
+            this.filtrosService.getTiposUsuario(),
+            this.filtrosService.getCiclos(),
+            this.filtrosService.getEspecialidades()
+        ]);
+
+        this.dataSede = sedes;
+        this.dataTipoUsuario = tipoUsuarios;
+        this.dataCiclo = ciclos;
+        this.dataEscuela = especialidades;
+
         this.sedeFiltro = this.dataSede[0];
-        this.dataTipoUsuario = filtros.tipoUsuarios;
         this.tipoUsuarioFiltro = this.dataTipoUsuario[0];
-        this.dataCiclo = filtros.ciclos;
         this.cicloFiltro = this.dataCiclo[0];
-        this.dataEscuela = filtros.especialidades;
         this.escuelaFiltro = this.dataEscuela[0];
     }
     private formatDate(d?: Date): string | undefined {
@@ -135,7 +142,17 @@ export class ReporteUsoTiempoBiblioteca {
     async reporte() {
         this.loading = true;
         try {
-            this.resultados = (await firstValueFrom(this.svc.reporteUsoTiempoBiblioteca(this.formatDate(this.fechaInicio), this.formatDate(this.fechaFin)))) ?? [];
+            this.resultados =
+                (await firstValueFrom(
+                    this.svc.reporteUsoTiempoBiblioteca(
+                        this.formatDate(this.fechaInicio),
+                        this.formatDate(this.fechaFin),
+                        this.sedeFiltro?.id,
+                        this.tipoUsuarioFiltro?.id,
+                        this.cicloFiltro?.id,
+                        this.escuelaFiltro?.id
+                    )
+                )) ?? [];
         } catch (error: any) {
             const msg = error?.status === 403 ? 'No autorizado para ver el reporte.' : 'No fue posible cargar los datos.';
             this.messageService.add({ severity: 'error', detail: msg });

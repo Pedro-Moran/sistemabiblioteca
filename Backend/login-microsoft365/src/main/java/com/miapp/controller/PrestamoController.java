@@ -4,6 +4,7 @@ import com.miapp.model.*;
 import com.miapp.model.dto.OcurrenciaBibliotecaDTO;
 import com.miapp.model.dto.UsuarioPrestamosDTO;
 import com.miapp.service.*;
+import com.miapp.repository.RolRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -25,6 +26,7 @@ public class PrestamoController {
     private final OcurrenciaBibliotecaService ocurrenciaBibliotecaService;
     private final UsuarioService usuarioService;
     private final EquipoService equipoService;
+    private final RolRepository rolRepository;
 
     @PostMapping("/solicitar")
     public ResponseEntity<?> solicitar(@RequestBody SolicitudDTO dto,
@@ -188,6 +190,13 @@ public class PrestamoController {
         return ResponseEntity.ok(Map.of("status","0","data", lista));
     }
 
+    /** Lista todos los tipos de usuario disponibles */
+    @GetMapping("/tipos-usuario")
+    public ResponseEntity<?> listarTiposUsuario() {
+        List<Rol> roles = rolRepository.findAll();
+        return ResponseEntity.ok(Map.of("status", "0", "data", roles));
+    }
+
     @GetMapping("/reporte/estudiantes-atendidos")
     public ResponseEntity<?> reporteEstudiantesAtendidos(
             @RequestParam(required = false) Long sede,
@@ -227,13 +236,24 @@ public class PrestamoController {
 
     @GetMapping("/reporte/uso-tiempo-biblioteca")
     public ResponseEntity<?> reporteUsoTiempoBiblioteca(
+            @RequestParam(required = false) String sede,
+            @RequestParam(required = false) Integer tipoUsuario,
+            @RequestParam(required = false) String ciclo,
+            @RequestParam(required = false) String escuela,
             @RequestParam(required = false) String fechaInicio,
             @RequestParam(required = false) String fechaFin
     ) {
         LocalDateTime inicio = fechaInicio != null ? LocalDate.parse(fechaInicio).atStartOfDay() : LocalDateTime.now().minusMonths(1);
         LocalDateTime fin    = fechaFin != null ? LocalDate.parse(fechaFin).atTime(23,59,59) : LocalDateTime.now();
 
-        List<com.miapp.model.dto.EquipoUsoTiempoDTO> lista = prestamoService.reporteUsoTiempoBiblioteca(inicio, fin);
+        List<com.miapp.model.dto.EquipoUsoTiempoDTO> lista = prestamoService.reporteUsoTiempoBiblioteca(
+                sede,
+                tipoUsuario,
+                ciclo,
+                escuela,
+                inicio,
+                fin
+        );
         return ResponseEntity.ok(Map.of("status","0","data", lista));
     }
 

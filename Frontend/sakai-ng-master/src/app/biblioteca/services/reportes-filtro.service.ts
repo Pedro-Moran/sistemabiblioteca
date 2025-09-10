@@ -173,7 +173,7 @@ export class ReportesFiltroService {
     if (!this.cacheTipoUsuario) {
       try {
         const res: any = await firstValueFrom(
-          this.genericoService.roles_get('roles/lista-roles')
+          this.genericoService.tipo_get('api/prestamos/tipos-usuario')
         );
         const list = Array.isArray(res?.data)
           ? res.data
