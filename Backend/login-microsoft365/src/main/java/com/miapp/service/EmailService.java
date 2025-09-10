@@ -5,7 +5,11 @@ import com.miapp.model.DetalleBiblioteca;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -20,6 +24,51 @@ public class EmailService {
 
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
+    }
+
+    private void sendHtml(String to, String subject, String htmlBody) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlBody, true);
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error al enviar correo", e);
+        }
+    }
+
+    private String buildTemplate(String header, String content) {
+        return """
+                <html>
+                  <body style=\"font-family:Arial,sans-serif;\">
+                    <table width=\"600\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:collapse;\">
+                      <tr>
+                        <td style=\"padding:10px 0;text-align:center;\">
+                          <img src=\"https://via.placeholder.com/180x60?text=LOGO\" alt=\"Logo\"/>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style=\"background:#E2001A;color:#fff;padding:10px 20px;text-align:center;font-weight:bold;\">
+                          %s
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style=\"border:1px solid #E2001A;padding:20px;\">
+                          %s
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style=\"background:#E2001A;color:#fff;text-align:center;padding:15px;font-weight:bold;\">
+                          UNIVERSIDAD PRIVADA SAN JUAN BAUTISTA
+                        </td>
+                      </tr>
+                    </table>
+                  </body>
+                </html>
+                """.formatted(header, content);
     }
 
     public void sendLoanConfirmation(DetallePrestamo dp) {
@@ -89,22 +138,24 @@ public class EmailService {
     }
 
     public void sendMaterialConfirmation(DetalleBiblioteca detalle) {
-        SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setFrom(from);
-        msg.setTo("moranpedro0398@gmail.com");
-        msg.setSubject("Confirmación de préstamo del material "
-                + detalle.getBiblioteca().getTitulo());
         LocalDateTime fechaDev = null;
         if (detalle.getFechaFin() != null) {
             LocalTime hf = detalle.getHoraFin() != null ? LocalTime.parse(detalle.getHoraFin()) : LocalTime.MIDNIGHT;
             fechaDev = LocalDateTime.of(detalle.getFechaFin(), hf);
         }
-        msg.setText("Tu préstamo ha sido registrado.\n" +
-                "Fecha devolución: " +
-                (fechaDev != null
-                        ? fechaDev.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-                        : "N/A"));
-        mailSender.send(msg);
+        String fecha = fechaDev != null
+                ? fechaDev.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                : "N/A";
+        String body = """
+                <p>Hola %s,</p>
+                <p>Tu préstamo del material <strong>%s</strong> ha sido aprobado.</p>
+                <p>Fecha devolución: %s</p>
+                """.formatted(detalle.getCodigoUsuario(),
+                detalle.getBiblioteca().getTitulo(), fecha);
+        String html = buildTemplate("NOTIFICACIÓN BIBLIOTECA", body);
+        sendHtml("moranpedro0398@gmail.com",
+                "Confirmación de préstamo del material " + detalle.getBiblioteca().getTitulo(),
+                html);
     }
 
     public void sendMaterialRejection(DetalleBiblioteca detalle) {
@@ -121,15 +172,12 @@ public class EmailService {
     }
 
     public void sendMaterialCancellation(DetalleBiblioteca detalle, String codigoUsuario) {
-        SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setFrom(from);
-        msg.setTo("moranpedro0398@gmail.com");
-        msg.setSubject("Solicitud de préstamo cancelada");
-        msg.setText("Hola " + codigoUsuario + ",\n\n" +
-                "Has cancelado tu solicitud del material \"" +
-                detalle.getBiblioteca().getTitulo() + "\".\n\n" +
-                "Saludos,\nTu App de Préstamos");
-        mailSender.send(msg);
+        String body = """
+                <p>Hola %s,</p>
+                <p>Has cancelado tu solicitud del material <strong>%s</strong>.</p>
+                """.formatted(codigoUsuario, detalle.getBiblioteca().getTitulo());
+        String html = buildTemplate("NOTIFICACIÓN BIBLIOTECA", body);
+        sendHtml("moranpedro0398@gmail.com", "Solicitud de préstamo cancelada", html);
     }
 
     public void sendMaterialReturnReminder(DetalleBiblioteca detalle, long amount, ChronoUnit unit) {
@@ -142,17 +190,16 @@ public class EmailService {
         String fecha = fechaDev != null
                 ? fechaDev.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
                 : "N/A";
-
-        SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setFrom(from);
-        msg.setTo("moranpedro0398@gmail.com");
-        msg.setSubject(amount > 0
+        String body = """
+                <p>Hola %s,</p>
+                <p>Tu préstamo del material <strong>%s</strong> vence el %s.</p>
+                """.formatted(detalle.getCodigoUsuario(),
+                detalle.getBiblioteca().getTitulo(), fecha);
+        String subject = amount > 0
                 ? "Recordatorio de devolución en " + amount + " " + unitName
-                : "El préstamo vence hoy");
-        msg.setText("Hola " + detalle.getCodigoUsuario() + ",\n\n" +
-                "Tu préstamo del material \"" + detalle.getBiblioteca().getTitulo() +
-                "\" vence el " + fecha + ".\n\nSaludos,\nTu App de Préstamos");
-        mailSender.send(msg);
+                : "El préstamo vence hoy";
+        String html = buildTemplate("NOTIFICACIÓN BIBLIOTECA", body);
+        sendHtml("moranpedro0398@gmail.com", subject, html);
     }
 
     public void sendMaterialOverdue(DetalleBiblioteca detalle) {
@@ -164,15 +211,13 @@ public class EmailService {
         String fecha = fechaDev2 != null
                 ? fechaDev2.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
                 : "N/A";
-        SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setFrom(from);
-        msg.setTo("moranpedro0398@gmail.com");
-        msg.setSubject("Préstamo vencido");
-        msg.setText("Hola " + detalle.getCodigoUsuario() + ",\n\n" +
-                "El préstamo del material \"" + detalle.getBiblioteca().getTitulo() +
-                "\" venció el " + fecha + ". Se aplicarán las sanciones correspondientes." +
-                "\n\nSaludos,\nTu App de Préstamos");
-        mailSender.send(msg);
+        String body = """
+                <p>Hola %s,</p>
+                <p>El préstamo del material <strong>%s</strong> venció el %s. Se aplicarán las sanciones correspondientes.</p>
+                """.formatted(detalle.getCodigoUsuario(),
+                detalle.getBiblioteca().getTitulo(), fecha);
+        String html = buildTemplate("NOTIFICACIÓN BIBLIOTECA", body);
+        sendHtml("moranpedro0398@gmail.com", "Préstamo vencido", html);
     }
 
     /**
