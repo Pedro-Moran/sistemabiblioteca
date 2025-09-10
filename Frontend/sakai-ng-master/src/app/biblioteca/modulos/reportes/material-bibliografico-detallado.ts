@@ -432,16 +432,33 @@ export class ReporteMaterialBibliograficoDetallado {
                 startY: 40,
                 styles: { fontSize: 9 }
             });
-            const inicioTabla = (doc as any).lastAutoTable.finalY + 5;
-            autoTable(doc, {
-                head: [this.columns.map((c) => c.header)],
-                body: this.data.map((r) => this.columns.map((c) => this.resolveField(r, c.field))),
-                startY: inicioTabla,
-                styles: { fontSize: 8 },
-                headStyles: { fillColor: [41, 128, 185] }
+            const chunkSize = 10;
+            let startY = (doc as any).lastAutoTable.finalY + 5;
+            const columnChunks = this.chunkArray(this.columns, chunkSize);
+            columnChunks.forEach((cols, idx) => {
+                autoTable(doc, {
+                    head: [cols.map((c) => c.header)],
+                    body: this.data.map((r) => cols.map((c) => this.resolveField(r, c.field))),
+                    startY,
+                    styles: { fontSize: 8 },
+                    headStyles: { fillColor: [41, 128, 185] },
+                    tableWidth: 'wrap'
+                });
+                if (idx < columnChunks.length - 1) {
+                    doc.addPage();
+                    startY = 20;
+                }
             });
             doc.save('material_bibliografico_detallado.pdf');
         };
+    }
+
+    private chunkArray<T>(arr: T[], size: number): T[][] {
+        const res: T[][] = [];
+        for (let i = 0; i < arr.length; i += size) {
+            res.push(arr.slice(i, i + size));
+        }
+        return res;
     }
 
     htmlValue(row: any, path: string): string {
