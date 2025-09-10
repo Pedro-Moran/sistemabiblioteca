@@ -139,32 +139,36 @@ export class ReportesFiltroService {
 
   async getCiclos(): Promise<ClaseGeneral[]> {
     if (!this.cacheCiclo) {
-      try {
-        const res: any = await firstValueFrom(
-          this.genericoService.tipo_get('catalogos/ciclos')
-        );
-        const list = Array.isArray(res?.data)
-          ? res.data
-          : Array.isArray(res)
-            ? res
-            : [];
-        this.cacheCiclo = [
-          new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 }),
-          ...list.map(
-            (c: any) =>
-              new ClaseGeneral({
-                id: c.id ?? c.codigo ?? c.ciclo,
-                descripcion: c.descripcion ?? c.nombre ?? c.ciclo,
-                activo: true,
-                estado: 1,
-              })
-          ),
-        ];
-      } catch {
-        this.cacheCiclo = [
-          new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 }),
-        ];
-      }
+      const romanos = [
+        'I',
+        'II',
+        'III',
+        'IV',
+        'V',
+        'VI',
+        'VII',
+        'VIII',
+        'IX',
+        'X',
+        'XI',
+        'XII',
+        'XIII',
+        'XIV',
+        'XV'
+      ];
+
+      this.cacheCiclo = [
+        new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 }),
+        ...romanos.map(
+          (descripcion, idx) =>
+            new ClaseGeneral({
+              id: idx + 1,
+              descripcion,
+              activo: true,
+              estado: 1
+            })
+        )
+      ];
     }
     return this.cacheCiclo ?? [];
   }
