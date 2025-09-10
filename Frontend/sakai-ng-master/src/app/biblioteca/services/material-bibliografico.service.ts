@@ -57,21 +57,21 @@ api_libros_lista(modulo: any): Observable<any> {
     return this.http.get<any[]>('assets/demo/biblioteca/material-bibliografico/opciones-libro.json');
   }
   lista_especialidad(modulo: any):Observable<any>{
-    return this.http.get<any[]>(`${this.apiUrl}/api/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );
+    const token = this.authService.getToken();
+    const options = token ? { headers: new HttpHeaders().set('Authorization',`Bearer ${token}`)} : {};
+    return this.http.get<any[]>(`${this.apiUrl}/api/${modulo}`, options);
 //     return this.http.get<any[]>('assets/demo/biblioteca/material-bibliografico/especialidad.json');
   }
   lista_pais(modulo: any):Observable<any>{
-    return this.http.get<any[]>(`${this.apiUrl}/api/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );
+    const token = this.authService.getToken();
+    const options = token ? { headers: new HttpHeaders().set('Authorization',`Bearer ${token}`)} : {};
+    return this.http.get<any[]>(`${this.apiUrl}/api/${modulo}`, options);
 //     return this.http.get<any[]>('assets/demo/biblioteca/material-bibliografico/pais.json');
   }
   lista_ciudad(modulo: any):Observable<any>{
-    return this.http.get<any[]>(`${this.apiUrl}/api/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );
+    const token = this.authService.getToken();
+    const options = token ? { headers: new HttpHeaders().set('Authorization',`Bearer ${token}`)} : {};
+    return this.http.get<any[]>(`${this.apiUrl}/api/${modulo}`, options);
 //     return this.http.get<any[]>('assets/demo/biblioteca/material-bibliografico/ciudad.json');
   }
   lista_idioma(modulo: any):Observable<any>{
@@ -104,9 +104,9 @@ api_libros_lista(modulo: any): Observable<any> {
     return this.http.get<any[]>(`${this.apiUrl}/api/${modulo}`, options);
   }
   lista_tipo_adquisicion(modulo: any):Observable<any>{
-    return this.http.get<any[]>(`${this.apiUrl}/api/${modulo}`
-        ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-        );
+    const token = this.authService.getToken();
+    const options = token ? { headers: new HttpHeaders().set('Authorization',`Bearer ${token}`)} : {};
+    return this.http.get<any[]>(`${this.apiUrl}/api/${modulo}`, options);
   }
 
   search_get(url: string): Observable<any> {
