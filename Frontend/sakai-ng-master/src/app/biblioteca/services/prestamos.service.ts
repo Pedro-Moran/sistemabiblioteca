@@ -246,8 +246,26 @@ export class PrestamosService {
         return this.http.get<{ status: string; data: UsuarioPrestamosEquipoDTO[] }>(`${this.apiUrl}/api/prestamos/reporte/usuarios-atendidos-biblioteca`).pipe(map((r) => r.data ?? []));
     }
 
-    reporteUsoTiempoBiblioteca(fechaInicio?: string, fechaFin?: string): Observable<EquipoUsoTiempoDTO[]> {
+    reporteUsoTiempoBiblioteca(
+        fechaInicio?: string,
+        fechaFin?: string,
+        sede?: number | string,
+        tipoUsuario?: number | string,
+        ciclo?: number | string,
+        escuela?: number | string
+    ): Observable<EquipoUsoTiempoDTO[]> {
         let params = new HttpParams();
+
+        const addParam = (key: string, value?: number | string | null) => {
+            if (value != null && value !== 0 && value !== '0') {
+                params = params.set(key, String(value));
+            }
+        };
+
+        addParam('sede', sede);
+        addParam('tipoUsuario', tipoUsuario);
+        addParam('ciclo', ciclo);
+        addParam('escuela', escuela);
         if (fechaInicio) params = params.set('fechaInicio', fechaInicio);
         if (fechaFin) params = params.set('fechaFin', fechaFin);
 
