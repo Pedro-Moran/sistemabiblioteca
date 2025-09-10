@@ -5,8 +5,8 @@ import { TemplateModule } from '../../template.module';
 import { InputValidation } from '../../input-validation';
 import { GenericoService } from '../../services/generico.service';
 import { MaterialBibliograficoService } from '../../services/material-bibliografico.service';
-import { OcurrenciasService } from '../../services/ocurrencias.service';
 import { ClaseGeneral } from '../../interfaces/clase-general';
+import { generarConstanciaNoAdeudo, generarConstanciaPendientes } from './constancia-pdf';
 @Component({
     selector: 'app-modal-impresion',
     standalone: true,
@@ -61,7 +61,6 @@ export class ModalImpresion implements OnInit {
 constructor(private fb: FormBuilder,
             private genericoService: GenericoService,
             private materialBibliograficoService: MaterialBibliograficoService,
-            private ocurrenciasService: OcurrenciasService,
             private confirmationService: ConfirmationService,
             private messageService: MessageService) {
 }
@@ -121,13 +120,19 @@ constructor(private fb: FormBuilder,
                         correlativo: this.form.value.correlativo,
                         descripcion: this.form.value.descripcion
                     };
-                    this.ocurrenciasService.api_constancias_pdf(payload)
-                        .subscribe(blob => {
-                            this.loading = false;
-                            const url = window.URL.createObjectURL(blob);
-                            window.open(url, '_blank');
-                            this.display = false;
-                        }, _ => this.loading = false);
+                    if (this.objeto.pendiente) {
+                        generarConstanciaPendientes({
+                            codigo: this.objeto.codigo,
+                            estudiante: this.objeto.estudiante,
+                            especialidad: this.objeto.especialidad,
+                            detallesLaboratorio: this.objeto.laboratorios,
+                            detallesBiblioteca: this.objeto.biblioteca
+                        });
+                    } else {
+                        generarConstanciaNoAdeudo(payload);
+                    }
+                    this.loading = false;
+                    this.display = false;
                 }
             });
         }
