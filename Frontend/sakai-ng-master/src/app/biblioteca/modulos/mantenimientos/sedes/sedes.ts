@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { TemplateModule } from '../../../template.module';
 import { Sedes } from '../../../interfaces/sedes';
 import { SedeService } from '../../../services/sede.service';
 import { MessageService, ConfirmationService } from 'primeng/api';
+import { Table } from 'primeng/table';
 
 @Component({
   selector: 'app-sedes',
@@ -10,20 +11,42 @@ import { MessageService, ConfirmationService } from 'primeng/api';
   imports: [TemplateModule],
   providers: [MessageService, ConfirmationService],
   template: `
-    <p-toolbar styleClass="mb-4">
+    <p-toolbar styleClass="mb-6">
       <ng-template #start>
         <p-button label="Nueva Sede" icon="pi pi-plus" (onClick)="openNew()" />
       </ng-template>
     </p-toolbar>
-    <p-table [value]="sedes" dataKey="id" [tableStyle]="{ 'min-width': '50rem' }">
-      <ng-template #header>
+    <p-table
+      #dt1
+      [value]="sedes"
+      dataKey="id"
+      [rows]="10"
+      [paginator]="true"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+      [rowHover]="true"
+      styleClass="p-datatable-gridlines"
+      [globalFilterFields]="['descripcion','activo']"
+      [loading]="loading"
+      responsiveLayout="scroll"
+    >
+      <ng-template pTemplate="caption">
+        <div class="flex items-center justify-between">
+          <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt1)" />
+          <p-iconfield>
+            <input pInputText #filter type="text" placeholder="Filtrar" (input)="onGlobalFilter(dt1,$event)" />
+          </p-iconfield>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="header">
         <tr>
-          <th>Descripción</th>
-          <th>Activo</th>
+          <th pSortableColumn="descripcion">Descripción<p-sortIcon field="descripcion"></p-sortIcon></th>
+          <th pSortableColumn="activo" style="width:8rem">Activo<p-sortIcon field="activo"></p-sortIcon></th>
           <th style="width:8rem">Acciones</th>
         </tr>
       </ng-template>
-      <ng-template #body let-sede>
+      <ng-template pTemplate="body" let-sede>
         <tr>
           <td>{{ sede.descripcion }}</td>
           <td>
@@ -33,6 +56,16 @@ import { MessageService, ConfirmationService } from 'primeng/api';
             <p-button icon="pi pi-pencil" rounded outlined class="mr-2" (onClick)="editSede(sede)"></p-button>
             <p-button icon="pi pi-trash" severity="danger" rounded outlined (onClick)="confirmDelete(sede)"></p-button>
           </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="3">No se encontraron registros.</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="loadingbody">
+        <tr>
+          <td colspan="3">Cargando datos. Espere por favor.</td>
         </tr>
       </ng-template>
     </p-table>
@@ -58,6 +91,8 @@ export class SedesComponent implements OnInit {
   sedes: Sedes[] = [];
   sedeDialog = false;
   sede: Sedes = new Sedes();
+  loading = false;
+  @ViewChild('filter') filter!: ElementRef;
 
   constructor(
     private sedeService: SedeService,
@@ -70,7 +105,11 @@ export class SedesComponent implements OnInit {
   }
 
   load() {
-    this.sedeService.list().subscribe(data => (this.sedes = data));
+    this.loading = true;
+    this.sedeService.list().subscribe(data => {
+      this.sedes = data;
+      this.loading = false;
+    });
   }
 
   openNew() {
@@ -111,5 +150,14 @@ export class SedesComponent implements OnInit {
 
   hideDialog() {
     this.sedeDialog = false;
+  }
+
+  onGlobalFilter(table: Table, event: Event) {
+    table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+  }
+
+  clear(table: Table) {
+    table.clear();
+    this.filter.nativeElement.value = '';
   }
 }
