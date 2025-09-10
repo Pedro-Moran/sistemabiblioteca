@@ -408,7 +408,7 @@ private resetInactivityTimer(): void {
     this.currentUserSubject.next({} as Usuario);
     this.msalService.instance.setActiveAccount(null);
     void this.msalService.instance.clearCache();
-    this.router.navigate(['/auth/login']);
+    this.router.navigate(['/'], { replaceUrl: true });
   }
 
   refreshAccessToken(): Observable<string> {

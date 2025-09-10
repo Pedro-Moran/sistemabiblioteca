@@ -10,11 +10,13 @@ import { PortalRegistrate } from './app/biblioteca/web/registrate/registrate';
 import { PortalReserva } from './app/biblioteca/web/catalogo/reserva';
 import { Dashboard } from './app/biblioteca/modulos/dashboard/dashboard';
 import { Login } from './app/pages/auth/login';
+import { RoleGuard } from './app/guards/role.guard';
 
 export const appRoutes: Routes = [
     {
         path: 'main',
         component: AppLayout,
+        canActivate: [RoleGuard],
         children: [
             { path: '', component: Dashboard },
             { path: 'mantenimiento', loadChildren: () => import('./app/biblioteca/modulos/mantenimientos/mantenimientos.routes')},
