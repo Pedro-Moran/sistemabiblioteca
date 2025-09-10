@@ -14,8 +14,6 @@ import { Detalle } from '../../interfaces/material-bibliografico/detalle';
 import { Table } from 'primeng/table';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { HttpClient } from '@angular/common/http';
 import { ReportesFiltroService } from '../../services/reportes-filtro.service';
 import { construirCabeceraFiltros } from '../../utils/exportacion';
@@ -42,7 +40,6 @@ import { Observable } from 'rxjs';
                         <div class="flex items-end gap-2">
                             <button pButton type="button" class="p-button-rounded p-button-danger" icon="pi pi-search" (click)="reporte()" [disabled]="loading" pTooltip="Ver reporte" tooltipPosition="bottom"></button>
                             <button pButton type="button" class="p-button-rounded p-button-success" icon="pi pi-file-excel" (click)="exportExcel()" tooltip="Exportar a Excel" tooltipPosition="bottom"></button>
-                            <button pButton type="button" class="p-button-rounded p-button-info" icon="pi pi-file-pdf" (click)="exportPdf()" tooltip="Exportar a PDF" tooltipPosition="bottom"></button>
                         </div>
                     </div>
                 </div>
@@ -406,59 +403,6 @@ export class ReporteMaterialBibliograficoDetallado {
         ws.columns.forEach((col) => (col.width = 20));
         const buf = await wb.xlsx.writeBuffer();
         saveAs(new Blob([buf]), 'material_bibliografico_detallado.xlsx');
-    }
-
-    exportPdf() {
-        if (!this.data.length) {
-            this.messageService.add({ severity: 'warn', detail: 'No hay datos para exportar.' });
-            return;
-        }
-        const doc = new jsPDF({ orientation: 'landscape' });
-        const img = new Image();
-        img.src = '/assets/logo.png';
-        img.onload = () => {
-            doc.addImage(img, 'PNG', 10, 10, 60, 25);
-            doc.setFontSize(16);
-            const pageWidth = doc.internal.pageSize.getWidth();
-            doc.text(this.titulo, pageWidth / 2, 20, { align: 'center' });
-            const filtrosCabecera = construirCabeceraFiltros([
-                { etiqueta: 'Sede', valor: this.sedeFiltro?.descripcion, defecto: 'Todas' },
-                { etiqueta: 'Colección', valor: this.coleccionFiltro?.descripcion, defecto: 'Todas' },
-                { etiqueta: 'Fecha emisión', valor: new Date().toLocaleString() }
-            ]);
-            autoTable(doc, {
-                head: [filtrosCabecera.etiquetas],
-                body: [filtrosCabecera.valores],
-                startY: 40,
-                styles: { fontSize: 9 }
-            });
-            const chunkSize = 10;
-            let startY = (doc as any).lastAutoTable.finalY + 5;
-            const columnChunks = this.chunkArray(this.columns, chunkSize);
-            columnChunks.forEach((cols, idx) => {
-                autoTable(doc, {
-                    head: [cols.map((c) => c.header)],
-                    body: this.data.map((r) => cols.map((c) => this.resolveField(r, c.field))),
-                    startY,
-                    styles: { fontSize: 8 },
-                    headStyles: { fillColor: [41, 128, 185] },
-                    tableWidth: 'wrap'
-                });
-                if (idx < columnChunks.length - 1) {
-                    doc.addPage();
-                    startY = 20;
-                }
-            });
-            doc.save('material_bibliografico_detallado.pdf');
-        };
-    }
-
-    private chunkArray<T>(arr: T[], size: number): T[][] {
-        const res: T[][] = [];
-        for (let i = 0; i < arr.length; i += size) {
-            res.push(arr.slice(i, i + size));
-        }
-        return res;
     }
 
     htmlValue(row: any, path: string): string {
