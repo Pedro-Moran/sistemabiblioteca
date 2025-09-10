@@ -22,11 +22,14 @@ import { AuthService } from '../../biblioteca/services/auth.service';
 import { OcurrenciasService } from '../../biblioteca/services/ocurrencias.service';
 import { MaterialBibliograficoService } from '../../biblioteca/services/material-bibliografico.service';
 import { OcurrenciaDTO } from '../../biblioteca/interfaces/ocurrenciaDTO';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
+import { finalize } from 'rxjs/operators';
 
 @Component({
     selector: 'app-topbar',
     standalone: true,
-    imports: [RouterModule, CommonModule, StyleClassModule, StyleClassModule, OverlayPanelModule, DialogModule, TableModule, ButtonModule, OverlayBadgeModule, BadgeModule, MenuModule, TabViewModule],
+    imports: [RouterModule, CommonModule, StyleClassModule, StyleClassModule, OverlayPanelModule, DialogModule, TableModule, ButtonModule, OverlayBadgeModule, BadgeModule, MenuModule, TabViewModule, ToastModule],
     styles: [
       `.highlight-row { animation: fadeHighlight 2s ease-in-out forwards; }
        @keyframes fadeHighlight { from { background-color: #ffe08a; } to { background-color: transparent; } }`
@@ -158,7 +161,7 @@ import { OcurrenciaDTO } from '../../biblioteca/interfaces/ocurrenciaDTO';
                     <td>{{ recursoSolicitud(s) }}</td>
                     <td>{{ s.fechaPrestamo | date:'short' }}</td>
                     <td>
-                      <button pButton icon="pi pi-times" class="p-button-text p-button-danger" (click)="cancelarSolicitud(s, i)"></button>
+                      <button pButton icon="pi pi-times" class="p-button-text p-button-danger" (click)="cancelarSolicitud(s, i)" [loading]="cancelandoIndex === i" [disabled]="cancelandoIndex === i"></button>
                     </td>
                   </tr>
                 </ng-template>
@@ -188,7 +191,9 @@ import { OcurrenciaDTO } from '../../biblioteca/interfaces/ocurrenciaDTO';
             </p-tabPanel>
           </p-tabView>
         </p-dialog>
-    </div>`
+        <p-toast></p-toast>
+    </div>`,
+    providers: [MessageService]
 })
 export class AppTopbar implements OnInit {
     @ViewChild('op') overlayPanel!: OverlayPanel;
@@ -217,13 +222,15 @@ export class AppTopbar implements OnInit {
     nuevosRechazados = 0;
     nuevasSolicitudes = 0;
     nuevasOcurrencias = 0;
+    cancelandoIndex: number | null = null;
 
     constructor(
       public layoutService: LayoutService,
       private prestamoService: PrestamosService,
       private authService: AuthService,
       private ocurrenciasService: OcurrenciasService,
-      private materialService: MaterialBibliograficoService
+      private materialService: MaterialBibliograficoService,
+      private messageService: MessageService
     ) {}
 
     ngOnInit() {
@@ -312,16 +319,24 @@ export class AppTopbar implements OnInit {
   }
 
   cancelarSolicitud(n: DetallePrestamo, index: number) {
+    this.cancelandoIndex = index;
     const req$ = n.material
       ? this.materialService.cancelarDetalle(n.id)
       : this.prestamoService.cancelarSolicitud(n.id);
-    req$.subscribe({
-      next: () => {
-        this.solicitudes.splice(index, 1);
-        this.nuevasSolicitudes = this.solicitudes.length;
-      },
-      error: () => {}
-    });
+    req$
+      .pipe(finalize(() => (this.cancelandoIndex = null)))
+      .subscribe({
+        next: () => {
+          this.solicitudes.splice(index, 1);
+          this.nuevasSolicitudes = this.solicitudes.length;
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Solicitud cancelada',
+            detail: 'La reserva ha sido cancelada'
+          });
+        },
+        error: () => {}
+      });
   }
 
   /** Devuelve el recurso mencionado en la notificación */
