@@ -426,10 +426,10 @@ export class CatalogoEnLineaComponent {
         this.detallesPorBiblioteca = {};
     }
     listar(page: number = 0, size: number = this.rows) {
-        const opcion = this.opcionFiltro?.valor;
+        const rawOption = this.opcionFiltro?.valor;
         const valor = this.palabraClave?.trim() || '';
 
-        if (opcion === 'codigoLocalizacion') {
+        if (rawOption === 'codigoLocalizacion') {
             if (valor && !/^\d+$/.test(valor)) {
                 this.messageService.add({
                     severity: 'warn',
@@ -440,7 +440,7 @@ export class CatalogoEnLineaComponent {
             }
         }
 
-        if (opcion && !valor) {
+        if (rawOption && !valor) {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Valor requerido',
@@ -449,75 +449,68 @@ export class CatalogoEnLineaComponent {
             return;
         }
 
-        const params = new URLSearchParams();
-        if (valor) {
-            params.set('valor', valor);
-        }
-        if (this.sedeFiltro?.id) {
-            params.set('sedeId', String(this.sedeFiltro.id));
-        }
-        if (this.coleccionFiltro?.id) {
-            params.set('tipoMaterial', String(this.coleccionFiltro.id));
-        }
-        if (opcion) {
-            params.set('opcion', opcion);
-        }
-        params.set('page', page.toString());
-        params.set('size', size.toString());
-
-        const url = `api/biblioteca/catalogo?${params.toString()}`;
+        const optionMap: Record<string, string> = {
+            autorPersonal: 'AUTOR',
+            titulo: 'TITULO',
+            descriptor: 'TEMA',
+            codigoLocalizacion: 'CODIGO'
+        };
+        const opcion = optionMap[rawOption as keyof typeof optionMap] || '';
 
         // Recupera solo las cabeceras disponibles
         this.loading = true;
-        this.materialBibliograficoService.api_libros_lista(url).subscribe({
-            next: (result: any) => {
-                const resp = Array.isArray(result) ? { data: result, total: result.length } : result;
-                const cabeceras = (resp?.data || []).filter((b: any) => b.estadoId === 2 || b.estado?.descripcion === 'DISPONIBLE');
-                this.totalRecords = resp?.total ?? cabeceras.length;
+        this.materialBibliograficoService
+            .catalogoPaginado(valor, this.sedeFiltro?.id, this.coleccionFiltro?.id, opcion, page, size)
+            .subscribe({
+                next: (resp: any) => {
+                    const cabeceras = (resp?.data || resp || []).filter(
+                        (b: any) => b.estadoId === 2 || b.estado?.descripcion === 'DISPONIBLE'
+                    );
+                    this.totalRecords = resp?.total ?? cabeceras.length;
 
-                if (cabeceras.length === 0) {
-                    this.data = [];
-                    this.loading = false;
-                    return;
-                }
-
-                const requests: Observable<{ cab: any; detalles: any[] }>[] = cabeceras.map((b: any) =>
-                    this.materialBibliograficoService.listarDetallesPorBiblioteca(b.id, false).pipe(
-                        map((det: any[]) => ({
-                            cab: b,
-                            detalles: det.filter((d) => d.idEstado === 2 || d.estado?.descripcion === 'DISPONIBLE')
-                        }))
-                    )
-                );
-
-                forkJoin(requests).subscribe({
-                    next: (resp: { cab: any; detalles: any[] }[]) => {
+                    if (cabeceras.length === 0) {
                         this.data = [];
-                        this.detallesPorBiblioteca = {};
-
-                        resp.forEach((r: { cab: any; detalles: any[] }) => {
-                            if (r.detalles.length > 0) {
-                                const det = r.detalles[0];
-                                r.cab.coleccion = r.cab.coleccion || det?.tipoMaterial;
-                                r.cab.codigoLocalizacion = r.cab.codigoLocalizacion || r.cab.codigo;
-                                r.cab.anioPublicacion = r.cab.anioPublicacion || r.cab.material?.anioPublicacion;
-                                this.data.push(r.cab);
-                                this.detallesPorBiblioteca[r.cab.id] = r.detalles;
-                            }
-                        });
-
                         this.loading = false;
-                    },
-                    error: () => {
-                        this.loading = false;
-                        this.messageService.add({ severity: 'error', detail: 'Error al cargar detalles' });
+                        return;
                     }
-                });
-            },
-            error: () => {
-                this.loading = false;
-            }
-        });
+
+                    const requests: Observable<{ cab: any; detalles: any[] }>[] = cabeceras.map((b: any) =>
+                        this.materialBibliograficoService.listarDetallesPorBiblioteca(b.id, false).pipe(
+                            map((det: any[]) => ({
+                                cab: b,
+                                detalles: det.filter((d) => d.idEstado === 2 || d.estado?.descripcion === 'DISPONIBLE')
+                            }))
+                        )
+                    );
+
+                    forkJoin(requests).subscribe({
+                        next: (resp: { cab: any; detalles: any[] }[]) => {
+                            this.data = [];
+                            this.detallesPorBiblioteca = {};
+
+                            resp.forEach((r: { cab: any; detalles: any[] }) => {
+                                if (r.detalles.length > 0) {
+                                    const det = r.detalles[0];
+                                    r.cab.coleccion = r.cab.coleccion || det?.tipoMaterial;
+                                    r.cab.codigoLocalizacion = r.cab.codigoLocalizacion || r.cab.codigo;
+                                    r.cab.anioPublicacion = r.cab.anioPublicacion || r.cab.material?.anioPublicacion;
+                                    this.data.push(r.cab);
+                                    this.detallesPorBiblioteca[r.cab.id] = r.detalles;
+                                }
+                            });
+
+                            this.loading = false;
+                        },
+                        error: () => {
+                            this.loading = false;
+                            this.messageService.add({ severity: 'error', detail: 'Error al cargar detalles' });
+                        }
+                    });
+                },
+                error: () => {
+                    this.loading = false;
+                }
+            });
     }
 
     loadData(event: any) {
