@@ -9,6 +9,7 @@ import { Libro } from '../../interfaces/material-bibliografico/libro';
 import { Revista } from '../../interfaces/material-bibliografico/revista';
 import { Tesis } from '../../interfaces/material-bibliografico/tesis';
 import { Otro } from '../../interfaces/material-bibliografico/otro';
+import { BibliotecaDTO } from '../../interfaces/material-bibliografico/biblioteca.model';
 import { Detalle } from '../../interfaces/material-bibliografico/detalle';
 import { Table } from 'primeng/table';
 import * as ExcelJS from 'exceljs';
@@ -16,8 +17,9 @@ import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { HttpClient } from '@angular/common/http';
-import { GenericoService } from '../../services/generico.service';
+import { ReportesFiltroService } from '../../services/reportes-filtro.service';
 import { construirCabeceraFiltros } from '../../utils/exportacion';
+import { Observable } from 'rxjs';
 @Component({
     selector: 'app-reporte-material-bibliografico-detallado',
     standalone: true,
@@ -95,7 +97,7 @@ export class ReporteMaterialBibliograficoDetallado {
     dataColeccion: ClaseGeneral[] = [];
     tipo:number=1;
     loading: boolean = true;
-    data:(Libro|Revista|Tesis|Otro)[] = [];
+    data:(Libro|Revista|Tesis|Otro|BibliotecaDTO)[] = [];
     columns: {field:string; header:string}[] = [];
     // Catálogos para traducir códigos a descripciones
     private paisMap = new Map<string,string>();
@@ -103,6 +105,7 @@ export class ReporteMaterialBibliograficoDetallado {
     private especialidadMap = new Map<number,string>();
     private sedeMap = new Map<number,string>();
     private tipoAdqMap = new Map<number,string>();
+    private coleccionMap = new Map<number,string>();
     private lookup<K,V>(map: Map<K,V>, ...keys: (K|undefined|null)[]): V | undefined {
         for (const k of keys) {
             if (k != null && map.has(k as K)) {
@@ -116,18 +119,15 @@ export class ReporteMaterialBibliograficoDetallado {
     }
 
     constructor(private materialService: MaterialBibliograficoService,
-                private genericoService: GenericoService,
+                private filtrosService: ReportesFiltroService,
                 private http: HttpClient,
                 private messageService: MessageService){}
 
     private async cargarSedes() {
         try {
-            const res: any = await this.genericoService.sedes_get('sede/lista-activo').toPromise();
-            if (res.status === "0") {
-                this.dataSede = [{ id: 0, descripcion: 'TODAS LAS SEDES', activo: true, estado: 1 }, ...res.data];
-                this.sedeFiltro = this.dataSede[0];
-                this.sedeMap = new Map(this.dataSede.map(s => [s.id, s.descripcion]));
-            }
+            this.dataSede = await this.filtrosService.getSedes();
+            this.sedeFiltro = this.dataSede[0];
+            this.sedeMap = new Map(this.dataSede.map(s => [s.id, s.descripcion]));
         } catch (err) {
             this.messageService.add({ severity: 'error', detail: 'Error al cargar sedes' });
         }
@@ -154,8 +154,10 @@ export class ReporteMaterialBibliograficoDetallado {
         try {
             const res: any = await this.materialService.lista_tipo_material('catalogos/tipomaterial/activos').toPromise();
             const rawList: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
-            this.dataColeccion = rawList.map(t => new ClaseGeneral({ id: t.tipo.id, descripcion: t.descripcion, activo: t.activo ?? true, estado: 1 }));
-            this.coleccionFiltro = this.dataColeccion.find(c => c.id === 1) ?? this.dataColeccion[0];
+            this.coleccionMap = new Map(rawList.map(t => [t.tipo.id, t.descripcion]));
+            this.dataColeccion = [new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 }),
+                ...rawList.map(t => new ClaseGeneral({ id: t.tipo.id, descripcion: t.descripcion, activo: t.activo ?? true, estado: 1 }))];
+            this.coleccionFiltro = this.dataColeccion[0];
         } catch (err) {
             this.messageService.add({ severity: 'error', detail: 'Error al cargar colecciones' });
         }
@@ -166,16 +168,23 @@ export class ReporteMaterialBibliograficoDetallado {
     }
     reporte() {
         this.loading = true;
-        const tipo = this.coleccionFiltro?.id ?? 1;
+        const tipo = this.coleccionFiltro?.id ?? 0;
         const sedeId = this.sedeFiltro?.id && this.sedeFiltro.id !== 0 ? this.sedeFiltro.id : undefined;
         this.setColumns(tipo);
-        const source = tipo === 3
+        const source: Observable<(Libro|Revista|Tesis|Otro|BibliotecaDTO)[]> = tipo === 3
             ? this.materialService.listarTesis(sedeId)
-            : this.materialService.listarColeccionDetalle(tipo, sedeId);
+            : tipo === 0
+                ? this.materialService.listarPorTipoMaterial(undefined, sedeId)
+                : this.materialService.listarColeccionDetalle(tipo, sedeId);
         source.subscribe({
-            next: list => {
-                this.data = list.map(item => {
-                    const anyItem: any = item;
+            next: (list: (Libro|Revista|Tesis|Otro|BibliotecaDTO)[]) => {
+                this.data = list.map((item: Libro|Revista|Tesis|Otro|BibliotecaDTO) => {
+                    const anyItem: any = { ...item };
+                    anyItem.detalle = anyItem.detalle ?? anyItem.detalles;
+                    if (!anyItem.tipoMaterial?.descripcion && anyItem.tipoMaterialId != null) {
+                        const desc = this.coleccionMap.get(anyItem.tipoMaterialId);
+                        if (desc) anyItem.tipoMaterial = { descripcion: desc };
+                    }
                     if (anyItem.pais) {
                         let desc = this.lookup(
                             this.paisMap,
@@ -239,6 +248,18 @@ export class ReporteMaterialBibliograficoDetallado {
     }
 
     private setColumns(tipo: number) {
+        if (tipo === 0) {
+            this.columns = [
+                { field: 'codigoLocalizacion', header: 'Código' },
+                { field: 'titulo', header: 'Título' },
+                { field: 'autorPersonal', header: 'Autor' },
+                { field: 'tipoMaterial.descripcion', header: 'Tipo de material' },
+                { field: 'anioPublicacion', header: 'Año' },
+                { field: 'detalle.numeroIngreso', header: 'N° de Ingreso' },
+                { field: 'detalle.sede.descripcion', header: 'Sede' }
+            ];
+            return;
+        }
         if (tipo === 1) {
             this.columns = [
                 { field: 'codigo', header: 'Código' },
