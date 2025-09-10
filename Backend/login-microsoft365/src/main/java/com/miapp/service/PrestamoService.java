@@ -459,8 +459,22 @@ public class PrestamoService {
                 .orElseThrow(() -> new RuntimeException("DetallePrestamo no encontrado: " + id));
     }
 
-    public List<com.miapp.model.dto.UsuarioPrestamosDTO> reporteEstudiantesAtendidos() {
-        return detallePrestamoRepository.contarPrestamosPorUsuario();
+    public List<com.miapp.model.dto.UsuarioPrestamosDTO> reporteEstudiantesAtendidos(
+            String sede,
+            String especialidad,
+            String programa,
+            String ciclo,
+            LocalDateTime fechaInicio,
+            LocalDateTime fechaFin
+    ) {
+        return detallePrestamoRepository.contarPrestamosPorUsuario(
+                sede,
+                especialidad,
+                programa,
+                ciclo,
+                fechaInicio,
+                fechaFin
+        );
     }
 
     /**

@@ -189,8 +189,25 @@ public class PrestamoController {
     }
 
     @GetMapping("/reporte/estudiantes-atendidos")
-    public ResponseEntity<?> reporteEstudiantesAtendidos() {
-        List<com.miapp.model.dto.UsuarioPrestamosDTO> lista = prestamoService.reporteEstudiantesAtendidos();
+    public ResponseEntity<?> reporteEstudiantesAtendidos(
+            @RequestParam(required = false) Long sede,
+            @RequestParam(required = false) Long especialidad,
+            @RequestParam(required = false) Long programa,
+            @RequestParam(required = false) Long ciclo,
+            @RequestParam(required = false) String fechaInicio,
+            @RequestParam(required = false) String fechaFin
+    ) {
+        LocalDateTime inicio = fechaInicio != null ? LocalDate.parse(fechaInicio).atStartOfDay() : null;
+        LocalDateTime fin    = fechaFin != null ? LocalDate.parse(fechaFin).atTime(23,59,59) : null;
+
+        List<com.miapp.model.dto.UsuarioPrestamosDTO> lista = prestamoService.reporteEstudiantesAtendidos(
+                sede != null ? sede.toString() : null,
+                especialidad != null ? especialidad.toString() : null,
+                programa != null ? programa.toString() : null,
+                ciclo != null ? ciclo.toString() : null,
+                inicio,
+                fin
+        );
         return ResponseEntity.ok(Map.of("status","0","data", lista));
     }
 
