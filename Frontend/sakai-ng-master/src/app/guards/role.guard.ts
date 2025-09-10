@@ -14,12 +14,15 @@ export class RoleGuard implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): boolean | UrlTree {
-      // 🚨 Verificar si el usuario está autenticado
+        // 🚨 Verificar si el usuario está autenticado
         if (!this.authService.idAuthenticated()) {
-          console.warn('Usuario no autenticado, redirigiendo a /login');
-          return this.router.createUrlTree(['/login']);
+          console.warn('Usuario no autenticado, redirigiendo al inicio');
+          return this.router.createUrlTree(['/']);
         }
     const requiredRoles: string[] = route.data['roles'] || []; // Obtiene los roles permitidos de la ruta
+    if (requiredRoles.length === 0) {
+      return true;
+    }
     const userRoles: string[] = this.authService.getRoles() || []; // Obtiene los roles del usuario
     // Imprime en consola los roles requeridos y los roles del usuario
         console.log('Roles requeridos:', requiredRoles);
