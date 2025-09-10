@@ -214,10 +214,30 @@ export class PrestamosService {
       return this.http.get<any>(`${this.apiUrl}/api/equipos/estados`);
       }
 
-  reporteEstudiantesAtendidos(): Observable<UsuarioPrestamosDTO[]> {
+  reporteEstudiantesAtendidos(filtros: {
+    sede?: number | string;
+    programa?: number | string;
+    especialidad?: number | string;
+    ciclo?: number | string;
+    tipoMaterial?: number | string;
+    fechaInicio?: string;
+    fechaFin?: string;
+  } = {}): Observable<UsuarioPrestamosDTO[]> {
+      let params = new HttpParams();
+      const agregar = (k: string, v?: number | string | null) => {
+        if (v != null && v !== 0 && v !== '0') params = params.set(k, String(v));
+      };
+      agregar('sede', filtros.sede);
+      agregar('programa', filtros.programa);
+      agregar('especialidad', filtros.especialidad);
+      agregar('ciclo', filtros.ciclo);
+      agregar('tipoMaterial', filtros.tipoMaterial);
+      if (filtros.fechaInicio) params = params.set('fechaInicio', filtros.fechaInicio);
+      if (filtros.fechaFin) params = params.set('fechaFin', filtros.fechaFin);
+
       return this.http
         .get<{status:string, data: UsuarioPrestamosDTO[]}>(
-          `${this.apiUrl}/api/prestamos/reporte/estudiantes-atendidos`
+          `${this.apiUrl}/api/prestamos/reporte/estudiantes-atendidos`, { params }
         )
         .pipe(map(r => r.data ?? []));
   }

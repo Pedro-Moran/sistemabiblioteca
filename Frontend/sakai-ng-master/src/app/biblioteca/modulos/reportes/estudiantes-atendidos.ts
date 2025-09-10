@@ -188,8 +188,18 @@ export class ReporteEstudiantesAtendidos implements OnInit {
     async reporte() {
         this.loading = true;
         try {
+            const fi = this.fechaInicio ? this.fechaInicio.toISOString().split('T')[0] : undefined;
+            const ff = this.fechaFin ? this.fechaFin.toISOString().split('T')[0] : undefined;
             this.resultados = await firstValueFrom(
-                this.prestamosService.reporteEstudiantesAtendidos()
+                this.prestamosService.reporteEstudiantesAtendidos({
+                    sede: this.sedeFiltro?.id,
+                    programa: this.programaFiltro?.id,
+                    especialidad: this.especialidadFiltro?.id,
+                    ciclo: this.cicloFiltro?.id,
+                    tipoMaterial: this.tipoMaterialFiltro?.id,
+                    fechaInicio: fi,
+                    fechaFin: ff,
+                })
             );
         } finally {
             this.loading = false;

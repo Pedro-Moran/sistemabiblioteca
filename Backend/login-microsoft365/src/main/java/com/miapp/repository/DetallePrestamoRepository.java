@@ -53,9 +53,21 @@ public interface DetallePrestamoRepository
                     "LEFT JOIN Usuario u ON upper(u.login) = upper(dp.codigoUsuario) " +
                     "LEFT JOIN Sede s ON u.idSede = s.id " +
                     "LEFT JOIN Sede s2 ON dp.codigoSede = str(s2.id) " +
+                    "WHERE (:sede IS NULL OR dp.codigoSede = :sede) " +
+                    "AND (:especialidad IS NULL OR dp.codigoEscuela = :especialidad) " +
+                    "AND (:programa IS NULL OR dp.codigoPrograma = :programa) " +
+                    "AND (:ciclo IS NULL OR dp.codigoCiclo = :ciclo) " +
+                    "AND (:fechaInicio IS NULL OR dp.fechaPrestamo >= :fechaInicio) " +
+                    "AND (:fechaFin IS NULL OR dp.fechaPrestamo <= :fechaFin) " +
                     "GROUP BY dp.codigoUsuario, COALESCE(s.descripcion, s2.descripcion) " +
                     "ORDER BY MAX(dp.id) DESC" )
-    List<com.miapp.model.dto.UsuarioPrestamosDTO> contarPrestamosPorUsuario();
+    List<com.miapp.model.dto.UsuarioPrestamosDTO> contarPrestamosPorUsuario(
+            @org.springframework.data.repository.query.Param("sede") String sede,
+            @org.springframework.data.repository.query.Param("especialidad") String especialidad,
+            @org.springframework.data.repository.query.Param("programa") String programa,
+            @org.springframework.data.repository.query.Param("ciclo") String ciclo,
+            @org.springframework.data.repository.query.Param("fechaInicio") java.time.LocalDateTime fechaInicio,
+            @org.springframework.data.repository.query.Param("fechaFin") java.time.LocalDateTime fechaFin);
 
     /**
      * Devuelve la cantidad de préstamos aprobados por usuario.
