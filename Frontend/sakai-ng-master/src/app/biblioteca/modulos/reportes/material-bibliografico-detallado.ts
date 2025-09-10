@@ -25,88 +25,146 @@ import { Observable } from 'rxjs';
     standalone: true,
     template: `
         <div class="card flex flex-col gap-4 w-full">
-    <h5>{{titulo}}</h5>
-    <p-toolbar styleClass="mb-6">
-    <div class="flex flex-col w-full gap-4">
-                <!-- Primera fila: Sede (2 col), Programa (2 col) y Escuela (3 col) -->
-                <div class="grid grid-cols-7 gap-4">
-                    <div class="flex flex-col gap-2 col-span-7 md:col-span-2 lg:col-span-2">
-                        <label for="sede" class="block text-sm font-medium">Local/Filial</label>
-                        <p-select [(ngModel)]="sedeFiltro" [options]="dataSede" optionLabel="descripcion" placeholder="Seleccionar" />
-                    </div>
+            <h5>{{ titulo }}</h5>
+            <p-toolbar styleClass="mb-6">
+                <div class="flex flex-col w-full gap-4">
+                    <!-- Primera fila: Sede (2 col), Programa (2 col) y Escuela (3 col) -->
+                    <div class="grid grid-cols-7 gap-4">
+                        <div class="flex flex-col gap-2 col-span-7 md:col-span-2 lg:col-span-2">
+                            <label for="sede" class="block text-sm font-medium">Local/Filial</label>
+                            <p-select [(ngModel)]="sedeFiltro" [options]="dataSede" optionLabel="descripcion" placeholder="Seleccionar" />
+                        </div>
 
-                    <div class="flex flex-col gap-2 col-span-7 md:col-span-2 lg:col-span-2">
-                    <label for="coleccion" class="block text-sm font-medium">Coleccion</label>
-                    <p-select [(ngModel)]="coleccionFiltro" [options]="dataColeccion" optionLabel="descripcion" placeholder="Seleccionar" />
+                        <div class="flex flex-col gap-2 col-span-7 md:col-span-2 lg:col-span-2">
+                            <label for="coleccion" class="block text-sm font-medium">Coleccion</label>
+                            <p-select [(ngModel)]="coleccionFiltro" [options]="dataColeccion" optionLabel="descripcion" placeholder="Seleccionar" />
+                        </div>
+                        <div class="flex items-end gap-2">
+                            <button pButton type="button" class="p-button-rounded p-button-danger" icon="pi pi-search" (click)="reporte()" [disabled]="loading" pTooltip="Ver reporte" tooltipPosition="bottom"></button>
+                            <button pButton type="button" class="p-button-rounded p-button-success" icon="pi pi-file-excel" (click)="exportExcel()" tooltip="Exportar a Excel" tooltipPosition="bottom"></button>
+                            <button pButton type="button" class="p-button-rounded p-button-info" icon="pi pi-file-pdf" (click)="exportPdf()" tooltip="Exportar a PDF" tooltipPosition="bottom"></button>
+                        </div>
                     </div>
-                                        <div class="flex items-end gap-2">
-                                <button pButton type="button" class="p-button-rounded p-button-danger" icon="pi pi-search"(click)="reporte()" [disabled]="loading"  pTooltip="Ver reporte" tooltipPosition="bottom"></button>
-                                <button pButton type="button" class="p-button-rounded p-button-success" icon="pi pi-file-excel" (click)="exportExcel()" tooltip="Exportar a Excel" tooltipPosition="bottom"></button>
-                                <button pButton type="button" class="p-button-rounded p-button-info" icon="pi pi-file-pdf" (click)="exportPdf()" tooltip="Exportar a PDF" tooltipPosition="bottom"></button>
+                </div>
+            </p-toolbar>
+            <p-table #dt [value]="data" dataKey="id" [rows]="10" [paginator]="true" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" rowHover styleClass="p-datatable-gridlines" responsiveLayout="scroll" [globalFilterFields]="columnFields">
+                <ng-template pTemplate="caption">
+                    <div class="flex items-center justify-between">
+                        <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt)" />
+                        <p-iconfield>
+                            <input pInputText type="text" placeholder="Filtrar" #filter (input)="onGlobalFilter(dt, $event)" />
+                        </p-iconfield>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th *ngFor="let col of columns" [pSortableColumn]="col.field">{{ col.header }}<p-sortIcon [field]="col.field"></p-sortIcon></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-row>
+                    <tr>
+                        <td *ngFor="let col of columns"><span [innerHTML]="htmlValue(row, col.field)"></span></td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="13">No se encontraron registros.</td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr>
+                        <td colspan="13">Cargando datos. Espere por favor.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
         </div>
-                    </div>
-
-
-
-            </div>
-
-    </p-toolbar>
-    <p-table #dt [value]="data" dataKey="id" [rows]="10" [paginator]="true"
-             [rowsPerPageOptions]="[10,25,50]" [loading]="loading" rowHover
-            styleClass="p-datatable-gridlines" responsiveLayout="scroll"
-             [globalFilterFields]="columnFields">
-        <ng-template pTemplate="caption">
-            <div class="flex items-center justify-between">
-                <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt)" />
-                <p-iconfield>
-                    <input pInputText type="text" placeholder="Filtrar" #filter (input)="onGlobalFilter(dt, $event)" />
-                </p-iconfield>
-            </div>
-        </ng-template>
-        <ng-template pTemplate="header">
-            <tr>
-                <th *ngFor="let col of columns" [pSortableColumn]="col.field">{{col.header}}<p-sortIcon [field]="col.field"></p-sortIcon></th>
-            </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-row>
-            <tr>
-                <td *ngFor="let col of columns"><span [innerHTML]="htmlValue(row, col.field)"></span></td>
-            </tr>
-        </ng-template>
-        <ng-template pTemplate="emptymessage">
-            <tr>
-                <td colspan="13">No se encontraron registros.</td>
-            </tr>
-        </ng-template>
-        <ng-template pTemplate="loadingbody">
-            <tr>
-                <td colspan="13">Cargando datos. Espere por favor.</td>
-            </tr>
-        </ng-template>
-    </p-table>
-</div>
-`,
-            imports: [TemplateModule, TooltipModule],
-            providers: [MessageService, ConfirmationService]
+    `,
+    imports: [TemplateModule, TooltipModule],
+    providers: [MessageService, ConfirmationService]
 })
 export class ReporteMaterialBibliograficoDetallado {
-    titulo: string = "Material bibliográfico detallado";
+    titulo: string = 'Material bibliográfico detallado';
     dataSede: Sedes[] = [];
     sedeFiltro: Sedes = new Sedes();
     coleccionFiltro: ClaseGeneral = new ClaseGeneral();
     dataColeccion: ClaseGeneral[] = [];
-    tipo:number=1;
+    tipo: number = 1;
     loading: boolean = true;
-    data:(Libro|Revista|Tesis|Otro|BibliotecaDTO)[] = [];
-    columns: {field:string; header:string}[] = [];
+    data: (Libro | Revista | Tesis | Otro | BibliotecaDTO)[] = [];
+    columns: { field: string; header: string }[] = [];
+    private readonly bibliotecaColumns: { field: string; header: string }[] = [
+        { field: 'usuarioModificacion', header: 'Usuario Modificación' },
+        { field: 'usuarioCreacion', header: 'Usuario Creación' },
+        { field: 'traductor', header: 'Traductor' },
+        { field: 'tituloAnterior', header: 'Título Anterior' },
+        { field: 'titulo', header: 'Título' },
+        { field: 'tipoReproduccion', header: 'Tipo Reproducción' },
+        { field: 'tipoConteo', header: 'Tipo Conteo' },
+        { field: 'tipoBibliotecaId', header: 'Tipo Biblioteca' },
+        { field: 'tipoAnioPublicacion', header: 'Tipo Año Publicación' },
+        { field: 'tipoAdquisicionId', header: 'Tipo Adquisición' },
+        { field: 'serie', header: 'Serie' },
+        { field: 'rutaImagen', header: 'Ruta Imagen' },
+        { field: 'reimpresion', header: 'Reimpresión' },
+        { field: 'productor', header: 'Productor' },
+        { field: 'proceso', header: 'Proceso' },
+        { field: 'observacion', header: 'Observación' },
+        { field: 'numeroPaginas', header: 'Número Páginas' },
+        { field: 'numeroFactura', header: 'Número Factura' },
+        { field: 'numeroExpediente', header: 'Número Expediente' },
+        { field: 'numeroDeIngreso', header: 'Número de Ingreso' },
+        { field: 'numeroConteo2', header: 'Número Conteo 2' },
+        { field: 'numeroConteo', header: 'Número Conteo' },
+        { field: 'notaResumen', header: 'Nota Resumen' },
+        { field: 'notaGeneral', header: 'Nota General' },
+        { field: 'notaContenido', header: 'Nota Contenido' },
+        { field: 'nombreImagen', header: 'Nombre Imagen' },
+        { field: 'motivo', header: 'Motivo' },
+        { field: 'materia', header: 'Materia' },
+        { field: 'linkPublicacion', header: 'Link Publicación' },
+        { field: 'juzgado', header: 'Juzgado' },
+        { field: 'issn', header: 'ISSN' },
+        { field: 'isbn', header: 'ISBN' },
+        { field: 'tipoMaterialId', header: 'ID Tipo Material' },
+        { field: 'sedeId', header: 'ID Sede' },
+        { field: 'estadoId', header: 'ID Estado' },
+        { field: 'idEspecialidad', header: 'ID Especialidad' },
+        { field: 'id', header: 'ID Biblioteca' },
+        { field: 'flasyllabus', header: 'FLA Syllabus' },
+        { field: 'fladigitalizado', header: 'FLA Digitalizado' },
+        { field: 'fechaModificacion', header: 'Fecha Modificación' },
+        { field: 'fechaInicioExpediente', header: 'Fecha Inicio Expediente' },
+        { field: 'fechaIngreso', header: 'Fecha Ingreso' },
+        { field: 'fechaCreacion', header: 'Fecha Creación' },
+        { field: 'existencias', header: 'Existencias' },
+        { field: 'editorialPublicacion', header: 'Editorial Publicación' },
+        { field: 'edicion', header: 'Edición' },
+        { field: 'director', header: 'Director' },
+        { field: 'descriptor', header: 'Descriptor' },
+        { field: 'descripcionRevista', header: 'Descripción Revista' },
+        { field: 'demandante', header: 'Demandante' },
+        { field: 'demandado', header: 'Demandado' },
+        { field: 'costo', header: 'Costo' },
+        { field: 'coordinador', header: 'Coordinador' },
+        { field: 'compilador', header: 'Compilador' },
+        { field: 'periodicidadId', header: 'Código Periodicidad' },
+        { field: 'paisId', header: 'Código País' },
+        { field: 'codigoLocalizacion', header: 'Código Localización' },
+        { field: 'idiomaId', header: 'Código Idioma' },
+        { field: 'ciudadCodigo', header: 'Código Ciudad' },
+        { field: 'autorSecundario', header: 'Autor Secundario' },
+        { field: 'autorPersonal', header: 'Autor Personal' },
+        { field: 'autorInstitucional', header: 'Autor Institucional' },
+        { field: 'anioPublicacion', header: 'Año Publicación' }
+    ];
     // Catálogos para traducir códigos a descripciones
-    private paisMap = new Map<string,string>();
-    private ciudadMap = new Map<string,string>();
-    private especialidadMap = new Map<number,string>();
-    private sedeMap = new Map<number,string>();
-    private tipoAdqMap = new Map<number,string>();
-    private coleccionMap = new Map<number,string>();
-    private lookup<K,V>(map: Map<K,V>, ...keys: (K|undefined|null)[]): V | undefined {
+    private paisMap = new Map<string, string>();
+    private ciudadMap = new Map<string, string>();
+    private especialidadMap = new Map<number, string>();
+    private sedeMap = new Map<number, string>();
+    private tipoAdqMap = new Map<number, string>();
+    private coleccionMap = new Map<number, string>();
+    private lookup<K, V>(map: Map<K, V>, ...keys: (K | undefined | null)[]): V | undefined {
         for (const k of keys) {
             if (k != null && map.has(k as K)) {
                 return map.get(k as K);
@@ -115,19 +173,21 @@ export class ReporteMaterialBibliograficoDetallado {
         return undefined;
     }
     get columnFields(): string[] {
-        return this.columns.map(c => c.field);
+        return this.columns.map((c) => c.field);
     }
 
-    constructor(private materialService: MaterialBibliograficoService,
-                private filtrosService: ReportesFiltroService,
-                private http: HttpClient,
-                private messageService: MessageService){}
+    constructor(
+        private materialService: MaterialBibliograficoService,
+        private filtrosService: ReportesFiltroService,
+        private http: HttpClient,
+        private messageService: MessageService
+    ) {}
 
     private async cargarSedes() {
         try {
             this.dataSede = await this.filtrosService.getSedes();
             this.sedeFiltro = this.dataSede[0];
-            this.sedeMap = new Map(this.dataSede.map(s => [s.id, s.descripcion]));
+            this.sedeMap = new Map(this.dataSede.map((s) => [s.id, s.descripcion]));
         } catch (err) {
             this.messageService.add({ severity: 'error', detail: 'Error al cargar sedes' });
         }
@@ -154,9 +214,8 @@ export class ReporteMaterialBibliograficoDetallado {
         try {
             const res: any = await this.materialService.lista_tipo_material('catalogos/tipomaterial/activos').toPromise();
             const rawList: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
-            this.coleccionMap = new Map(rawList.map(t => [t.tipo.id, t.descripcion]));
-            this.dataColeccion = [new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 }),
-                ...rawList.map(t => new ClaseGeneral({ id: t.tipo.id, descripcion: t.descripcion, activo: t.activo ?? true, estado: 1 }))];
+            this.coleccionMap = new Map(rawList.map((t) => [t.tipo.id, t.descripcion]));
+            this.dataColeccion = [new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 }), ...rawList.map((t) => new ClaseGeneral({ id: t.tipo.id, descripcion: t.descripcion, activo: t.activo ?? true, estado: 1 }))];
             this.coleccionFiltro = this.dataColeccion[0];
         } catch (err) {
             this.messageService.add({ severity: 'error', detail: 'Error al cargar colecciones' });
@@ -170,15 +229,13 @@ export class ReporteMaterialBibliograficoDetallado {
         this.loading = true;
         const tipo = this.coleccionFiltro?.id ?? 0;
         const sedeId = this.sedeFiltro?.id && this.sedeFiltro.id !== 0 ? this.sedeFiltro.id : undefined;
+        this.tipo = tipo;
         this.setColumns(tipo);
-        const source: Observable<(Libro|Revista|Tesis|Otro|BibliotecaDTO)[]> = tipo === 3
-            ? this.materialService.listarTesis(sedeId)
-            : tipo === 0
-                ? this.materialService.listarPorTipoMaterial(undefined, sedeId)
-                : this.materialService.listarColeccionDetalle(tipo, sedeId);
+        const source: Observable<(Libro | Revista | Tesis | Otro | BibliotecaDTO)[]> =
+            tipo === 3 ? this.materialService.listarTesis(sedeId) : tipo === 0 ? this.materialService.listarPorTipoMaterial(undefined, sedeId) : this.materialService.listarColeccionDetalle(tipo, sedeId);
         source.subscribe({
-            next: (list: (Libro|Revista|Tesis|Otro|BibliotecaDTO)[]) => {
-                this.data = list.map((item: Libro|Revista|Tesis|Otro|BibliotecaDTO) => {
+            next: (list: (Libro | Revista | Tesis | Otro | BibliotecaDTO)[]) => {
+                this.data = list.map((item: Libro | Revista | Tesis | Otro | BibliotecaDTO) => {
                     const anyItem: any = { ...item };
                     anyItem.detalle = anyItem.detalle ?? anyItem.detalles;
                     if (!anyItem.tipoMaterial?.descripcion && anyItem.tipoMaterialId != null) {
@@ -186,54 +243,27 @@ export class ReporteMaterialBibliograficoDetallado {
                         if (desc) anyItem.tipoMaterial = { descripcion: desc };
                     }
                     if (anyItem.pais) {
-                        let desc = this.lookup(
-                            this.paisMap,
-                            anyItem.pais.descripcion,
-                            anyItem.pais.paisId,
-                            anyItem.pais.codigoPais,
-                            anyItem.pais.id
-                        );
-                        if (!desc && anyItem.pais.nombrePais)
-                            desc = anyItem.pais.nombrePais;
+                        let desc = this.lookup(this.paisMap, anyItem.pais.descripcion, anyItem.pais.paisId, anyItem.pais.codigoPais, anyItem.pais.id);
+                        if (!desc && anyItem.pais.nombrePais) desc = anyItem.pais.nombrePais;
                         if (desc) anyItem.pais.descripcion = desc;
                     }
                     if (anyItem.ciudad) {
-                        let desc = this.lookup(
-                            this.ciudadMap,
-                            anyItem.ciudad.descripcion,
-                            anyItem.ciudad.ciudadCodigo,
-                            anyItem.ciudad.id
-                        );
-                        if (!desc && anyItem.ciudad.nombreCiudad)
-                            desc = anyItem.ciudad.nombreCiudad;
+                        let desc = this.lookup(this.ciudadMap, anyItem.ciudad.descripcion, anyItem.ciudad.ciudadCodigo, anyItem.ciudad.id);
+                        if (!desc && anyItem.ciudad.nombreCiudad) desc = anyItem.ciudad.nombreCiudad;
                         if (desc) anyItem.ciudad.descripcion = desc;
                     }
                     if (anyItem.especialidad) {
-                        const desc = this.lookup(
-                            this.especialidadMap,
-                            anyItem.especialidad.idEspecialidad,
-                            anyItem.especialidad.id
-                        );
+                        const desc = this.lookup(this.especialidadMap, anyItem.especialidad.idEspecialidad, anyItem.especialidad.id);
                         if (desc) anyItem.especialidad.descripcion = desc;
                     }
                     if (Array.isArray(anyItem.detalle)) {
                         anyItem.detalle = anyItem.detalle.map((d: any) => {
                             if (d.sede) {
-                                const desc = this.lookup(
-                                    this.sedeMap,
-                                    d.sede.descripcion,
-                                    d.sede.id,
-                                    d.codigoSede
-                                );
+                                const desc = this.lookup(this.sedeMap, d.sede.descripcion, d.sede.id, d.codigoSede);
                                 if (desc) d.sede.descripcion = desc;
                             }
                             if (d.tipoAdquisicion) {
-                                const desc = this.lookup(
-                                    this.tipoAdqMap,
-                                    d.tipoAdquisicion.descripcion,
-                                    d.tipoAdquisicion.id,
-                                    d.tipoAdquisicionId
-                                );
+                                const desc = this.lookup(this.tipoAdqMap, d.tipoAdquisicion.descripcion, d.tipoAdquisicion.id, d.tipoAdquisicionId);
                                 if (desc) d.tipoAdquisicion.descripcion = desc;
                             }
                             return d;
@@ -243,21 +273,15 @@ export class ReporteMaterialBibliograficoDetallado {
                 });
                 this.loading = false;
             },
-            error: () => { this.loading = false; }
+            error: () => {
+                this.loading = false;
+            }
         });
     }
 
     private setColumns(tipo: number) {
         if (tipo === 0) {
-            this.columns = [
-                { field: 'codigoLocalizacion', header: 'Código' },
-                { field: 'titulo', header: 'Título' },
-                { field: 'autorPersonal', header: 'Autor' },
-                { field: 'tipoMaterial.descripcion', header: 'Tipo de material' },
-                { field: 'anioPublicacion', header: 'Año' },
-                { field: 'detalle.numeroIngreso', header: 'N° de Ingreso' },
-                { field: 'detalle.sede.descripcion', header: 'Sede' }
-            ];
+            this.columns = this.bibliotecaColumns;
             return;
         }
         if (tipo === 1) {
@@ -318,8 +342,11 @@ export class ReporteMaterialBibliograficoDetallado {
 
         let sample: any;
         switch (tipo) {
-            case 2: sample = new Revista(); break;
-            default: sample = new Otro();
+            case 2:
+                sample = new Revista();
+                break;
+            default:
+                sample = new Otro();
         }
         const cols: { field: string; header: string }[] = [];
         for (const k of Object.keys(sample)) {
@@ -335,7 +362,7 @@ export class ReporteMaterialBibliograficoDetallado {
         this.columns = cols;
     }
 
-    private capitalize(text:string): string {
+    private capitalize(text: string): string {
         return text.charAt(0).toUpperCase() + text.slice(1);
     }
 
@@ -372,11 +399,11 @@ export class ReporteMaterialBibliograficoDetallado {
         ws.addRow(filtrosCabecera.etiquetas);
         ws.addRow(filtrosCabecera.valores);
         ws.addRow([]);
-        const headerRow = ws.addRow(this.columns.map(c => c.header));
+        const headerRow = ws.addRow(this.columns.map((c) => c.header));
         headerRow.font = { bold: true };
         headerRow.alignment = { horizontal: 'center' };
-        this.data.forEach(r => ws.addRow(this.columns.map(c => this.resolveField(r, c.field))));
-        ws.columns.forEach(col => (col.width = 20));
+        this.data.forEach((r) => ws.addRow(this.columns.map((c) => this.resolveField(r, c.field))));
+        ws.columns.forEach((col) => (col.width = 20));
         const buf = await wb.xlsx.writeBuffer();
         saveAs(new Blob([buf]), 'material_bibliografico_detallado.xlsx');
     }
@@ -407,8 +434,8 @@ export class ReporteMaterialBibliograficoDetallado {
             });
             const inicioTabla = (doc as any).lastAutoTable.finalY + 5;
             autoTable(doc, {
-                head: [this.columns.map(c => c.header)],
-                body: this.data.map(r => this.columns.map(c => this.resolveField(r, c.field))),
+                head: [this.columns.map((c) => c.header)],
+                body: this.data.map((r) => this.columns.map((c) => this.resolveField(r, c.field))),
                 startY: inicioTabla,
                 styles: { fontSize: 8 },
                 headStyles: { fillColor: [41, 128, 185] }
@@ -428,7 +455,7 @@ export class ReporteMaterialBibliograficoDetallado {
         for (const p of parts) {
             if (value == null) return '';
             if (Array.isArray(value)) {
-                value = value.map(v => v ? v[p] : undefined);
+                value = value.map((v) => (v ? v[p] : undefined));
             } else {
                 value = value[p];
             }
@@ -437,8 +464,11 @@ export class ReporteMaterialBibliograficoDetallado {
     }
 
     private formatValue(value: any): any {
+        if (value == null || value === '' || (Array.isArray(value) && value.length === 0)) {
+            return this.tipo === 0 ? '-' : '';
+        }
         if (Array.isArray(value)) {
-            return value.map(v => this.formatValue(v)).join('\n');
+            return value.map((v) => this.formatValue(v)).join('\n');
         }
         if (value && typeof value === 'object') {
             if ('idDetalleBiblioteca' in value) {
@@ -451,15 +481,8 @@ export class ReporteMaterialBibliograficoDetallado {
                 ].filter(Boolean);
                 return parts.join('\n');
             }
-            return (
-                (value as any).descripcion ??
-                (value as any).nombrePais ??
-                (value as any).nombreCiudad ??
-                (value as any).titulo ??
-                (value as any).nombre ??
-                JSON.stringify(value)
-            );
+            return (value as any).descripcion ?? (value as any).nombrePais ?? (value as any).nombreCiudad ?? (value as any).titulo ?? (value as any).nombre ?? JSON.stringify(value);
         }
-        return value ?? '';
+        return value;
     }
 }
