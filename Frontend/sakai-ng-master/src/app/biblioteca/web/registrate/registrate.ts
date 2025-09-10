@@ -15,6 +15,9 @@ import { InputValidation } from '../../input-validation';
 import { TemplateModule } from '../../template.module';
 import { AuthService } from '../../../biblioteca/services/auth.service';
 import { DocumentoService } from '../../../biblioteca/services/documento.service';
+import { MaterialBibliograficoService } from '../../../biblioteca/services/material-bibliografico.service';
+import { Pais } from '../../interfaces/material-bibliografico/pais';
+import { Ciudad } from '../../interfaces/material-bibliografico/ciudad';
 
 @Component({
     selector: 'app-registrate',
@@ -119,7 +122,7 @@ import { DocumentoService } from '../../../biblioteca/services/documento.service
                             </div>
                             <div class="flex flex-col gap-2">
                                 <label for="country" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">País</label>
-                                <input pInputText id="country" type="text" placeholder="País" formControlName="COUNTRY" [readonly]="fieldsDisabled" [ngClass]="{'disabled-input': fieldsDisabled}" />
+                                <p-dropdown id="country" [options]="paises" optionLabel="nombrePais" optionValue="paisId" formControlName="COUNTRY" placeholder="Seleccione" [showClear]="true" [disabled]="fieldsDisabled"></p-dropdown>
                             </div>
                             <div class="flex flex-col gap-2">
                                 <label for="state" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Estado</label>
@@ -127,7 +130,7 @@ import { DocumentoService } from '../../../biblioteca/services/documento.service
                             </div>
                             <div class="flex flex-col gap-2">
                                 <label for="city" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Ciudad</label>
-                                <input pInputText id="city" type="text" placeholder="Ciudad" formControlName="CITY" [readonly]="fieldsDisabled" [ngClass]="{'disabled-input': fieldsDisabled}" />
+                                <p-dropdown id="city" [options]="ciudades" optionLabel="nombreCiudad" optionValue="codigoCiudad" formControlName="CITY" placeholder="Seleccione" [showClear]="true" [disabled]="fieldsDisabled"></p-dropdown>
                             </div>
                             <div class="flex flex-col gap-2">
                                 <label for="county" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Provincia</label>
@@ -195,12 +198,15 @@ export class PortalRegistrate implements OnInit {
     programas: { idPrograma: number; descripcion: string }[] = [];
     especialidades: { idEspecialidad: number; descripcion: string }[] = [];
     ciclos: { label: string; value: string | null }[] = [];
+    paises: Pais[] = [];
+    ciudades: Ciudad[] = [];
     constructor(private router: Router,
                 private fb: FormBuilder,
                 private messageService: MessageService,
                 private confirmationService: ConfirmationService,
                 private authService: AuthService,
-                private documentoService: DocumentoService) {
+                private documentoService: DocumentoService,
+                private materialService: MaterialBibliograficoService) {
         this.form = this.fb.group({
             tipoDocumento: ['', Validators.required],
             numDocumento: ['', Validators.required],
@@ -253,6 +259,11 @@ export class PortalRegistrate implements OnInit {
             next: data => this.especialidades = data,
             error: () => this.especialidades = []
         });
+        this.materialService.lista_pais('material-bibliografico/pais').subscribe({
+            next: res => this.paises = res.data ?? res,
+            error: () => this.paises = []
+        });
+        this.form.get('COUNTRY')?.valueChanges.subscribe(paisId => this.loadCiudades(paisId));
         this.ciclos = [
             { label: 'Ninguno', value: null },
             { label: 'I', value: 'I' },
@@ -271,6 +282,25 @@ export class PortalRegistrate implements OnInit {
             { label: 'XIV', value: 'XIV' },
             { label: 'XV', value: 'XV' }
         ];
+    }
+
+    loadCiudades(paisId: string, selected?: string | null) {
+        if (!paisId) {
+            this.ciudades = [];
+            if (selected === undefined) {
+                this.form.patchValue({ CITY: null });
+            }
+            return;
+        }
+        this.materialService.lista_ciudad(`material-bibliografico/ciudad-by-pais/${paisId}`).subscribe({
+            next: res => {
+                this.ciudades = res.data ?? res;
+                if (selected !== undefined) {
+                    this.form.patchValue({ CITY: selected });
+                }
+            },
+            error: () => this.ciudades = []
+        });
     }
     limpiarObjeto() {
         this.fieldsDisabled = true;
@@ -486,6 +516,7 @@ export class PortalRegistrate implements OnInit {
                   SEX: data.SEX || '',
                   STATE: data.STATE || ''
               });
+              this.loadCiudades(data.COUNTRY, data.CITY || null);
               // Mantener los campos bloqueados cuando se encuentra el documento
               this.fieldsDisabled = true;
               this.form.get('fechaNacimiento')?.disable();
