@@ -537,8 +537,10 @@ public class PrestamoService {
      * Reporte de visitantes de biblioteca virtual.
      * Devuelve la cantidad de ocurrencias registradas por usuario.
      */
-    public List<com.miapp.model.dto.VisitanteBibliotecaVirtualDTO> reporteVisitantesBibliotecaVirtual() {
-        return usuarioRepository.reporteVisitantesBibliotecaVirtual();
+    public List<com.miapp.model.dto.VisitanteBibliotecaVirtualDTO> reporteVisitantesBibliotecaVirtual(
+            java.time.LocalDateTime fechaInicio,
+            java.time.LocalDateTime fechaFin) {
+        return usuarioRepository.reporteVisitantesBibliotecaVirtual(fechaInicio, fechaFin);
     }
 
 }

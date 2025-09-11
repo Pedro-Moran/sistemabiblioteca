@@ -87,26 +87,34 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
         <ng-template pTemplate="header">
             <tr>
                 <th>Sede</th>
-                <th>Tipo documento</th>
-                <th>N° documento</th>
+                <th>Base de datos</th>
+                <th>Código</th>
                 <th>Apellidos y nombres</th>
                 <th>Tipo usuario</th>
-                <th>Visitas</th>
+                <th>Especialidad</th>
+                <th>Programa</th>
+                <th>Ciclo</th>
+                <th>Correo</th>
+                <th>Total visitas</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-row>
             <tr>
                 <td>{{ row.sede }}</td>
-                <td>{{ row.tipoDocumento }}</td>
-                <td>{{ row.numeroDocumento }}</td>
+                <td>{{ row.baseDatos }}</td>
+                <td>{{ row.codigo }}</td>
                 <td>{{ row.apellidosNombres }}</td>
                 <td>{{ row.tipoUsuario }}</td>
+                <td>{{ row.especialidad }}</td>
+                <td>{{ row.programa }}</td>
+                <td>{{ row.ciclo }}</td>
+                <td>{{ row.correo }}</td>
                 <td>{{ row.totalVisitas }}</td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="6">
+                <td colspan="10">
                     {{ busquedaRealizada ? 'No se encontraron registros.' : 'Seleccione un rango de fechas para mostrar resultados.' }}
                 </td>
             </tr>
@@ -171,10 +179,12 @@ export class ReporteVisitantesBibliotecaVirtual {
         }
         this.loading = true;
         this.busquedaRealizada = true;
-        const { fechaInicio, fechaFin } = this.form.value;
+        const { fechaInicio, fechaFin } = this.form.value as { fechaInicio: Date; fechaFin: Date };
+        const fi = fechaInicio ? fechaInicio.toISOString().split('T')[0] : undefined;
+        const ff = fechaFin ? fechaFin.toISOString().split('T')[0] : undefined;
         try {
             this.resultados =
-                (await firstValueFrom(this.svc.reporteVisitantesBibliotecaVirtual(fechaInicio, fechaFin))) ?? [];
+                (await firstValueFrom(this.svc.reporteVisitantesBibliotecaVirtual(fi, ff))) ?? [];
         } catch (error: any) {
             const msg = error?.status === 403 ? 'No autorizado para ver el reporte.' : 'No fue posible cargar los datos.';
             this.messageService.add({ severity: 'error', detail: msg });
