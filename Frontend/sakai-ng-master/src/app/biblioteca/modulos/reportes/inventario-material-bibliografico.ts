@@ -118,13 +118,26 @@ export class ReporteInventarioMaterialBibliografico {
     async reporte() {
         this.loading = true;
         try {
-            const lista = await firstValueFrom(
-                this.materialService.list({
-                    sedeId: this.sedeFiltro?.id ?? 0,
-                    tipoMaterialId: this.coleccionFiltro?.id ?? 0
-                })
-            );
-            this.resultados = lista.flatMap((b: any) => {
+            const registros: any[] = [];
+            const pageSize = 1000;
+            let page = 0;
+            let batch: any[];
+            do {
+                batch = await firstValueFrom(
+                    this.materialService.list(
+                        {
+                            sedeId: this.sedeFiltro?.id ?? 0,
+                            tipoMaterialId: this.coleccionFiltro?.id ?? 0
+                        },
+                        page,
+                        pageSize
+                    )
+                );
+                registros.push(...batch);
+                page++;
+            } while (batch.length === pageSize && registros.length < 50000);
+
+            this.resultados = registros.flatMap((b: any) => {
                 const detalles = Array.isArray(b.detalles) && b.detalles.length
                     ? b.detalles
                     : [{} as any];
