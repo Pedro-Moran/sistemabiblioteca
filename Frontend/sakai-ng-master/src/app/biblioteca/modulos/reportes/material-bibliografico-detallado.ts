@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
 import { TemplateModule } from '../../template.module';
@@ -11,18 +11,20 @@ import { Tesis } from '../../interfaces/material-bibliografico/tesis';
 import { Otro } from '../../interfaces/material-bibliografico/otro';
 import { BibliotecaDTO } from '../../interfaces/material-bibliografico/biblioteca.model';
 import { Detalle } from '../../interfaces/material-bibliografico/detalle';
-import { Table } from 'primeng/table';
+import { Table, TableLazyLoadEvent } from 'primeng/table';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ReportesFiltroService } from '../../services/reportes-filtro.service';
 import { construirCabeceraFiltros } from '../../utils/exportacion';
-import { Observable } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
+import { NgIf } from '@angular/common';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 @Component({
     selector: 'app-reporte-material-bibliografico-detallado',
     standalone: true,
     template: `
-        <div class="card flex flex-col gap-4 w-full">
+        <div class="card relative flex flex-col gap-4 w-full">
             <h5>{{ titulo }}</h5>
             <p-toolbar styleClass="mb-6">
                 <div class="flex flex-col w-full gap-4">
@@ -44,7 +46,22 @@ import { Observable } from 'rxjs';
                     </div>
                 </div>
             </p-toolbar>
-            <p-table #dt [value]="data" dataKey="id" [rows]="10" [paginator]="true" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" rowHover styleClass="p-datatable-gridlines" responsiveLayout="scroll" [globalFilterFields]="columnFields">
+            <p-table
+                #dt
+                [value]="data"
+                dataKey="id"
+                [rows]="10"
+                [paginator]="true"
+                [rowsPerPageOptions]="[10, 25, 50]"
+                [loading]="loading"
+                rowHover
+                styleClass="p-datatable-gridlines"
+                responsiveLayout="scroll"
+                [globalFilterFields]="columnFields"
+                [lazy]="true"
+                (onLazyLoad)="cargarPagina($event)"
+                [totalRecords]="totalRecords"
+            >
                 <ng-template pTemplate="caption">
                     <div class="flex items-center justify-between">
                         <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt)" />
@@ -74,21 +91,31 @@ import { Observable } from 'rxjs';
                     </tr>
                 </ng-template>
             </p-table>
+            <div *ngIf="exportando" class="absolute inset-0 flex flex-col items-center justify-center bg-black/40 z-10">
+                <p-progressSpinner></p-progressSpinner>
+                <span class="mt-4 text-lg font-semibold animate-pulse">{{ mensajeCarga }}</span>
+            </div>
         </div>
     `,
-    imports: [TemplateModule, TooltipModule],
+    imports: [TemplateModule, TooltipModule, NgIf, ProgressSpinnerModule],
     providers: [MessageService, ConfirmationService]
 })
-export class ReporteMaterialBibliograficoDetallado {
+export class ReporteMaterialBibliograficoDetallado implements OnDestroy {
     titulo: string = 'Material bibliográfico detallado';
     dataSede: Sedes[] = [];
     sedeFiltro: Sedes = new Sedes();
     coleccionFiltro: ClaseGeneral = new ClaseGeneral();
     dataColeccion: ClaseGeneral[] = [];
     tipo: number = 1;
-    loading: boolean = true;
+    loading: boolean = false;
+    exportando: boolean = false;
     data: (Libro | Revista | Tesis | Otro | BibliotecaDTO)[] = [];
     columns: { field: string; header: string }[] = [];
+    page: number = 0;
+    pageSize: number = 1000;
+    totalRecords: number = 0;
+    mensajeCarga: string = 'Generando reporte';
+    private intervaloTexto?: any;
     private readonly bibliotecaColumns: { field: string; header: string }[] = [
         { field: 'usuarioModificacion', header: 'Usuario Modificación' },
         { field: 'usuarioCreacion', header: 'Usuario Creación' },
@@ -209,10 +236,18 @@ export class ReporteMaterialBibliograficoDetallado {
 
     private async cargarColecciones() {
         try {
-            const res: any = await this.materialService.lista_tipo_material('catalogos/tipomaterial/activos').toPromise();
-            const rawList: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
-            this.coleccionMap = new Map(rawList.map((t) => [t.tipo.id, t.descripcion]));
-            this.dataColeccion = [new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 }), ...rawList.map((t) => new ClaseGeneral({ id: t.tipo.id, descripcion: t.descripcion, activo: t.activo ?? true, estado: 1 }))];
+            const res: any = await firstValueFrom(this.materialService.lista_tipo_material('catalogos/tipomaterial/activos'));
+            const rawList: any[] = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+            this.coleccionMap = new Map(rawList.map((t) => [t.tipo?.id ?? t.id, t.descripcion]));
+            this.dataColeccion = rawList.map(
+                (t) =>
+                    new ClaseGeneral({
+                        id: t.tipo?.id ?? t.id,
+                        descripcion: t.descripcion,
+                        activo: t.activo ?? true,
+                        estado: 1
+                    })
+            );
             this.coleccionFiltro = this.dataColeccion[0];
         } catch (err) {
             this.messageService.add({ severity: 'error', detail: 'Error al cargar colecciones' });
@@ -222,60 +257,97 @@ export class ReporteMaterialBibliograficoDetallado {
         await Promise.all([this.cargarSedes(), this.cargarColecciones(), this.cargarCatalogos()]);
         await this.reporte();
     }
-    reporte() {
-        this.loading = true;
+    ngOnDestroy() {
+        this.detenerAnimacion();
+    }
+
+    async reporte() {
+        this.page = 0;
+        this.data = [];
+        this.totalRecords = 0;
         const tipo = this.coleccionFiltro?.id ?? 0;
-        const sedeId = this.sedeFiltro?.id && this.sedeFiltro.id !== 0 ? this.sedeFiltro.id : undefined;
         this.tipo = tipo;
         this.setColumns(tipo);
-        const source: Observable<(Libro | Revista | Tesis | Otro | BibliotecaDTO)[]> =
-            tipo === 3 ? this.materialService.listarTesis(sedeId) : tipo === 0 ? this.materialService.listarPorTipoMaterial(undefined, sedeId) : this.materialService.listarColeccionDetalle(tipo, sedeId);
-        source.subscribe({
-            next: (list: (Libro | Revista | Tesis | Otro | BibliotecaDTO)[]) => {
-                this.data = list.map((item: Libro | Revista | Tesis | Otro | BibliotecaDTO) => {
-                    const anyItem: any = { ...item };
-                    anyItem.detalle = anyItem.detalle ?? anyItem.detalles;
-                    if (!anyItem.tipoMaterial?.descripcion && anyItem.tipoMaterialId != null) {
-                        const desc = this.coleccionMap.get(anyItem.tipoMaterialId);
-                        if (desc) anyItem.tipoMaterial = { descripcion: desc };
-                    }
-                    if (anyItem.pais) {
-                        let desc = this.lookup(this.paisMap, anyItem.pais.descripcion, anyItem.pais.paisId, anyItem.pais.codigoPais, anyItem.pais.id);
-                        if (!desc && anyItem.pais.nombrePais) desc = anyItem.pais.nombrePais;
-                        if (desc) anyItem.pais.descripcion = desc;
-                    }
-                    if (anyItem.ciudad) {
-                        let desc = this.lookup(this.ciudadMap, anyItem.ciudad.descripcion, anyItem.ciudad.ciudadCodigo, anyItem.ciudad.id);
-                        if (!desc && anyItem.ciudad.nombreCiudad) desc = anyItem.ciudad.nombreCiudad;
-                        if (desc) anyItem.ciudad.descripcion = desc;
-                    }
-                    if (anyItem.especialidad) {
-                        const desc = this.lookup(this.especialidadMap, anyItem.especialidad.idEspecialidad, anyItem.especialidad.id);
-                        if (desc) anyItem.especialidad.descripcion = desc;
-                    }
-                    if (Array.isArray(anyItem.detalle)) {
-                        anyItem.detalle = anyItem.detalle.map((d: any) => {
-                            if (d.sede) {
-                                const desc = this.lookup(this.sedeMap, d.sede.descripcion, d.sede.id, d.codigoSede);
-                                if (desc) d.sede.descripcion = desc;
-                            }
-                            if (d.tipoAdquisicion) {
-                                const desc = this.lookup(this.tipoAdqMap, d.tipoAdquisicion.descripcion, d.tipoAdquisicion.id, d.tipoAdquisicionId);
-                                if (desc) d.tipoAdquisicion.descripcion = desc;
-                            }
-                            return d;
-                        });
-                    }
-                    return anyItem;
-                });
-                this.loading = false;
-            },
-            error: () => {
-                this.loading = false;
+        await this.cargarPagina({ first: 0, rows: this.pageSize });
+    }
+
+    private mapear(lista: BibliotecaDTO[]): any[] {
+        return lista.map((item: any) => {
+            const anyItem: any = { ...item };
+            anyItem.detalle = anyItem.detalle ?? anyItem.detalles;
+            if (!anyItem.tipoMaterial?.descripcion && anyItem.tipoMaterialId != null) {
+                const desc = this.coleccionMap.get(anyItem.tipoMaterialId);
+                if (desc) anyItem.tipoMaterial = { descripcion: desc };
             }
+            if (anyItem.pais) {
+                let desc = this.lookup(this.paisMap, anyItem.pais.descripcion, anyItem.pais.paisId, anyItem.pais.codigoPais, anyItem.pais.id);
+                if (!desc && anyItem.pais.nombrePais) desc = anyItem.pais.nombrePais;
+                if (desc) anyItem.pais.descripcion = desc;
+            }
+            if (anyItem.ciudad) {
+                let desc = this.lookup(this.ciudadMap, anyItem.ciudad.descripcion, anyItem.ciudad.ciudadCodigo, anyItem.ciudad.id);
+                if (!desc && anyItem.ciudad.nombreCiudad) desc = anyItem.ciudad.nombreCiudad;
+                if (desc) anyItem.ciudad.descripcion = desc;
+            }
+            if (anyItem.especialidad) {
+                const desc = this.lookup(this.especialidadMap, anyItem.especialidad.idEspecialidad, anyItem.especialidad.id);
+                if (desc) anyItem.especialidad.descripcion = desc;
+            }
+            if (Array.isArray(anyItem.detalle)) {
+                anyItem.detalle = anyItem.detalle.map((d: any) => {
+                    if (d.sede) {
+                        const desc = this.lookup(this.sedeMap, d.sede.descripcion, d.sede.id, d.codigoSede);
+                        if (desc) d.sede.descripcion = desc;
+                    }
+                    if (d.tipoAdquisicion) {
+                        const desc = this.lookup(this.tipoAdqMap, d.tipoAdquisicion.descripcion, d.tipoAdquisicion.id, d.tipoAdquisicionId);
+                        if (desc) d.tipoAdquisicion.descripcion = desc;
+                    }
+                    return d;
+                });
+            }
+            return anyItem;
         });
     }
 
+    async cargarPagina(event: TableLazyLoadEvent) {
+        const rows = event.rows ?? 0;
+        const last = (event.first || 0) + rows;
+        if (last >= this.data.length && !this.loading) {
+            this.loading = true;
+            try {
+                const lista = await firstValueFrom(this.materialService.list({ sedeId: this.sedeFiltro?.id ?? 0, tipoMaterialId: this.coleccionFiltro?.id ?? 0 }, this.page, this.pageSize));
+                const nuevos = this.mapear(lista);
+                this.data = [...this.data, ...nuevos];
+                this.page++;
+                this.totalRecords = this.data.length + (lista.length < this.pageSize ? 0 : 1);
+            } catch (err) {
+                console.error(err);
+                let detail = 'No fue posible cargar los datos';
+                if (err instanceof HttpErrorResponse && err.status === 403) {
+                    detail = 'No cuenta con permisos para ver la información';
+                }
+                this.messageService.add({ severity: 'error', summary: 'Error', detail });
+            } finally {
+                this.loading = false;
+            }
+        }
+    }
+
+    private async obtenerTodo(): Promise<any[]> {
+        const acumulado: any[] = [];
+        let page = 0;
+        while (true) {
+            const lista = await firstValueFrom(this.materialService.list({ sedeId: this.sedeFiltro?.id ?? 0, tipoMaterialId: this.coleccionFiltro?.id ?? 0 }, page, this.pageSize));
+            const mapeados = this.mapear(lista);
+            acumulado.push(...mapeados);
+            if (lista.length < this.pageSize) {
+                break;
+            }
+            page++;
+        }
+        return acumulado;
+    }
     private setColumns(tipo: number) {
         if (tipo === 0) {
             this.columns = this.bibliotecaColumns;
@@ -372,44 +444,68 @@ export class ReporteMaterialBibliograficoDetallado {
     }
 
     async exportExcel() {
-        if (!this.data.length) {
-            this.messageService.add({ severity: 'warn', detail: 'No hay datos para exportar.' });
-            return;
+        this.exportando = true;
+        this.iniciarAnimacion();
+        try {
+            const datos = await this.obtenerTodo();
+            if (!datos.length) {
+                this.messageService.add({ severity: 'warn', detail: 'No hay datos para exportar.' });
+                return;
+            }
+            const wb = new ExcelJS.Workbook();
+            const ws = wb.addWorksheet('Reporte');
+            const buffer = await this.http.get('/assets/logo.png', { responseType: 'arraybuffer' }).toPromise();
+            const logoId = wb.addImage({ buffer, extension: 'png' });
+            ws.addImage(logoId, { tl: { col: 0.2, row: 0.2 }, ext: { width: 220, height: 80 } });
+            ws.addRows([[], [], [], []]);
+            ws.mergeCells('C5', 'E6');
+            const title = ws.getCell('C5');
+            title.value = this.titulo;
+            title.alignment = { vertical: 'middle', horizontal: 'center' };
+            title.font = { size: 16, bold: true };
+            ws.addRow([]);
+            const filtrosCabecera = construirCabeceraFiltros([
+                { etiqueta: 'Sede', valor: this.sedeFiltro?.descripcion, defecto: 'Todas' },
+                { etiqueta: 'Colección', valor: this.coleccionFiltro?.descripcion, defecto: 'Todas' },
+                { etiqueta: 'Fecha emisión', valor: new Date().toLocaleString() }
+            ]);
+            ws.addRow(filtrosCabecera.etiquetas);
+            ws.addRow(filtrosCabecera.valores);
+            ws.addRow([]);
+            const headerRow = ws.addRow(this.columns.map((c) => c.header));
+            headerRow.font = { bold: true };
+            headerRow.alignment = { horizontal: 'center' };
+            datos.forEach((r) => ws.addRow(this.columns.map((c) => this.resolveField(r, c.field))));
+            ws.columns.forEach((col) => (col.width = 20));
+            const buf = await wb.xlsx.writeBuffer();
+            saveAs(new Blob([buf]), 'material_bibliografico_detallado.xlsx');
+        } catch (err) {
+            console.error(err);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No fue posible exportar.' });
+        } finally {
+            this.detenerAnimacion();
+            this.exportando = false;
         }
-        const wb = new ExcelJS.Workbook();
-        const ws = wb.addWorksheet('Reporte');
-        const buffer = await this.http.get('/assets/logo.png', { responseType: 'arraybuffer' }).toPromise();
-        const logoId = wb.addImage({ buffer, extension: 'png' });
-        ws.addImage(logoId, { tl: { col: 0.2, row: 0.2 }, ext: { width: 220, height: 80 } });
-        ws.addRows([[], [], [], []]); // espacio para la imagen
-        ws.mergeCells('C5', 'E6');
-        const title = ws.getCell('C5');
-        title.value = this.titulo;
-        title.alignment = { vertical: 'middle', horizontal: 'center' };
-        title.font = { size: 16, bold: true };
-        ws.addRow([]);
-        const filtrosCabecera = construirCabeceraFiltros([
-            { etiqueta: 'Sede', valor: this.sedeFiltro?.descripcion, defecto: 'Todas' },
-            { etiqueta: 'Colección', valor: this.coleccionFiltro?.descripcion, defecto: 'Todas' },
-            { etiqueta: 'Fecha emisión', valor: new Date().toLocaleString() }
-        ]);
-        ws.addRow(filtrosCabecera.etiquetas);
-        ws.addRow(filtrosCabecera.valores);
-        ws.addRow([]);
-        const headerRow = ws.addRow(this.columns.map((c) => c.header));
-        headerRow.font = { bold: true };
-        headerRow.alignment = { horizontal: 'center' };
-        this.data.forEach((r) => ws.addRow(this.columns.map((c) => this.resolveField(r, c.field))));
-        ws.columns.forEach((col) => (col.width = 20));
-        const buf = await wb.xlsx.writeBuffer();
-        saveAs(new Blob([buf]), 'material_bibliografico_detallado.xlsx');
+    }
+
+    private iniciarAnimacion() {
+        this.mensajeCarga = 'Generando reporte';
+        this.intervaloTexto = setInterval(() => {
+            this.mensajeCarga = this.mensajeCarga === 'Generando reporte' ? 'Espere por favor' : 'Generando reporte';
+        }, 1000);
+    }
+
+    private detenerAnimacion() {
+        if (this.intervaloTexto) {
+            clearInterval(this.intervaloTexto);
+            this.intervaloTexto = undefined;
+        }
     }
 
     htmlValue(row: any, path: string): string {
         const val = this.resolveField(row, path);
         return String(val ?? '').replace(/\n/g, '<br/>');
     }
-
     resolveField(row: any, path: string): any {
         const parts = path.split('.');
         let value: any = row;
