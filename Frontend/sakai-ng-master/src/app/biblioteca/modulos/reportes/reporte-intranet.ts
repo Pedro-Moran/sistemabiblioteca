@@ -1,10 +1,14 @@
 import { Component } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
 import { TemplateModule } from '../../template.module';
 import { Sedes } from '../../interfaces/sedes';
 import { ClaseGeneral } from '../../interfaces/clase-general';
 import { ReportesFiltroService } from '../../services/reportes-filtro.service';
+import { PrestamosService } from '../../services/prestamos.service';
+import { IntranetVisitaDTO } from '../../interfaces/reportes/intranet-visita';
 
 @Component({
     selector: 'app-reporte-intranet',
@@ -13,7 +17,7 @@ import { ReportesFiltroService } from '../../services/reportes-filtro.service';
         <div class="card flex flex-col gap-4 w-full">
     <h5>{{titulo}}</h5>
     <p-toolbar styleClass="mb-6">
-    <div class="flex flex-col w-full gap-4">
+    <form [formGroup]="form" class="flex flex-col w-full gap-4">
                 <!-- Primera fila: Sede (2 col), Programa (2 col) y Escuela (3 col) -->
                 <div class="grid grid-cols-7 gap-4">
                     <div class="flex flex-col gap-2 col-span-7 md:col-span-2 lg:col-span-2">
@@ -64,10 +68,10 @@ import { ReportesFiltroService } from '../../services/reportes-filtro.service';
                         </p-datepicker>
                     </div>
                     <div class="flex items-end">
-            <button 
-                pButton 
-                type="button" 
-                class="p-button-rounded p-button-danger" 
+            <button
+                pButton
+                type="button"
+                class="p-button-rounded p-button-danger"
                 icon="pi pi-search"(click)="reporte()" [disabled]="loading"  pTooltip="Ver reporte" tooltipPosition="bottom">
             </button>
         </div>
@@ -76,9 +80,56 @@ import { ReportesFiltroService } from '../../services/reportes-filtro.service';
                     </div>
                 </div>
                
-            </div>
-       
+            </form>
+
     </p-toolbar>
+    <p-table [value]="resultados" [paginator]="true" [rows]="10" [loading]="loading">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Tipo usuario</th>
+                <th>Subtipo usuario</th>
+                <th>Programa</th>
+                <th>PACPRO</th>
+                <th>ID visita</th>
+                <th>Situación alumno</th>
+                <th>ID bib. vir.</th>
+                <th>Hora salida</th>
+                <th>Hora ingreso</th>
+                <th>Estado usuario</th>
+                <th>Fecha registro</th>
+                <th>Código usuario</th>
+                <th>Sede</th>
+                <th>Especialidad</th>
+                <th>Ciclo</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+            <tr>
+                <td>{{ row.tipoUsuario }}</td>
+                <td>{{ row.subTipoUsuario }}</td>
+                <td>{{ row.programa }}</td>
+                <td>{{ row.pacpro }}</td>
+                <td>{{ row.idVisitaBibVir }}</td>
+                <td>{{ row.idSituacionAlumno }}</td>
+                <td>{{ row.idBibVir }}</td>
+                <td>{{ row.horaSalida }}</td>
+                <td>{{ row.horaIngreso }}</td>
+                <td>{{ row.flgUsuario }}</td>
+                <td>{{ row.fechaRegistro }}</td>
+                <td>{{ row.codigoUsuario }}</td>
+                <td>{{ row.codigoSede }}</td>
+                <td>{{ row.codigoEspecialidad }}</td>
+                <td>{{ row.ciclo }}</td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="15">
+                    {{ busquedaRealizada ? 'No se encontraron registros.' : 'Seleccione un rango de fechas para mostrar resultados.' }}
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
 </div>
 `,
             imports: [TemplateModule, TooltipModule],
@@ -106,11 +157,18 @@ export class ReporteIntranet {
     basededatosFiltro: ClaseGeneral = new ClaseGeneral();
     dataTipoPrestamo: ClaseGeneral[] = [];
     tipoPrestamoFiltro: ClaseGeneral = new ClaseGeneral();
-    loading: boolean = true;
-    constructor(private filtrosService: ReportesFiltroService) {}
+    loading: boolean = false;
+    resultados: IntranetVisitaDTO[] = [];
+    busquedaRealizada: boolean = false;
+    form: FormGroup;
+    constructor(private filtrosService: ReportesFiltroService, private svc: PrestamosService, private messageService: MessageService, private fb: FormBuilder) {
+        this.form = this.fb.group({
+            fechaInicio: [null, Validators.required],
+            fechaFin: [null, Validators.required],
+        });
+    }
     async ngOnInit() {
         await this.cargarFiltros();
-        await this.reporte();
     }
     private async cargarFiltros() {
         const filtros = await this.filtrosService.cargarFiltros();
@@ -127,5 +185,38 @@ export class ReporteIntranet {
         this.dataCiclo = filtros.ciclos;
         this.cicloFiltro = this.dataCiclo[0];
     }
-    async reporte(){}
+    private formatDate(d: Date | null): string | undefined {
+        return d ? d.toISOString().split('T')[0] : undefined;
+    }
+    async reporte() {
+        if (this.form.invalid) {
+            this.messageService.add({ severity: 'warn', detail: 'Seleccione un rango de fechas.' });
+            return;
+        }
+        this.loading = true;
+        this.busquedaRealizada = true;
+        const { fechaInicio, fechaFin } = this.form.value;
+        const inicio = this.formatDate(fechaInicio);
+        const fin = this.formatDate(fechaFin);
+        try {
+            this.resultados =
+                (await firstValueFrom(
+                    this.svc.reporteVisitasBibliotecaIntranet(
+                        this.sedeFiltro.id,
+                        this.tipoUsuarioFiltro.id,
+                        this.estadoFiltro.id,
+                        this.escuelaFiltro.id,
+                        this.programaFiltro.id,
+                        this.cicloFiltro.id,
+                        inicio,
+                        fin
+                    )
+                )) ?? [];
+        } catch (error: any) {
+            const msg = error?.status === 403 ? 'No autorizado para ver el reporte.' : 'No fue posible cargar los datos.';
+            this.messageService.add({ severity: 'error', detail: msg });
+        } finally {
+            this.loading = false;
+        }
+    }
 }

@@ -13,14 +13,16 @@ import com.miapp.repository.EquipoRepository;
 import com.miapp.repository.EstadoRepository;
 import com.miapp.repository.OcurrenciaBibliotecaRepository;
 import com.miapp.repository.UsuarioRepository;
-import com.miapp.repository.OcurrenciaBibliotecaRepository;
 import com.miapp.spec.DetallePrestamoSpecs;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+
+import com.miapp.model.dto.IntranetVisitaDTO;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -53,6 +55,7 @@ public class PrestamoService {
     private final UsuarioRepository usuarioRepository;
     private final DetalleBibliotecaRepository detalleBibliotecaRepository;
     private final BibliotecaMapper bibliotecaMapper;
+    private final JdbcTemplate jdbcTemplate;
 
     public DetallePrestamo solicitarPrestamo(Long equipoId,
                                              Integer tipoUsuario,
@@ -532,6 +535,85 @@ public class PrestamoService {
         }
 
         return lista;
+    }
+
+    /**
+     * Reporte de visitas a la intranet de biblioteca.
+     * Aplica filtros básicos y devuelve una lista de visitas.
+     */
+    public List<IntranetVisitaDTO> reporteVisitasBibliotecaIntranet(
+            String sede,
+            Integer tipoUsuario,
+            String estado,
+            String escuela,
+            String programa,
+            String ciclo,
+            LocalDateTime fechaInicio,
+            LocalDateTime fechaFin
+    ) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT v.TIPOUSUARIO, v.SUBTIPOUSUARIO, v.PROGRAMA, v.PACPRO, v.IDVISITABIBVIR, " +
+                        "v.IDSITUACIONALUMNO, v.IDBIBVIR, v.HORASALIDA, v.HORAINGRESO, v.FLGUSUARIO, " +
+                        "v.FECHAREGISTRO, v.CODIGOUSUARIO, v.CODIGOSEDE, v.CODIGOESPECIALIDAD, v.CICLO " +
+                        "FROM VISITASBIBVIR v WHERE 1=1");
+
+        List<Object> params = new ArrayList<>();
+        if (sede != null) {
+            sql.append(" AND v.CODIGOSEDE = ?");
+            params.add(sede);
+        }
+        if (tipoUsuario != null) {
+            sql.append(" AND v.TIPOUSUARIO = ?");
+            params.add(tipoUsuario);
+        }
+        if (estado != null) {
+            sql.append(" AND v.FLGUSUARIO = ?");
+            params.add(estado);
+        }
+        if (escuela != null) {
+            sql.append(" AND v.CODIGOESPECIALIDAD = ?");
+            params.add(escuela);
+        }
+        if (programa != null) {
+            sql.append(" AND v.PROGRAMA = ?");
+            params.add(programa);
+        }
+        if (ciclo != null) {
+            sql.append(" AND v.CICLO = ?");
+            params.add(ciclo);
+        }
+        if (fechaInicio != null) {
+            sql.append(" AND v.FECHAREGISTRO >= ?");
+            params.add(java.sql.Timestamp.valueOf(fechaInicio));
+        }
+        if (fechaFin != null) {
+            sql.append(" AND v.FECHAREGISTRO <= ?");
+            params.add(java.sql.Timestamp.valueOf(fechaFin));
+        }
+
+        sql.append(" ORDER BY v.FECHAREGISTRO DESC");
+
+        return jdbcTemplate.query(
+                sql.toString(),
+                params.toArray(),
+                (rs, rowNum) -> new IntranetVisitaDTO(
+                        rs.getString("TIPOUSUARIO"),
+                        rs.getString("SUBTIPOUSUARIO"),
+                        rs.getString("PROGRAMA"),
+                        rs.getString("PACPRO"),
+                        rs.getString("IDVISITABIBVIR"),
+                        rs.getString("IDSITUACIONALUMNO"),
+                        rs.getString("IDBIBVIR"),
+                        rs.getString("HORASALIDA"),
+                        rs.getString("HORAINGRESO"),
+                        rs.getString("FLGUSUARIO"),
+                        rs.getTimestamp("FECHAREGISTRO").toLocalDateTime(),
+                        rs.getString("CODIGOUSUARIO"),
+                        rs.getString("CODIGOSEDE"),
+                        rs.getString("CODIGOESPECIALIDAD"),
+                        rs.getString("CICLO")
+                )
+        );
     }
     /**
      * Reporte de visitantes de biblioteca virtual.
