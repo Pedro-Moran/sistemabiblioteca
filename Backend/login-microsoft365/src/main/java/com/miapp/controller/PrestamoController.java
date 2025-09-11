@@ -12,8 +12,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @RestController
@@ -224,6 +228,53 @@ public class PrestamoController {
     public ResponseEntity<?> reporteUsuariosAtendidosBiblioteca() {
         List<com.miapp.model.dto.UsuarioEquipoPrestamosDTO> lista = prestamoService.reporteUsuariosAtendidosBiblioteca();
         return ResponseEntity.ok(Map.of("status","0","data", lista));
+    }
+
+    @GetMapping("/reporte/intranet")
+    public ResponseEntity<?> reporteIntranet(
+            @RequestParam(required = false) String sede,
+            @RequestParam(required = false) Integer tipoUsuario,
+            @RequestParam(required = false) String estado,
+            @RequestParam(required = false) String escuela,
+            @RequestParam(required = false) String programa,
+            @RequestParam(required = false) String ciclo,
+            @RequestParam(required = false) String fechaInicio,
+            @RequestParam(required = false) String fechaFin
+    ) {
+        LocalDateTime inicio = parseDate(fechaInicio, false);
+        LocalDateTime fin    = parseDate(fechaFin, true);
+
+        List<com.miapp.model.dto.IntranetVisitaDTO> lista = prestamoService.reporteVisitasBibliotecaIntranet(
+                sede,
+                tipoUsuario,
+                estado,
+                escuela,
+                programa,
+                ciclo,
+                inicio,
+                fin
+        );
+        return ResponseEntity.ok(Map.of("status","0","data", lista));
+    }
+
+    private LocalDateTime parseDate(String dateStr, boolean endOfDay) {
+        if (dateStr == null || dateStr.isBlank()) {
+            return null;
+        }
+        try {
+            LocalDate d = LocalDate.parse(dateStr);
+            return endOfDay ? d.atTime(23, 59, 59) : d.atStartOfDay();
+        } catch (DateTimeParseException ex) {
+            try {
+                String trimmed = dateStr.contains("(") ? dateStr.substring(0, dateStr.indexOf('(')).trim() : dateStr;
+                DateTimeFormatter fmt = DateTimeFormatter.ofPattern("EEE MMM dd yyyy HH:mm:ss 'GMT'XXX", Locale.ENGLISH);
+                ZonedDateTime zdt = ZonedDateTime.parse(trimmed, fmt);
+                LocalDate d = zdt.withZoneSameInstant(ZoneId.systemDefault()).toLocalDate();
+                return endOfDay ? d.atTime(23, 59, 59) : d.atStartOfDay();
+            } catch (Exception e) {
+                return null;
+            }
+        }
     }
 
     /** Reporte de visitantes de biblioteca virtual */

@@ -10,6 +10,7 @@ import { UsuarioPrestamosDTO } from '../interfaces/reportes/usuario-prestamos';
 import { EquipoUsoTiempoDTO } from '../interfaces/reportes/equipo-uso-tiempo';
 import { UsuarioPrestamosEquipoDTO } from '../interfaces/reportes/usuario-prestamos-equipo';
 import { VisitanteBibliotecaVirtualDTO } from '../interfaces/reportes/visitante-biblioteca-virtual';
+import { IntranetVisitaDTO } from '../interfaces/reportes/intranet-visita';
 
 @Injectable({
   providedIn: 'root'
@@ -286,6 +287,45 @@ export class PrestamosService {
             .get<{ status: string; data: VisitanteBibliotecaVirtualDTO[] }>(
                 `${this.apiUrl}/api/prestamos/reporte/visitantes-biblioteca-virtual`,
                 { params }
+            )
+            .pipe(map((resp) => resp.data ?? []));
+    }
+
+    reporteVisitasBibliotecaIntranet(
+        sede?: number | string,
+        tipoUsuario?: number | string,
+        estado?: number | string,
+        escuela?: number | string,
+        programa?: number | string,
+        ciclo?: number | string,
+        fechaInicio?: string,
+        fechaFin?: string
+    ): Observable<IntranetVisitaDTO[]> {
+        let params = new HttpParams();
+        const addParam = (key: string, value?: number | string | null) => {
+            if (value != null && value !== 0 && value !== '0') {
+                params = params.set(key, String(value));
+            }
+        };
+        addParam('sede', sede);
+        addParam('tipoUsuario', tipoUsuario);
+        addParam('estado', estado);
+        addParam('escuela', escuela);
+        addParam('programa', programa);
+        addParam('ciclo', ciclo);
+        if (fechaInicio) params = params.set('fechaInicio', fechaInicio);
+        if (fechaFin) params = params.set('fechaFin', fechaFin);
+
+        return this.http
+            .get<{ status: string; data: IntranetVisitaDTO[] }>(
+                `${this.apiUrl}/api/prestamos/reporte/intranet`,
+                {
+                    params,
+                    headers: new HttpHeaders().set(
+                        'Authorization',
+                        `Bearer ${this.authService.getToken()}`
+                    ),
+                }
             )
             .pipe(map((resp) => resp.data ?? []));
     }
