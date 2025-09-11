@@ -207,16 +207,8 @@ registrarEspecialidad(especialidad: any): Observable<any> {
 
       list(filtros?: { sedeId?: number; tipoMaterialId?: number }): Observable<BibliotecaDTO[]> {
         let params = new HttpParams();
-        if (filtros?.sedeId !== undefined && filtros.sedeId !== null && filtros.sedeId > 0) {
-          params = params.set('sedeId', filtros.sedeId.toString());
-        }
-        if (
-          filtros?.tipoMaterialId !== undefined &&
-          filtros.tipoMaterialId !== null &&
-          filtros.tipoMaterialId > 0
-        ) {
-          params = params.set('tipoMaterialId', filtros.tipoMaterialId.toString());
-        }
+        params = params.set('sedeId', (filtros?.sedeId ?? 0).toString());
+        params = params.set('tipoMaterialId', (filtros?.tipoMaterialId ?? 0).toString());
         return this.http
           .get<any>(`${this.apiUrl}/api/biblioteca/list`, {
             headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`),

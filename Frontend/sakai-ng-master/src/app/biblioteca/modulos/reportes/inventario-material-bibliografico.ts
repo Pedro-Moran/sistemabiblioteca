@@ -116,10 +116,12 @@ export class ReporteInventarioMaterialBibliografico {
     async reporte() {
         this.loading = true;
         try {
-            const result = await firstValueFrom(
-                this.materialService.api_libros_lista('api/biblioteca/list')
+            const lista = await firstValueFrom(
+                this.materialService.list({
+                    sedeId: this.sedeFiltro?.id ?? 0,
+                    tipoMaterialId: this.coleccionFiltro?.id ?? 0
+                })
             );
-            const lista = result?.data ?? [];
             this.resultados = lista.flatMap((b: any) => {
                 const detalles = Array.isArray(b.detalles) && b.detalles.length
                     ? b.detalles
