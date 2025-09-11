@@ -1,8 +1,10 @@
 export interface InventarioMaterialBibliograficoDTO {
     id: number;
-    numeroIngreso?: number;
-    tipoMaterial?: string;
+    codigo?: string;
+    numeroIngreso?: string | number;
+    numeroMaterial?: string | number;
     titulo?: string;
     autor?: string;
-    estado?: number;
+    anio?: string | number;
+    estado?: string | number;
 }
