@@ -207,7 +207,11 @@ registrarEspecialidad(especialidad: any): Observable<any> {
 
       list(filtros?: { sedeId?: number; tipoMaterialId?: number }): Observable<BibliotecaDTO[]> {
         let params = new HttpParams();
-        if (filtros?.sedeId !== undefined && filtros.sedeId !== null && filtros.sedeId > 0) {
+        if (
+          filtros?.sedeId !== undefined &&
+          filtros.sedeId !== null &&
+          filtros.sedeId > 0
+        ) {
           params = params.set('sedeId', filtros.sedeId.toString());
         }
         if (
