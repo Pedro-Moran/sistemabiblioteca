@@ -353,8 +353,31 @@ public class BibliotecaServiceImpl implements BibliotecaService {
     }
 
     @Override
-    public Page<BibliotecaDTO> listAllPaged(Pageable pageable) {
-        return bibliotecaRepository.findAll(pageable)
+    public Page<BibliotecaDTO> listAllPaged(Long sedeId, Long tipoMaterialId, Pageable pageable) {
+        Specification<Biblioteca> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (sedeId != null || tipoMaterialId != null) {
+                Subquery<Long> sq = query.subquery(Long.class);
+                var d = sq.from(DetalleBiblioteca.class);
+                List<Predicate> subPreds = new ArrayList<>();
+                subPreds.add(cb.equal(d.get("biblioteca").get("id"), root.get("id")));
+
+                if (sedeId != null) {
+                    subPreds.add(cb.equal(d.get("sede").get("id"), sedeId));
+                }
+                if (tipoMaterialId != null) {
+                    subPreds.add(cb.equal(d.get("tipoMaterial").get("idTipoMaterial"), tipoMaterialId));
+                }
+
+                sq.select(cb.literal(1L)).where(subPreds.toArray(new Predicate[0]));
+                predicates.add(cb.exists(sq));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return bibliotecaRepository.findAll(spec, pageable)
                 .map(this::mapToDto);
     }
 
