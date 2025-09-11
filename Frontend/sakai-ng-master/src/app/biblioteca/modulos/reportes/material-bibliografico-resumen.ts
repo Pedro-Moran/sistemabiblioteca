@@ -103,7 +103,12 @@ export class ReporteMaterialBibliograficoResumen {
     async reporte() {
         this.loading = true;
         try {
-            const respuesta = await firstValueFrom(this.materialService.list());
+            const respuesta = await firstValueFrom(
+                this.materialService.list({
+                    sedeId: this.sedeFiltro?.id,
+                    tipoMaterialId: this.coleccionFiltro?.id
+                })
+            );
             const lista = Array.isArray(respuesta) ? respuesta : [];
             this.resultados = lista.reduce((acc: MaterialBibliograficoResumenDTO[], b: any) => {
                 const detalles = Array.isArray(b.detalles) && b.detalles.length ? b.detalles : [{}];

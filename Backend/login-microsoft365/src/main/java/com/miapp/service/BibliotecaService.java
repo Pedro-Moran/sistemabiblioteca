@@ -17,7 +17,7 @@ public interface BibliotecaService {
     void deleteAll(List<Long> ids);
     Optional<Biblioteca> findById(Long id);
     List<Biblioteca> listAll();
-    Page<BibliotecaDTO> listAllPaged(Pageable pageable);
+    Page<BibliotecaDTO> listAllPaged(Long sedeId, Long tipoMaterialId, Pageable pageable);
     BibliotecaDTO mapToDto(Biblioteca b);
     List<Ciudad> listCiudades();
     Page<BibliotecaDTO> search(Long tipoMaterialId, String opcion, String valor,

@@ -54,10 +54,16 @@ public class BibliotecaController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<?> listAll(@RequestParam(defaultValue = "0") int page,
-                                     @RequestParam(defaultValue = "20") int size) {
+    public ResponseEntity<?> listAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(value = "sedeId", required = false) Long sedeId,
+            @RequestParam(value = "tipoMaterialId", required = false) Long tipoMaterialId) {
+        Long sede = (sedeId != null && sedeId > 0) ? sedeId : null;
+        Long tipo = (tipoMaterialId != null && tipoMaterialId > 0) ? tipoMaterialId : null;
         Page<BibliotecaDTO> result = bibliotecaService
-                .listAllPaged(PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id")));
+                .listAllPaged(sede, tipo,
+                        PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id")));
         return ResponseEntity.ok(Map.of("status", 0, "data", result));
     }
 
