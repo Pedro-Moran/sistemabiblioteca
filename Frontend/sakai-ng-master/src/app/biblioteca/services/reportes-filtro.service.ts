@@ -34,22 +34,17 @@ export class ReportesFiltroService {
           : Array.isArray(res)
             ? res
             : [];
-        this.cacheSedes = [
-          new Sedes({ id: 0, descripcion: 'TODAS LAS SEDES', activo: true }),
-          ...list.map(
-            (s: any) =>
-              new Sedes({
-                id: s.idSede ?? s.id ?? s.codigo ?? 0,
-                descripcion:
-                  s.descripcion ?? s.nombre ?? s.descripcionSede ?? '',
-                activo: s.activo ?? true,
-              })
-          ),
-        ];
+        this.cacheSedes = list.map(
+          (s: any) =>
+            new Sedes({
+              id: s.idSede ?? s.id ?? s.codigo ?? 0,
+              descripcion:
+                s.descripcion ?? s.nombre ?? s.descripcionSede ?? '',
+              activo: s.activo ?? true,
+            })
+        );
       } catch {
-        this.cacheSedes = [
-          new Sedes({ id: 0, descripcion: 'TODAS LAS SEDES', activo: true }),
-        ];
+        this.cacheSedes = [];
       }
     }
     return this.cacheSedes ?? [];
@@ -66,22 +61,17 @@ export class ReportesFiltroService {
           : Array.isArray(res)
             ? res
             : [];
-        this.cacheTipoMaterial = [
-          new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 }),
-          ...list.map(
-            (t: any) =>
-              new ClaseGeneral({
-                id: t.tipo?.id ?? t.id,
-                descripcion: t.descripcion,
-                activo: t.activo ?? true,
-                estado: 1,
-              })
-          ),
-        ];
+        this.cacheTipoMaterial = list.map(
+          (t: any) =>
+            new ClaseGeneral({
+              id: t.tipo?.id ?? t.id,
+              descripcion: t.descripcion,
+              activo: t.activo ?? true,
+              estado: 1,
+            })
+        );
       } catch {
-        this.cacheTipoMaterial = [
-          new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 }),
-        ];
+        this.cacheTipoMaterial = [];
       }
     }
     return this.cacheTipoMaterial ?? [];
