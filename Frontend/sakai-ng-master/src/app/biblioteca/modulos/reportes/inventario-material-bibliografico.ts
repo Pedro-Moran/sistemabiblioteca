@@ -57,11 +57,12 @@ import { construirCabeceraFiltros } from '../../utils/exportacion';
         <ng-template pTemplate="header">
             <tr>
                 <th>N°</th>
-                <th>ID</th>
+                <th>Código</th>
                 <th>N° Ingreso</th>
-                <th>Tipo Material</th>
+                <th>N° Material</th>
                 <th>Título</th>
                 <th>Autor</th>
+                <th>Año</th>
                 <th>Estado</th>
                 <th>Verificar</th>
                 <th>Observaciones</th>
@@ -70,11 +71,12 @@ import { construirCabeceraFiltros } from '../../utils/exportacion';
         <ng-template pTemplate="body" let-row let-i="rowIndex">
             <tr>
                 <td>{{ i + 1 }}</td>
-                <td>{{ row.id }}</td>
+                <td>{{ row.codigo || '-' }}</td>
                 <td>{{ row.numeroIngreso || '-' }}</td>
-                <td>{{ row.tipoMaterial || '-' }}</td>
+                <td>{{ row.numeroMaterial || '-' }}</td>
                 <td>{{ row.titulo || '-' }}</td>
                 <td>{{ row.autor || '-' }}</td>
+                <td>{{ row.anio || '-' }}</td>
                 <td>{{ row.estado || '-' }}</td>
                 <td></td>
                 <td></td>
@@ -127,12 +129,14 @@ export class ReporteInventarioMaterialBibliografico {
                     ? b.detalles
                     : [{} as any];
                 return detalles.map((d: any) => ({
-                    id: b.id ?? 0,
-                    numeroIngreso: d.numeroIngreso,
-                    tipoMaterial: d.tipoMaterial?.descripcion,
-                    titulo: b.titulo ?? '',
-                    autor: b.autorPersonal ?? '',
-                    estado: d.idEstado
+                    id: d.idDetalleBiblioteca ?? b.id ?? 0,
+                    codigo: b.codigoLocalizacion ?? '',
+                    numeroIngreso: d.numeroIngreso ?? b.numeroDeIngreso ?? '',
+                    numeroMaterial: d.codigoBarra ?? b.codigoLocalizacion ?? '',
+                    titulo: b.titulo ?? b.material?.titulo ?? '',
+                    autor: b.autorPersonal ?? b.material?.autorPrincipal ?? '',
+                    anio: b.anioPublicacion ?? b.material?.anioPublicacion ?? '',
+                    estado: d.estadoDescripcion ?? d.idEstado ?? ''
                 }));
             });
         } catch (err) {
@@ -162,7 +166,7 @@ export class ReporteInventarioMaterialBibliografico {
         const logoId = wb.addImage({ buffer, extension: 'png' });
         ws.addImage(logoId, { tl: { col: 0.2, row: 0.2 }, ext: { width: 220, height: 80 } });
         ws.addRows([[], [], [], []]); // espacio para la imagen
-        ws.mergeCells('C5', 'H6');
+        ws.mergeCells('C5', 'J6');
         const title = ws.getCell('C5');
         title.value = this.titulo;
         title.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -176,11 +180,22 @@ export class ReporteInventarioMaterialBibliografico {
         ws.addRow(filtrosCabecera.etiquetas);
         ws.addRow(filtrosCabecera.valores);
         ws.addRow([]);
-        const headerRow = ws.addRow(['N°', 'ID', 'N° Ingreso', 'Tipo Material', 'Título', 'Autor', 'Estado', 'Verificar', 'Observaciones']);
+        const headerRow = ws.addRow(['N°', 'Código', 'N° Ingreso', 'N° Material', 'Título', 'Autor', 'Año', 'Estado', 'Verificar', 'Observaciones']);
         headerRow.font = { bold: true };
         headerRow.alignment = { horizontal: 'center' };
         this.resultados.forEach((r, idx) => {
-            ws.addRow([idx + 1, r.id, r.numeroIngreso ?? '-', r.tipoMaterial ?? '-', r.titulo ?? '-', r.autor ?? '-', r.estado ?? '-', '', '']);
+            ws.addRow([
+                idx + 1,
+                r.codigo ?? '-',
+                r.numeroIngreso ?? '-',
+                r.numeroMaterial ?? '-',
+                r.titulo ?? '-',
+                r.autor ?? '-',
+                r.anio ?? '-',
+                r.estado ?? '-',
+                '',
+                ''
+            ]);
         });
         ws.columns.forEach(col => (col.width = 20));
         const buf = await wb.xlsx.writeBuffer();
@@ -213,8 +228,19 @@ export class ReporteInventarioMaterialBibliografico {
             });
             const inicioTabla = (doc as any).lastAutoTable.finalY + 5;
             autoTable(doc, {
-                head: [['N°', 'ID', 'N° Ingreso', 'Tipo Material', 'Título', 'Autor', 'Estado', 'Verificar', 'Observaciones']],
-                body: this.resultados.map((r, idx) => [idx + 1, r.id, r.numeroIngreso ?? '-', r.tipoMaterial ?? '-', r.titulo ?? '-', r.autor ?? '-', r.estado ?? '-', '', '']),
+                head: [['N°', 'Código', 'N° Ingreso', 'N° Material', 'Título', 'Autor', 'Año', 'Estado', 'Verificar', 'Observaciones']],
+                body: this.resultados.map((r, idx) => [
+                    idx + 1,
+                    r.codigo ?? '-',
+                    r.numeroIngreso ?? '-',
+                    r.numeroMaterial ?? '-',
+                    r.titulo ?? '-',
+                    r.autor ?? '-',
+                    r.anio ?? '-',
+                    r.estado ?? '-',
+                    '',
+                    ''
+                ]),
                 startY: inicioTabla,
                 styles: { fontSize: 8 },
                 headStyles: { fillColor: [41, 128, 185] }
