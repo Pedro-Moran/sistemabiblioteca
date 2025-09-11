@@ -8,86 +8,87 @@ import { ReportesFiltroService } from '../../services/reportes-filtro.service';
 import { MaterialBibliograficoService } from '../../services/material-bibliografico.service';
 import { MaterialBibliograficoResumenDTO } from '../../interfaces/reportes/material-bibliografico-resumen';
 import { firstValueFrom } from 'rxjs';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import { construirCabeceraFiltros } from '../../utils/exportacion';
 
 @Component({
     selector: 'app-reporte-material-bibliografico-resumen',
     standalone: true,
-    template: ` 
+    template: `
         <div class="card flex flex-col gap-4 w-full">
-    <h5>{{titulo}}</h5>
-    <p-toolbar styleClass="mb-6">
-    <div class="flex flex-col w-full gap-4">
-                <!-- Primera fila: Sede (2 col), Programa (2 col) y Escuela (3 col) -->
-                <div class="grid grid-cols-7 gap-4">
-                    <div class="flex flex-col gap-2 col-span-7 md:col-span-2 lg:col-span-2">
-                        <label for="sede" class="block text-sm font-medium">Local/Filial</label>
-                        <p-select [(ngModel)]="sedeFiltro" [options]="dataSede" optionLabel="descripcion" placeholder="Seleccionar" />
-                    </div>
+            <h5>{{ titulo }}</h5>
+            <p-toolbar styleClass="mb-6">
+                <div class="flex flex-col w-full gap-4">
+                    <!-- Primera fila: Sede (2 col), Programa (2 col) y Escuela (3 col) -->
+                    <div class="grid grid-cols-7 gap-4">
+                        <div class="flex flex-col gap-2 col-span-7 md:col-span-2 lg:col-span-2">
+                            <label for="sede" class="block text-sm font-medium">Local/Filial</label>
+                            <p-select [(ngModel)]="sedeFiltro" [options]="dataSede" optionLabel="descripcion" placeholder="Seleccionar" />
+                        </div>
 
-                    <div class="flex flex-col gap-2 col-span-7 md:col-span-2 lg:col-span-2">
-                    <label for="coleccion" class="block text-sm font-medium">Coleccion</label>
-                    <p-select [(ngModel)]="coleccionFiltro" [options]="dataColeccion" optionLabel="descripcion" placeholder="Seleccionar" />
+                        <div class="flex flex-col gap-2 col-span-7 md:col-span-2 lg:col-span-2">
+                            <label for="coleccion" class="block text-sm font-medium">Coleccion</label>
+                            <p-select [(ngModel)]="coleccionFiltro" [options]="dataColeccion" optionLabel="descripcion" placeholder="Seleccionar" />
+                        </div>
+                        <div class="flex items-end">
+                            <button pButton type="button" class="p-button-rounded p-button-danger" icon="pi pi-search" (click)="reporte()" [disabled]="loading" pTooltip="Ver reporte" tooltipPosition="bottom"></button>
+                        </div>
+                        <div class="flex items-end gap-2">
+                            <button pButton icon="pi pi-file-excel" label="Excel" class="p-button-success" (click)="exportExcel()" tooltip="Exportar a Excel"></button>
+                            <button pButton icon="pi pi-file-pdf" label="PDF" class="p-button-info" (click)="exportPdf()" tooltip="Exportar a PDF"></button>
+                        </div>
                     </div>
-                    <div class="flex items-end">
-            <button
-                pButton
-                type="button"
-                class="p-button-rounded p-button-danger"
-                icon="pi pi-search"(click)="reporte()" [disabled]="loading"  pTooltip="Ver reporte" tooltipPosition="bottom">
-            </button>
+                </div>
+            </p-toolbar>
+            <p-table [value]="resultados" [loading]="loading" [paginator]="true" [rows]="10">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>N°</th>
+                        <th>Código</th>
+                        <th>Título</th>
+                        <th>Autor</th>
+                        <th>Editorial</th>
+                        <th>Edición</th>
+                        <th>Año</th>
+                        <th>N° Ingreso</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-row let-i="rowIndex">
+                    <tr>
+                        <td>{{ i + 1 }}</td>
+                        <td>{{ row.codigo || '-' }}</td>
+                        <td>{{ row.titulo || '-' }}</td>
+                        <td>{{ row.autor || '-' }}</td>
+                        <td>{{ row.editorial || '-' }}</td>
+                        <td>{{ row.edicion || '-' }}</td>
+                        <td>{{ row.anio || '-' }}</td>
+                        <td>{{ row.numeroIngreso || '-' }}</td>
+                    </tr>
+                </ng-template>
+            </p-table>
         </div>
-                    </div>
-
-
-
-            </div>
-
-    </p-toolbar>
-    <p-table [value]="resultados" [loading]="loading" [paginator]="true" [rows]="10">
-        <ng-template pTemplate="header">
-            <tr>
-                <th>N°</th>
-                <th>Código</th>
-                <th>Título</th>
-                <th>Autor</th>
-                <th>Editorial</th>
-                <th>Edición</th>
-                <th>Año</th>
-                <th>N° Ingreso</th>
-            </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-row let-i="rowIndex">
-            <tr>
-                <td>{{ i + 1 }}</td>
-                <td>{{ row.codigo || '-' }}</td>
-                <td>{{ row.titulo || '-' }}</td>
-                <td>{{ row.autor || '-' }}</td>
-                <td>{{ row.editorial || '-' }}</td>
-                <td>{{ row.edicion || '-' }}</td>
-                <td>{{ row.anio || '-' }}</td>
-                <td>{{ row.numeroIngreso || '-' }}</td>
-            </tr>
-        </ng-template>
-    </p-table>
-</div>
-`,
-            imports: [TemplateModule, TooltipModule],
-            providers: [MessageService, ConfirmationService]
+    `,
+    imports: [TemplateModule, TooltipModule],
+    providers: [MessageService, ConfirmationService]
 })
 export class ReporteMaterialBibliograficoResumen {
-    titulo: string = "Material bibliográfico resumen";
+    titulo: string = 'Material bibliográfico resumen';
     dataSede: Sedes[] = [];
     sedeFiltro: Sedes = new Sedes();
     coleccionFiltro: ClaseGeneral = new ClaseGeneral();
     dataColeccion: ClaseGeneral[] = [];
-    tipo:number=1;
+    tipo: number = 1;
     loading: boolean = true;
     resultados: MaterialBibliograficoResumenDTO[] = [];
     constructor(
         private filtrosService: ReportesFiltroService,
         private materialService: MaterialBibliograficoService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private http: HttpClient
     ) {}
     async ngOnInit() {
         await this.cargarFiltros();
@@ -114,30 +115,13 @@ export class ReporteMaterialBibliograficoResumen {
                 const detalles = Array.isArray(b.detalles) && b.detalles.length ? b.detalles : [{}];
                 detalles.forEach((d: any) => {
                     acc.push({
-                        codigo:
-                            d.codigoLocalizacion ??
-                            b.codigoLocalizacion ??
-                            b.codigo ??
-                            '',
+                        codigo: d.codigoLocalizacion ?? b.codigoLocalizacion ?? b.codigo ?? '',
                         titulo: b.titulo ?? b.material?.titulo ?? '',
-                        autor:
-                            [
-                                b.autorPersonal,
-                                b.autorInstitucional,
-                                b.autorSecundario,
-                                b.material?.autorPrincipal,
-                                b.material?.autorSecundario
-                            ]
-                                .filter(Boolean)
-                                .join(' - ') || '',
+                        autor: [b.autorPersonal, b.autorInstitucional, b.autorSecundario, b.material?.autorPrincipal, b.material?.autorSecundario].filter(Boolean).join(' - ') || '',
                         editorial: b.editorialPublicacion ?? b.material?.editorial ?? '',
                         edicion: b.edicion ?? b.material?.edicion ?? '',
                         anio: b.anioPublicacion ?? b.material?.anioPublicacion ?? '',
-                        numeroIngreso:
-                            d.numeroIngreso ??
-                            b.numeroDeIngreso ??
-                            b.numeroIngreso ??
-                            ''
+                        numeroIngreso: d.numeroIngreso ?? b.numeroDeIngreso ?? b.numeroIngreso ?? ''
                     });
                 });
                 return acc;
@@ -152,5 +136,77 @@ export class ReporteMaterialBibliograficoResumen {
         } finally {
             this.loading = false;
         }
+    }
+
+    async exportExcel() {
+        if (!this.resultados.length) {
+            this.messageService.add({ severity: 'warn', detail: 'No hay datos para exportar.' });
+            return;
+        }
+        const wb = new ExcelJS.Workbook();
+        const ws = wb.addWorksheet('Reporte');
+        const buffer = await this.http.get('/assets/logo.png', { responseType: 'arraybuffer' }).toPromise();
+        const logoId = wb.addImage({ buffer, extension: 'png' });
+        ws.addImage(logoId, { tl: { col: 0.2, row: 0.2 }, ext: { width: 220, height: 80 } });
+        ws.addRows([[], [], [], []]);
+        ws.mergeCells('C5', 'H6');
+        const title = ws.getCell('C5');
+        title.value = this.titulo;
+        title.alignment = { vertical: 'middle', horizontal: 'center' };
+        title.font = { size: 16, bold: true };
+        ws.addRow([]);
+        const filtrosCabecera = construirCabeceraFiltros([
+            { etiqueta: 'Sede', valor: this.sedeFiltro?.descripcion, defecto: 'Todas' },
+            { etiqueta: 'Colección', valor: this.coleccionFiltro?.descripcion, defecto: 'Todas' },
+            { etiqueta: 'Fecha emisión', valor: new Date().toLocaleString() }
+        ]);
+        ws.addRow(filtrosCabecera.etiquetas);
+        ws.addRow(filtrosCabecera.valores);
+        ws.addRow([]);
+        const headerRow = ws.addRow(['N°', 'Código', 'Título', 'Autor', 'Editorial', 'Edición', 'Año', 'N° Ingreso']);
+        headerRow.font = { bold: true };
+        headerRow.alignment = { horizontal: 'center' };
+        this.resultados.forEach((r, idx) => {
+            ws.addRow([idx + 1, r.codigo ?? '-', r.titulo ?? '-', r.autor ?? '-', r.editorial ?? '-', r.edicion ?? '-', r.anio ?? '-', r.numeroIngreso ?? '-']);
+        });
+        ws.columns.forEach((col) => (col.width = 20));
+        const buf = await wb.xlsx.writeBuffer();
+        saveAs(new Blob([buf]), 'material_bibliografico_resumen.xlsx');
+    }
+
+    exportPdf() {
+        if (!this.resultados.length) {
+            this.messageService.add({ severity: 'warn', detail: 'No hay datos para exportar.' });
+            return;
+        }
+        const doc = new jsPDF({ orientation: 'landscape' });
+        const img = new Image();
+        img.src = '/assets/logo.png';
+        img.onload = () => {
+            doc.addImage(img, 'PNG', 10, 10, 60, 25);
+            doc.setFontSize(16);
+            const pageWidth = doc.internal.pageSize.getWidth();
+            doc.text(this.titulo, pageWidth / 2, 20, { align: 'center' });
+            const filtrosCabecera = construirCabeceraFiltros([
+                { etiqueta: 'Sede', valor: this.sedeFiltro?.descripcion, defecto: 'Todas' },
+                { etiqueta: 'Colección', valor: this.coleccionFiltro?.descripcion, defecto: 'Todas' },
+                { etiqueta: 'Fecha emisión', valor: new Date().toLocaleString() }
+            ]);
+            autoTable(doc, {
+                head: [filtrosCabecera.etiquetas],
+                body: [filtrosCabecera.valores],
+                startY: 40,
+                styles: { fontSize: 9 }
+            });
+            const startY = (doc as any).lastAutoTable.finalY + 5;
+            autoTable(doc, {
+                head: [['N°', 'Código', 'Título', 'Autor', 'Editorial', 'Edición', 'Año', 'N° Ingreso']],
+                body: this.resultados.map((r, idx) => [idx + 1, r.codigo ?? '-', r.titulo ?? '-', r.autor ?? '-', r.editorial ?? '-', r.edicion ?? '-', r.anio ?? '-', r.numeroIngreso ?? '-']),
+                startY,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [41, 128, 185] }
+            });
+            doc.save('material_bibliografico_resumen.pdf');
+        };
     }
 }
