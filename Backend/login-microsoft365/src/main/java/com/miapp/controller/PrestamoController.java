@@ -228,8 +228,14 @@ public class PrestamoController {
 
     /** Reporte de visitantes de biblioteca virtual */
     @GetMapping("/reporte/visitantes-biblioteca-virtual")
-    public ResponseEntity<?> reporteVisitantesBibliotecaVirtual() {
-        List<com.miapp.model.dto.VisitanteBibliotecaVirtualDTO> lista = prestamoService.reporteVisitantesBibliotecaVirtual();
+    public ResponseEntity<?> reporteVisitantesBibliotecaVirtual(
+            @RequestParam(required = false) String fechaInicio,
+            @RequestParam(required = false) String fechaFin
+    ) {
+        LocalDateTime inicio = fechaInicio != null ? LocalDate.parse(fechaInicio).atStartOfDay() : null;
+        LocalDateTime fin    = fechaFin != null ? LocalDate.parse(fechaFin).atTime(23,59,59) : null;
+
+        List<com.miapp.model.dto.VisitanteBibliotecaVirtualDTO> lista = prestamoService.reporteVisitantesBibliotecaVirtual(inicio, fin);
         return ResponseEntity.ok(Map.of("status","0","data", lista));
     }
 

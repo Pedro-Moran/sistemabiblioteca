@@ -37,20 +37,29 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     @Query(
             "SELECT new com.miapp.model.dto.VisitanteBibliotecaVirtualDTO(" +
                     " COALESCE(s.descripcion, '-')," +
-                    " td.descripcion," +
-                    " str(u.numDocumento)," +
+                    " 'N/A'," +
+                    " COALESCE(u.login, '')," +
                     " CONCAT(COALESCE(u.apellidoPaterno,''),' '," +
                     "        COALESCE(u.apellidoMaterno,''),' '," +
                     "        COALESCE(u.nombreUsuario,''))," +
                     " COALESCE(r.descripcion, 'Sin Rol')," +
+                    " COALESCE(e.descripcion, '-')," +
+                    " COALESCE(p.descripcion, '-')," +
+                    " COALESCE(u.ciclo, '-')," +
+                    " COALESCE(u.email, '-')," +
                     " COALESCE(u.loginCount,0) )" +
                     "FROM Usuario u " +
                     "LEFT JOIN Sede s ON u.idSede = s.id " +
-                    "LEFT JOIN TipoDocumento td ON u.tipodocumento.idTipoDocumento = td.idTipoDocumento " +
+                    "LEFT JOIN u.especialidad e " +
+                    "LEFT JOIN u.programa p " +
                     "LEFT JOIN u.roles r " +
                     "WHERE COALESCE(u.loginCount,0) > 0 " +
+                    "AND (:fechaInicio IS NULL OR u.fechaCreacion >= :fechaInicio) " +
+                    "AND (:fechaFin IS NULL OR u.fechaCreacion <= :fechaFin) " +
                     "ORDER BY COALESCE(u.loginCount,0) DESC")
-    List<VisitanteBibliotecaVirtualDTO> reporteVisitantesBibliotecaVirtual();
+    List<VisitanteBibliotecaVirtualDTO> reporteVisitantesBibliotecaVirtual(
+            @Param("fechaInicio") java.time.LocalDateTime fechaInicio,
+            @Param("fechaFin") java.time.LocalDateTime fechaFin);
 
     @Modifying
     @Transactional

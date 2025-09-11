@@ -10,9 +10,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class VisitanteBibliotecaVirtualDTO {
     private String sede;
-    private String tipoDocumento;
-    private String numeroDocumento;
+    private String baseDatos;
+    private String codigo;
     private String apellidosNombres;
     private String tipoUsuario;
+    private String especialidad;
+    private String programa;
+    private String ciclo;
+    private String correo;
     private Long   totalVisitas;
 }
