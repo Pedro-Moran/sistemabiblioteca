@@ -8,7 +8,9 @@ import { AuthService } from '../../services/auth.service';
 import { BibliotecaVirtualService } from '../../services/biblioteca-virtual.service';
 import { GenericoService } from '../../services/generico.service';
 
-import { CommonModule, formatDate } from '@angular/common';
+import { CommonModule, formatDate, registerLocaleData } from '@angular/common';
+import localeEsPe from '@angular/common/locales/es-PE';
+registerLocaleData(localeEsPe);
 import { FormsModule } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
 
@@ -236,6 +238,31 @@ export class BibliotecaVirtualComponent {
         d.setHours(h, m, 0, 0);
         return d;
     }
+
+    private coerceToDate(value: any): Date | null {
+        if (!value) {
+            return null;
+        }
+        if (value instanceof Date) {
+            return value;
+        }
+        if (Array.isArray(value)) {
+            const [y, m, d, hh = 0, mm = 0, ss = 0] = value;
+            return new Date(y, m - 1, d, hh, mm, ss);
+        }
+        if (typeof value === 'string') {
+            const match = value.match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/);
+            if (match) {
+                const [, hh, mm, ss = '0'] = match;
+                return new Date(1970, 0, 1, +hh, +mm, +ss);
+            }
+            return new Date(value.replace(' ', 'T'));
+        }
+        if (typeof value === 'object') {
+            return this.coerceToDate(value.fechaFin ?? value.fecha_fin);
+        }
+        return null;
+    }
     titulo: string = 'Biblioteca virtual';
     dataSede: Sedes[] = [];
     sedeFiltro: Sedes = new Sedes();
@@ -307,17 +334,18 @@ export class BibliotecaVirtualComponent {
                     equipos = equipos.filter((eq: any) => eq.sede?.id === sedeId);
                 }
                 const solicitudes = equipos.map((eq: any) => {
-                    const id = eq?.id ?? eq?.equipo?.id ?? eq?.equipoLaboratorio?.id;
+                    const id = eq?.id ?? eq?.idEquipo ?? eq?.equipo?.id ?? eq?.equipoLaboratorio?.id;
                     return id ? this.bibliotecaVirtualService.obtenerProximoFin(id) : of(null);
                 });
 
                 if (solicitudes.length) {
                     forkJoin(solicitudes).subscribe(
                         (fechas) => {
-                            (fechas as any[]).forEach((fecha, index) => {
+                        (fechas as any[]).forEach((fecha, index) => {
                                 const equipo = equipos[index];
-                                if (fecha) {
-                                    equipo.detallePrestamo = { fechaFin: fecha };
+                                const fechaFin = this.coerceToDate(fecha);
+                                if (fechaFin) {
+                                    equipo.detallePrestamo = { fechaFin };
                                 }
                             });
                             this.data = equipos;
@@ -339,7 +367,8 @@ export class BibliotecaVirtualComponent {
         );
     }
     getSeverity(product: any) {
-        switch (product.estado.descripcion) {
+        const estado = product?.estado?.descripcion?.toUpperCase?.() || '';
+        switch (estado) {
             case 'DISPONIBLE':
                 return 'success';
             case 'MANTENIMIENTO':
@@ -354,7 +383,8 @@ export class BibliotecaVirtualComponent {
     }
 
     getIcon(estado: string): string {
-        switch (estado) {
+        const estadoUpper = estado?.toUpperCase?.() || '';
+        switch (estadoUpper) {
             case 'DISPONIBLE':
                 return 'pi pi-check-circle text-green-500';
             case 'MANTENIMIENTO':
@@ -369,7 +399,8 @@ export class BibliotecaVirtualComponent {
     }
 
     getIconBg(estado: string): string {
-        switch (estado) {
+        const estadoUpper = estado?.toUpperCase?.() || '';
+        switch (estadoUpper) {
             case 'DISPONIBLE':
                 return 'bg-green-100 dark:bg-green-400/10';
             case 'MANTENIMIENTO':
@@ -385,13 +416,12 @@ export class BibliotecaVirtualComponent {
 
     getEstadoDescripcion(item: any): string {
         const estado = item?.estado?.descripcion || '';
+        const estadoUpper = estado.toUpperCase();
         const estadosConHora = ['PRESTADO EN SALA', 'PRESTADO A DOMICILIO', 'RESERVADO'];
-        if (estadosConHora.includes(estado)) {
-            const fin = item?.detallePrestamo?.fecha_fin || item?.detallePrestamo?.fechaFin;
-
+        if (estadosConHora.includes(estadoUpper)) {
+            const fin = this.coerceToDate(item?.detallePrestamo);
             if (fin) {
-                const fechaFin = typeof fin === 'string' ? new Date(/^\d{2}:\d{2}$/.test(fin) ? `1970-01-01T${fin}` : fin.replace(' ', 'T')) : fin;
-                const hora = formatDate(fechaFin, 'HH:mm', 'es-PE');
+                const hora = formatDate(fin, 'HH:mm', 'es-PE');
                 return `${estado} hasta las ${hora}`;
             }
         }
