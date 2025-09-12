@@ -142,6 +142,7 @@ export interface DetalleInput {
     horaFin?: string | null;
     maxHoras?: number | null;
     portadaLibroImg?: string | null;
+    codigoBarra?: string | null;
 }
 export interface DetalleDisplay extends DetalleInput {
     idDetalleBiblioteca?: number | null;
