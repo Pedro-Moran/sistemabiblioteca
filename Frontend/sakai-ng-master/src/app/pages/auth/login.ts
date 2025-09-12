@@ -1,11 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
-import { DropdownModule } from 'primeng/dropdown';
 import { DialogModule } from 'primeng/dialog';
 import { RippleModule } from 'primeng/ripple';
 import { AppFloatingConfigurator } from '../../layout/component/app.floatingconfigurator';
@@ -21,35 +21,44 @@ export interface LoginCredentials {
   selector: 'app-login',
   standalone: true,
   imports: [
+    CommonModule,
     ButtonModule,
     CheckboxModule,
     InputTextModule,
     PasswordModule,
-    DropdownModule,
     DialogModule,
     FormsModule,
     RouterModule,
     RippleModule,
     AppFloatingConfigurator
   ],
-  styles: [`
-    :host ::ng-deep .full-width-options .p-dropdown-item {
-      width: 100%;
-    }
-  `],
   template: `
     <app-floating-configurator />
-    <p-dialog header="Selecciona el tipo de usuario" [(visible)]="roleDialogVisible" [modal]="true" [closable]="false">
-      <p-dropdown
-        [options]="userRoles"
-        optionLabel="label"
-        optionValue="value"
-        [(ngModel)]="credentials.role"
-        appendTo="body"
-        panelStyleClass="full-width-options"
-      ></p-dropdown>
-      <div class="flex justify-end mt-4">
-        <p-button label="Continuar" (click)="confirmRoleSelection()"></p-button>
+    <p-dialog
+      [(visible)]="roleDialogVisible"
+      [modal]="true"
+      [closable]="false"
+      [style]="{ width: '40rem' }"
+      styleClass="role-dialog"
+      [appendTo]="'body'"
+    >
+      <ng-template pTemplate="header">
+        <div class="w-full text-center">
+          <span class="text-red-600 uppercase font-semibold">Seleccionar usuario</span>
+        </div>
+      </ng-template>
+      <div class="flex flex-col gap-2 w-full">
+        <button
+          *ngFor="let role of userRoles"
+          (click)="selectRole(role.value)"
+          class="w-full border border-gray-300 py-3 text-center uppercase font-medium text-gray-700 hover:text-red-600 hover:border-red-600 transition-colors cursor-pointer"
+        >
+          {{ role.label }}
+        </button>
+      </div>
+      <div class="mt-4 text-sm font-semibold text-center">
+        <span class="text-gray-700">Usuario:</span>
+        <span class="text-red-600">{{ credentials.email }}</span>
       </div>
     </p-dialog>
     <div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-[100vw] overflow-hidden p-4">
@@ -71,28 +80,12 @@ export interface LoginCredentials {
             <div class="flex flex-col gap-4">
               <div>
                 <label for="email" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Correo electrónico</label>
-                <input pInputText id="email" type="text" placeholder="Email address" class="w-full" [(ngModel)]="credentials.email" name="email" (ngModelChange)="onEmailChange()" />
+                <input pInputText id="email" type="text" placeholder="Email address" class="w-full" [(ngModel)]="credentials.email" name="email" />
               </div>
 
               <div>
                 <label for="password" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Contraseña</label>
                 <p-password id="password" [(ngModel)]="credentials.password" placeholder="Contraseña" [toggleMask]="true" [fluid]="true" [feedback]="false"></p-password>
-              </div>
-
-              <div>
-                <label for="role" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Tipo de usuario</label>
-                <p-dropdown
-                  id="role"
-                  [options]="userRoles"
-                  optionLabel="label"
-                  optionValue="value"
-                  [(ngModel)]="credentials.role"
-                  placeholder="Seleccione un rol"
-                  class="w-full"
-                  [disabled]="roleDisabled"
-                  appendTo="body"
-                  panelStyleClass="full-width-options"
-                ></p-dropdown>
               </div>
 
               <div class="flex items-center justify-between mt-2 mb-4 gap-4">
@@ -108,12 +101,23 @@ export interface LoginCredentials {
         </div>
       </div>
     </div>
-  `
+  `,
+  styles: [`
+    :host ::ng-deep .role-dialog {
+      opacity: 0;
+      transform: scale(0.85);
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    :host ::ng-deep .role-dialog.p-dialog-visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+  `]
 })
 export class Login implements OnInit {
   checked = false;
   userRoles: { label: string; value: string }[] = [];
-  roleDisabled = true;
   credentials: LoginCredentials = { email: '', password: '', role: '' };
   roleDialogVisible = false;
   msToken: string = '';
@@ -123,22 +127,20 @@ export class Login implements OnInit {
   loginWithMicrosoft() {
     this.authService.getMicrosoftToken().subscribe({
       next: ({ email, token }) => {
+        this.credentials.email = email;
         this.msToken = token;
         this.authService.getRolesByEmail(email).subscribe({
           next: roles => {
             this.userRoles = roles.length ? roles : [{ label: 'ESTUDIANTE', value: 'ESTUDIANTE' }];
             if (this.userRoles.length > 1) {
-              this.credentials.role = this.userRoles[0].value;
               this.roleDialogVisible = true;
             } else {
-              this.credentials.role = this.userRoles[0].value;
-              this.finishMicrosoftLogin();
+              this.selectRole(this.userRoles[0].value);
             }
           },
           error: () => {
             this.userRoles = [{ label: 'ESTUDIANTE', value: 'ESTUDIANTE' }];
-            this.credentials.role = 'ESTUDIANTE';
-            this.finishMicrosoftLogin();
+            this.selectRole('ESTUDIANTE');
           }
         });
       },
@@ -149,9 +151,14 @@ export class Login implements OnInit {
     });
   }
 
-  confirmRoleSelection() {
+  selectRole(role: string) {
+    this.credentials.role = role;
     this.roleDialogVisible = false;
-    this.finishMicrosoftLogin();
+    if (this.msToken) {
+      this.finishMicrosoftLogin();
+    } else {
+      this.finishManualLogin();
+    }
   }
 
   private finishMicrosoftLogin() {
@@ -164,61 +171,46 @@ export class Login implements OnInit {
     if (remembered) {
       this.credentials.email = remembered;
       this.checked = true;
-      this.loadUserRoles();
     }
-  }
-
-  onEmailChange(): void {
-    this.loadUserRoles();
-  }
-
-  private loadUserRoles(): void {
-    if (!this.credentials.email) {
-      this.userRoles = [];
-      this.credentials.role = '';
-      this.roleDisabled = true;
-      return;
-    }
-    this.authService.getRolesByEmail(this.credentials.email).subscribe({
-      next: (roles) => {
-        this.userRoles = roles;
-        if (roles.length === 1) {
-          this.credentials.role = roles[0].value;
-          this.roleDisabled = true;
-        } else {
-          this.credentials.role = '';
-          this.roleDisabled = false;
-        }
-      },
-      error: () => {
-        this.userRoles = [];
-        this.credentials.role = '';
-        this.roleDisabled = true;
-      }
-    });
   }
 
   onLogin(): void {
-    if (this.credentials.email && this.credentials.password && this.credentials.role) {
-      this.authService.loginManual(this.credentials).subscribe({
-        next: (response) => {
-          this.authService.setAuthentication(response.token);
-          this.authService.openPendingResource();
-          if (this.checked) {
-            localStorage.setItem('rememberedEmail', this.credentials.email);
+    if (this.credentials.email && this.credentials.password) {
+      this.authService.getRolesByEmail(this.credentials.email).subscribe({
+        next: roles => {
+          this.userRoles = roles.length ? roles : [{ label: 'ESTUDIANTE', value: 'ESTUDIANTE' }];
+          if (this.userRoles.length > 1) {
+            this.roleDialogVisible = true;
           } else {
-            localStorage.removeItem('rememberedEmail');
+            this.selectRole(this.userRoles[0].value);
           }
-          this.router.navigate(['/main']);
         },
-        error: (err) => {
-          alert('Credenciales incorrectas');
-          console.error('Error en login manual:', err);
+        error: () => {
+          alert('No se pudo obtener roles para el usuario');
         }
       });
     } else {
-      alert('Por favor ingresa email, contraseña y tipo de usuario');
+      alert('Por favor ingresa email y contraseña');
     }
+  }
+
+  private finishManualLogin(): void {
+    this.authService.loginManual(this.credentials).subscribe({
+      next: (response) => {
+        this.authService.setAuthentication(response.token);
+        this.authService.openPendingResource();
+        if (this.checked) {
+          localStorage.setItem('rememberedEmail', this.credentials.email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+        }
+        this.router.navigate(['/main']);
+      },
+      error: (err) => {
+        alert('Credenciales incorrectas');
+        console.error('Error en login manual:', err);
+      }
+    });
   }
 
   onForgotPassword(): void {
