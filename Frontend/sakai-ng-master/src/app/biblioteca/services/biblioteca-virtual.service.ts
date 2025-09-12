@@ -48,11 +48,17 @@ export class BibliotecaVirtualService {
     }
 
     listarEquipos(discapacidad?: boolean): Observable<any> {
-        let params = new HttpParams();
-        if (discapacidad !== undefined) {
-            params = params.set('discapacidad', discapacidad);
-        }
-        return this.http.get<any>(`${this.apisUrl}/list`, { params });
+        return this.http.get<any>(`${this.apisUrl}/list`).pipe(
+            map((res: any) => {
+                let equipos = res?.data ?? res;
+                if (discapacidad !== undefined) {
+                    equipos = (equipos || []).filter((eq: any) => eq.discapacidad === discapacidad);
+                }
+                return res && res.status !== undefined
+                    ? { ...res, data: equipos }
+                    : { status: '0', data: equipos };
+            })
+        );
     }
 
     verificarIpDuplicada(ip: string, id?: number): Observable<{ exists: boolean }> {
