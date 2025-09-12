@@ -19,7 +19,7 @@ import { Sede } from '../../../interfaces/biblioteca-virtual/sede';
                     <div class="flex flex-col md:flex-row gap-x-4 gap-y-2">
                         <div class="flex flex-col gap-2 w-full">
                             <label for="nombreEquipo">Nombre de equipo</label>
-                            <input pInputText id="nombreEquipo" type="text" formControlName="nombreEquipo" />
+                            <input pInputText id="nombreEquipo" type="text" formControlName="nombreEquipo" maxlength="6" />
                             <app-input-validation [form]="form" modelo="nombreEquipo" ver="Nombre Equipo"></app-input-validation>
                         </div>
                     </div>
@@ -101,7 +101,7 @@ export class FormEquipo implements OnInit, OnChanges {
         this.form = this.fb.group({
             id: [0],
             estado: [null],
-            nombreEquipo: ['', [Validators.required, Validators.maxLength(50), Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\\s\\-()]+$')]],
+            nombreEquipo: ['', [Validators.required, Validators.maxLength(6), Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\\s\\-()]+$')]],
             numeroEquipo: ['', [Validators.required, Validators.maxLength(2), Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\\s\\-()]+$')]],
             ip: ['', [Validators.required, Validators.pattern('^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$')]],
             horaInicio: [null, [Validators.required]],
