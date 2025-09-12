@@ -8,7 +8,7 @@ import { AuthService } from '../../services/auth.service';
 import { BibliotecaVirtualService } from '../../services/biblioteca-virtual.service';
 import { GenericoService } from '../../services/generico.service';
 
-import { CommonModule, formatDate }        from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule }         from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
 
@@ -434,9 +434,7 @@ export class BibliotecaVirtualComponent {
             if (estadosConHora.includes(estado)) {
                 const fin =
                     item?.detallePrestamo?.fecha_fin ||
-                    item?.detallePrestamo?.fechaFin ||
-                    item?.detallePrestamo?.prestamoHasta ||
-                    item?.detallePrestamo?.horaFin;
+                    item?.detallePrestamo?.fechaFin;
 
                 if (fin) {
                     const fechaFin =
