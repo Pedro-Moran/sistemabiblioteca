@@ -7,10 +7,10 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { BibliotecaVirtualService } from '../../services/biblioteca-virtual.service';
 import { GenericoService } from '../../services/generico.service';
-import { HttpErrorResponse } from '@angular/common/http';
 
-import { CommonModule }        from '@angular/common';
+import { CommonModule, formatDate }        from '@angular/common';
 import { FormsModule }         from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
 
 // PrimeNG Modules que vas a usar:
 import { ToolbarModule }       from 'primeng/toolbar';
@@ -109,8 +109,11 @@ import { ToastModule } from 'primeng/toast';
                             <div class="flex flex-col sm:flex-row sm:items-center p-6 gap-4" [ngClass]="{ 'border-t border-surface': i !== 0 }">
                                 <div class="md:w-40 relative">
 
-                                <div class="absolute bg-black/70 rounded-border" [style]="{ left: '4px', top: '4px' }">
-                                        <p-tag [value]="item.estado.descripcion" [severity]="getSeverity(item)"></p-tag>
+                                <div class="absolute" [style]="{ left: '4px', top: '4px' }">
+                                        <p-tag [severity]="getSeverity(item)" styleClass="flex items-center gap-1">
+                                            <i [ngClass]="getIcon(item.estado.descripcion)"></i>
+                                            {{ getEstadoDescripcion(item) }}
+                                        </p-tag>
                                     </div>
                                 </div>
                                 <div class="flex flex-col md:flex-row justify-between md:items-center flex-1 gap-6">
@@ -146,27 +149,17 @@ import { ToastModule } from 'primeng/toast';
                                 <div>
                                             <span class="font-medium text-surface-500 dark:text-surface-400 text-sm">EQUIPO: {{ item.nombreEquipo }}</span>
                                             <div class="text-lg font-medium mt-1">NRO: {{ item.numeroEquipo }}</div>
-                                            @if(item.estado.descripcion=='DISPONIBLE'){
-                                                <p-button [label]="item.estado.descripcion" severity="success" text />
-                                            }@else if(item.estado.descripcion=='RESERVADO'){
-                                                <p-button [label]="item.estado.descripcion" severity="warn" text />
+                                            @if(item.estado.descripcion==='DISPONIBLE'){
+                                                <p-button [label]="getEstadoDescripcion(item)" severity="success" text />
+                                            }@else if(item.estado.descripcion==='MANTENIMIENTO'){
+                                                <p-button [label]="getEstadoDescripcion(item)" severity="danger" text />
                                             }@else {
-                                                <p-button [label]="item.estado.descripcion" severity="danger" text />
+                                                <p-button [label]="getEstadoDescripcion(item)" severity="warn" text />
                                             }
                                         </div>
-                                        @if(item.estado.descripcion=='DISPONIBLE'){
-                                            <div class="flex items-center justify-center bg-green-100 dark:bg-green-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                                                <i class="pi pi-check-circle text-green-500 !text-xl"></i>
+                                        <div class="flex items-center justify-center rounded-border" [ngClass]="getIconBg(item.estado.descripcion)" style="width: 2.5rem; height: 2.5rem">
+                                                <i [ngClass]="getIcon(item.estado.descripcion)" class="!text-xl"></i>
                                             </div>
-                                        }@else if(item.estado.descripcion=='MANTENIMIENTO'){
-                                            <div class="flex items-center justify-center bg-red-100 dark:bg-red-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                                                <i class="pi pi-cog text-red-500 !text-xl"></i>
-                                            </div>
-                                        }@else {
-                                            <div class="flex items-center justify-center bg-red-100 dark:bg-red-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                                                <i class="pi pi-ban text-red-500 !text-xl"></i>
-                                            </div>
-                                        }
                 </div>
                                 <div class="">
                                     <div class="flex flex-col gap-6 mt-6">
@@ -289,20 +282,6 @@ export class BibliotecaVirtualComponent {
         d.setHours(h, m, 0, 0);
         return d;
     }
-
-    private isDisponibleAhora(eq: any): boolean {
-        if (!eq.horaInicio || !eq.horaFin) {
-            return true;
-        }
-        const now = new Date();
-        const start = this.parseTimeAtDate(eq.horaInicio, now);
-        const end = this.parseTimeAtDate(eq.horaFin, now);
-        if (end <= start) {
-            // horario que cruza medianoche
-            return now >= start || now <= end;
-        }
-        return now >= start && now <= end;
-    }
     titulo: string = "Biblioteca virtual";
     dataSede: Sedes[] = [];
     sedeFiltro: Sedes = new Sedes();
@@ -352,39 +331,132 @@ export class BibliotecaVirtualComponent {
             await this.listar();
   }
     buscar() { }
-    async listar() {
+    async listar(sedeId?: number) {
         this.loading = true;
         this.data = [];
 
-        this.bibliotecaVirtualService.listarEquipos()
-            .subscribe(
-                (result: any) => {
+        this.bibliotecaVirtualService.listarEquipos().subscribe(
+            (result: any) => {
+                let equipos = result?.data ?? result;
+                if (!Array.isArray(equipos)) {
                     this.loading = false;
-                    if (result.status == "0") {
-                        this.data = result.data
-                            .filter((e: any) => e.estado?.descripcion === 'DISPONIBLE' && this.isDisponibleAhora(e));
-                    }
-                },
-                   (error: HttpErrorResponse) => {
+                    return;
+                }
+                if (sedeId && sedeId !== 0) {
+                    equipos = equipos.filter((eq: any) => eq.sede?.id === sedeId);
+                }
+                const solicitudes = equipos.map((eq: any) => {
+                    const id = eq?.id ?? eq?.equipo?.id ?? eq?.equipoLaboratorio?.id;
+                    return id
+                        ? this.bibliotecaVirtualService.listarDetallePrestamoEquipo(id)
+                        : of([]);
+                });
+
+                if (solicitudes.length) {
+                    forkJoin<any[]>(solicitudes).subscribe(
+                        (detallesPorEquipo) => {
+                            (detallesPorEquipo as any[][]).forEach((detalles, index) => {
+                                const equipo = equipos[index];
+                                if (detalles && detalles.length) {
+                                    const ultimo = detalles.reduce((a: any, b: any) => {
+                                        const fa = new Date((a.fecha_fin || a.fechaFin || '').replace(' ', 'T'));
+                                        const fb = new Date((b.fecha_fin || b.fechaFin || '').replace(' ', 'T'));
+                                        return fb > fa ? b : a;
+                                    });
+                                    equipo.detallePrestamo = ultimo;
+                                }
+                            });
+                            this.data = equipos;
+                            this.loading = false;
+                        },
+                        () => {
+                            this.data = equipos;
+                            this.loading = false;
+                        }
+                    );
+                } else {
+                    this.data = equipos;
                     this.loading = false;
                 }
-            );
-        this.loading = false;
+            },
+            () => {
+                this.loading = false;
+            }
+        );
     }
         getSeverity(product: any) {
             switch (product.estado.descripcion) {
                 case 'DISPONIBLE':
                     return 'success';
-
-                case 'RESERVADO':
-                    return 'warn';
-
                 case 'MANTENIMIENTO':
                     return 'danger';
-
+                case 'PRESTADO EN SALA':
+                case 'PRESTADO A DOMICILIO':
+                case 'RESERVADO':
+                    return 'warn';
                 default:
-                    return 'danger';
+                    return 'info';
             }
+        }
+
+        getIcon(estado: string): string {
+            switch (estado) {
+                case 'DISPONIBLE':
+                    return 'pi pi-check-circle text-green-500';
+                case 'MANTENIMIENTO':
+                    return 'pi pi-cog text-red-500';
+                case 'PRESTADO EN SALA':
+                case 'PRESTADO A DOMICILIO':
+                case 'RESERVADO':
+                    return 'pi pi-lock text-yellow-500';
+                default:
+                    return 'pi pi-question-circle text-gray-500';
+            }
+        }
+
+        getIconBg(estado: string): string {
+            switch (estado) {
+                case 'DISPONIBLE':
+                    return 'bg-green-100 dark:bg-green-400/10';
+                case 'MANTENIMIENTO':
+                    return 'bg-red-100 dark:bg-red-400/10';
+                case 'PRESTADO EN SALA':
+                case 'PRESTADO A DOMICILIO':
+                case 'RESERVADO':
+                    return 'bg-yellow-100 dark:bg-yellow-400/10';
+                default:
+                    return 'bg-gray-100 dark:bg-gray-400/10';
+            }
+        }
+
+        getEstadoDescripcion(item: any): string {
+            const estado = item?.estado?.descripcion || '';
+            const estadosConHora = [
+                'PRESTADO EN SALA',
+                'PRESTADO A DOMICILIO',
+                'RESERVADO'
+            ];
+            if (estadosConHora.includes(estado)) {
+                const fin =
+                    item?.detallePrestamo?.fecha_fin ||
+                    item?.detallePrestamo?.fechaFin ||
+                    item?.detallePrestamo?.prestamoHasta ||
+                    item?.detallePrestamo?.horaFin;
+
+                if (fin) {
+                    const fechaFin =
+                        typeof fin === 'string'
+                            ? new Date(
+                                  /^\d{2}:\d{2}$/.test(fin)
+                                      ? `1970-01-01T${fin}`
+                                      : fin.replace(' ', 'T')
+                              )
+                            : fin;
+                    const hora = formatDate(fechaFin, 'hh:mm a', 'en-US');
+                    return `${estado} hasta las ${hora}`;
+                }
+            }
+            return estado;
         }
       async ListaSede() {
         try {
@@ -414,26 +486,8 @@ export class BibliotecaVirtualComponent {
     }
 
     filtrarPorSede() {
-      if (this.sedeFiltro && this.sedeFiltro.id) {
-        this.bibliotecaVirtualService
-          .filtrarPorSede(this.sedeFiltro.id)
-          .subscribe(
-            (result: any) => {
-              this.loading = false;
-              if (result.status == "0") {
-                this.data = result.data.filter(
-                  (e: any) =>
-                    e.estado?.descripcion === 'DISPONIBLE' && this.isDisponibleAhora(e)
-                );
-              }
-            },
-              (error: HttpErrorResponse) => {
-              this.loading = false;
-            }
-          );
-      } else {
-        this.listar();
-      }
+      const id = this.sedeFiltro?.id || 0;
+      this.listar(id);
     }
     reservar(item: any) {
         this.selectedItem = item;
