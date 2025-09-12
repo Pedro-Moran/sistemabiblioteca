@@ -119,24 +119,26 @@ import { ToastModule } from 'primeng/toast';
                 <ng-template #grid let-items>
                     <div class="grid grid-cols-12 gap-4">
                         <div *ngFor="let item of items; let i = index" class="col-span-12 sm:col-span-6 lg:col-span-4 p-2">
-                            <div class="p-6 border border-surface-200 dark:border-surface-700 bg-surface-0 dark:bg-surface-900 rounded flex flex-col">
-                                <div class="flex justify-between mb-4">
-                                    <div>
-                                        <span class="font-medium text-surface-500 dark:text-surface-400 text-sm">EQUIPO: {{ item.nombreEquipo }}</span>
-                                        <div class="text-lg font-medium mt-1">NRO: {{ item.numeroEquipo }}</div>
-                                        @if (item.estado.descripcion === 'DISPONIBLE') {
-                                            <p-button [label]="getEstadoDescripcion(item)" severity="success" text />
-                                        } @else if (item.estado.descripcion === 'MANTENIMIENTO') {
-                                            <p-button [label]="getEstadoDescripcion(item)" severity="danger" text />
-                                        } @else {
-                                            <p-button [label]="getEstadoDescripcion(item)" severity="warn" text />
-                                        }
-                                    </div>
-                                    <div class="flex items-center justify-center rounded-border" [ngClass]="getIconBg(item.estado.descripcion)" style="width: 2.5rem; height: 2.5rem">
-                                        <i [ngClass]="getIcon(item.estado.descripcion)" class="!text-xl"></i>
-                                    </div>
+                            <div class="border border-surface-200 dark:border-surface-700 bg-surface-0 dark:bg-surface-900 rounded flex flex-col relative">
+                                <div class="absolute -top-3 right-3 bg-blue-500 text-white text-sm font-medium px-3 py-2 rounded-full shadow-md">
+                                    {{ item.nombreEquipo }}
                                 </div>
-                                <div class="">
+                                <div class="p-6 flex flex-col">
+                                    <div class="flex justify-between mb-4">
+                                        <div>
+                                            <div class="text-lg font-medium">NRO: {{ item.numeroEquipo }}</div>
+                                            @if (item.estado.descripcion === 'DISPONIBLE') {
+                                                <p-button [label]="getEstadoDescripcion(item)" severity="success" text />
+                                            } @else if (item.estado.descripcion === 'MANTENIMIENTO') {
+                                                <p-button [label]="getEstadoDescripcion(item)" severity="danger" text />
+                                            } @else {
+                                                <p-button [label]="getEstadoDescripcion(item)" severity="warn" text />
+                                            }
+                                        </div>
+                                        <div class="flex items-center justify-center rounded-border" [ngClass]="getIconBg(item.estado.descripcion)" style="width: 2.5rem; height: 2.5rem">
+                                            <i [ngClass]="getIcon(item.estado.descripcion)" class="!text-xl"></i>
+                                        </div>
+                                    </div>
                                     <div class="flex flex-col gap-6 mt-6">
                                         <div class="flex gap-2">
                                             @if (item.estado.descripcion == 'DISPONIBLE') {
@@ -341,7 +343,7 @@ export class BibliotecaVirtualComponent {
                 if (solicitudes.length) {
                     forkJoin(solicitudes).subscribe(
                         (fechas) => {
-                        (fechas as any[]).forEach((fecha, index) => {
+                            (fechas as any[]).forEach((fecha, index) => {
                                 const equipo = equipos[index];
                                 const fechaFin = this.coerceToDate(fecha);
                                 if (fechaFin) {
