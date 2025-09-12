@@ -222,6 +222,13 @@ public class PrestamoService {
         return detallePrestamoRepository.findByEquipo_IdEquipo(equipoId);
     }
 
+    public LocalDateTime obtenerProximoFin(Long equipoId) {
+        return detallePrestamoRepository
+                .findTopByEquipo_IdEquipoOrderByFechaFinDesc(equipoId)
+                .map(DetallePrestamo::getFechaFin)
+                .orElse(null);
+    }
+
     /**
      * Para el listado de devoluciones: solo PRESTADO EN SALA/A DOMICILIO,
      * y si pasan sedeId != null, filtra por ese código de sede.

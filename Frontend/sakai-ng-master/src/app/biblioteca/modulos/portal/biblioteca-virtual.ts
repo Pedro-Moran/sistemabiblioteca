@@ -348,22 +348,17 @@ export class BibliotecaVirtualComponent {
                 const solicitudes = equipos.map((eq: any) => {
                     const id = eq?.id ?? eq?.equipo?.id ?? eq?.equipoLaboratorio?.id;
                     return id
-                        ? this.bibliotecaVirtualService.listarDetallePrestamoEquipo(id, sedeId)
-                        : of([]);
+                        ? this.bibliotecaVirtualService.obtenerProximoFin(id)
+                        : of(null);
                 });
 
                 if (solicitudes.length) {
-                    forkJoin<any[]>(solicitudes).subscribe(
-                        (detallesPorEquipo) => {
-                            (detallesPorEquipo as any[][]).forEach((detalles, index) => {
+                    forkJoin(solicitudes).subscribe(
+                        (fechas) => {
+                            (fechas as any[]).forEach((fecha, index) => {
                                 const equipo = equipos[index];
-                                if (detalles && detalles.length) {
-                                    const ultimo = detalles.reduce((a: any, b: any) => {
-                                        const fa = new Date((a.fecha_fin || a.fechaFin || '').replace(' ', 'T'));
-                                        const fb = new Date((b.fecha_fin || b.fechaFin || '').replace(' ', 'T'));
-                                        return fb > fa ? b : a;
-                                    });
-                                    equipo.detallePrestamo = ultimo;
+                                if (fecha) {
+                                    equipo.detallePrestamo = { fechaFin: fecha };
                                 }
                             });
                             this.data = equipos;
@@ -442,19 +437,16 @@ export class BibliotecaVirtualComponent {
                     item?.detallePrestamo?.fechaFin;
 
                 if (fin) {
-                    const finStr =
-                        typeof fin === 'string' ? fin.replace(' ', 'T') : fin;
-                    const fecha = new Date(finStr);
-                    if (!isNaN(fecha.getTime())) {
-                        const hora = fecha
-                            .toLocaleTimeString('es-PE', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: true
-                            })
-                            .toLowerCase();
-                        return `${estado} hasta ${hora}`;
-                    }
+                    const fechaFin =
+                        typeof fin === 'string'
+                            ? new Date(
+                                  /^\d{2}:\d{2}$/.test(fin)
+                                      ? `1970-01-01T${fin}`
+                                      : fin.replace(' ', 'T')
+                              )
+                            : fin;
+                    const hora = formatDate(fechaFin, 'HH:mm', 'es-PE');
+                    return `${estado} hasta las ${hora}`;
                 }
             }
             return estado;

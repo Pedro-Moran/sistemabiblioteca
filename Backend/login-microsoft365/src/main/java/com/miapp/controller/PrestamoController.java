@@ -327,6 +327,12 @@ public class PrestamoController {
         return ResponseEntity.ok(Map.of("status","0","data", lista));
     }
 
+    @GetMapping("/equipos/{equipoId}/proximo-fin")
+    public ResponseEntity<?> obtenerProximoFin(@PathVariable Long equipoId) {
+        LocalDateTime fecha = prestamoService.obtenerProximoFin(equipoId);
+        return ResponseEntity.ok(Map.of("status","0","data", fecha));
+    }
+
     /** Lista equipos (id, nombre o ip) */
     @GetMapping("/equipos")
     public ResponseEntity<?> listarEquipos(

@@ -30,6 +30,8 @@ public interface DetallePrestamoRepository
 
     List<DetallePrestamo> findByEquipo_IdEquipo(Long equipoId);
 
+    java.util.Optional<DetallePrestamo> findTopByEquipo_IdEquipoOrderByFechaFinDesc(Long equipoId);
+
     List<DetallePrestamo> findByEquipo_IdEquipoAndCodigoSede(Long equipoId, String codigoSede);
 
     List<DetallePrestamo> findByEstado_DescripcionIn(List<String> estados);
