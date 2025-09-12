@@ -17,6 +17,7 @@ export class Detalle {
     costo: any;
     nroFactura: string;
     numeroFactura?: string | null;
+    codigoBarra?: string | null;
     tipoMaterialId?: number | null;
     horaInicio?: string | null;
     /** Hora fin permitida para préstamo */
@@ -39,6 +40,7 @@ export class Detalle {
         this.costo = '';
         this.nroFactura = '';
         this.numeroFactura = null;
+        this.codigoBarra = null;
         this.tipoMaterialId = null;
         this.horaInicio = null;
         this.horaFin = null;

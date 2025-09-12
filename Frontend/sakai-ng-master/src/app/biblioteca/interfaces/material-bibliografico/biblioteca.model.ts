@@ -90,7 +90,7 @@ export interface DetalleBibliotecaDTO {
     tipoAdquisicionId?: number | null;
     tipoAdquisicion?: TipoAdquisicion | null;
     numeroIngreso?: number;
-    codigoBarra?: string;
+    codigoBarra?: string | null;
     costo?: number | null;
     numeroFactura?: string | null;
     /** Algunos servicios devuelven este campo */
