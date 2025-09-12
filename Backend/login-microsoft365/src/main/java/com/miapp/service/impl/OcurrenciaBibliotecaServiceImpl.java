@@ -161,16 +161,19 @@ public class OcurrenciaBibliotecaServiceImpl implements OcurrenciaBibliotecaServ
                     });
         }
         if (e.getDetalleBiblioteca()!=null) {
-            DetalleBiblioteca det = e.getDetalleBiblioteca();
-            dto.setIdDetalleBiblioteca(det.getIdDetalle());
-            dto.setIdEjemplar(
-                    det.getNumeroIngreso()!=null
-                            ? det.getNumeroIngreso().toString()
-                            : String.valueOf(det.getIdDetalle())
-            );
-            dto.setEjemplar(det.getBiblioteca()!=null ? det.getBiblioteca().getTitulo() : null);
-            dto.setSede(det.getSede()!=null ? det.getSede().getDescripcion() : null);
-            dto.setTipoMaterial(det.getTipoMaterial()!=null ? det.getTipoMaterial().getDescripcion() : null);
+            Long idDetalle = e.getDetalleBiblioteca().getIdDetalle();
+            DetalleBiblioteca det = detalleBiblioRepo.findById(idDetalle).orElse(null);
+            if (det != null) {
+                dto.setIdDetalleBiblioteca(det.getIdDetalle());
+                dto.setIdEjemplar(
+                        det.getNumeroIngreso()!=null
+                                ? det.getNumeroIngreso().toString()
+                                : String.valueOf(det.getIdDetalle())
+                );
+                dto.setEjemplar(det.getBiblioteca()!=null ? det.getBiblioteca().getTitulo() : null);
+                dto.setSede(det.getSede()!=null ? det.getSede().getDescripcion() : null);
+                dto.setTipoMaterial(det.getTipoMaterial()!=null ? det.getTipoMaterial().getDescripcion() : null);
+            }
         }
         dto.setCodigoLocalizacion(e.getCodigoLocalizacion());
         dto.setCodigoUsuario(e.getCodigoUsuario());
