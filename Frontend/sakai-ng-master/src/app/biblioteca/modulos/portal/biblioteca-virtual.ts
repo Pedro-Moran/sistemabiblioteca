@@ -8,7 +8,7 @@ import { AuthService } from '../../services/auth.service';
 import { BibliotecaVirtualService } from '../../services/biblioteca-virtual.service';
 import { GenericoService } from '../../services/generico.service';
 
-import { CommonModule, formatDate }        from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule }         from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
 
@@ -348,7 +348,7 @@ export class BibliotecaVirtualComponent {
                 const solicitudes = equipos.map((eq: any) => {
                     const id = eq?.id ?? eq?.equipo?.id ?? eq?.equipoLaboratorio?.id;
                     return id
-                        ? this.bibliotecaVirtualService.listarDetallePrestamoEquipo(id)
+                        ? this.bibliotecaVirtualService.listarDetallePrestamoEquipo(id, sedeId)
                         : of([]);
                 });
 
@@ -439,21 +439,22 @@ export class BibliotecaVirtualComponent {
             if (estadosConHora.includes(estado)) {
                 const fin =
                     item?.detallePrestamo?.fecha_fin ||
-                    item?.detallePrestamo?.fechaFin ||
-                    item?.detallePrestamo?.prestamoHasta ||
-                    item?.detallePrestamo?.horaFin;
+                    item?.detallePrestamo?.fechaFin;
 
                 if (fin) {
-                    const fechaFin =
-                        typeof fin === 'string'
-                            ? new Date(
-                                  /^\d{2}:\d{2}$/.test(fin)
-                                      ? `1970-01-01T${fin}`
-                                      : fin.replace(' ', 'T')
-                              )
-                            : fin;
-                    const hora = formatDate(fechaFin, 'hh:mm a', 'en-US');
-                    return `${estado} hasta las ${hora}`;
+                    const finStr =
+                        typeof fin === 'string' ? fin.replace(' ', 'T') : fin;
+                    const fecha = new Date(finStr);
+                    if (!isNaN(fecha.getTime())) {
+                        const hora = fecha
+                            .toLocaleTimeString('es-PE', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true
+                            })
+                            .toLowerCase();
+                        return `${estado} hasta ${hora}`;
+                    }
                 }
             }
             return estado;
