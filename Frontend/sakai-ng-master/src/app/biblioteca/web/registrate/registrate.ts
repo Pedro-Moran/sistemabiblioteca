@@ -58,6 +58,12 @@ import { Ciudad } from '../../interfaces/material-bibliografico/ciudad';
                                         </div>
 
                                         <div class="flex flex-col gap-2">
+                                            <label for="codigoAlumno" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Código de alumno</label>
+                                            <input pInputText id="codigoAlumno" type="text" placeholder="Código" formControlName="EMPLID" [readonly]="fieldsDisabled" [ngClass]="{ 'disabled-input': fieldsDisabled }" />
+                                            <app-input-validation [form]="form" modelo="EMPLID" ver="Código de alumno"></app-input-validation>
+                                        </div>
+
+                                        <div class="flex flex-col gap-2">
                                             <label for="nombres" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Nombres</label>
                                             <input pInputText id="nombreUsuario" type="text" placeholder="Nombre" formControlName="nombreUsuario" [readonly]="fieldsDisabled" [ngClass]="{ 'disabled-input': fieldsDisabled }" />
                                             <app-input-validation [form]="form" modelo="nombreUsuario" ver="nombreUsuario"></app-input-validation>
@@ -197,6 +203,7 @@ export class PortalRegistrate implements OnInit {
         this.form = this.fb.group({
             tipoDocumento: ['', Validators.required],
             numDocumento: ['', Validators.required],
+            EMPLID: ['', Validators.required],
             id: [0, [Validators.required]],
             nombreUsuario: ['', [Validators.required, Validators.maxLength(100), Validators.minLength(3), Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-\\s]+$')]],
             apellidoMaterno: ['', [Validators.required, Validators.maxLength(100), Validators.minLength(3), Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-\\s]+$')]],
@@ -357,6 +364,7 @@ export class PortalRegistrate implements OnInit {
         this.form = this.fb.group({
             tipoDocumento: [dataObjeto.tipoDocumento, [Validators.required]],
             numDocumento: [dataObjeto.numDocumento, [Validators.required]],
+            EMPLID: [dataObjeto.EMPLID, [Validators.required]],
             id: [dataObjeto.id, [Validators.required]],
             nombreUsuario: [dataObjeto.nombreUsuario, [Validators.required, Validators.maxLength(100), Validators.minLength(3), Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-\\s]+$')]],
             apellidoMaterno: [dataObjeto.apellidoMaterno, [Validators.required, Validators.maxLength(80), Validators.minLength(3), Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ,.;-\\s]+$')]],
@@ -372,7 +380,6 @@ export class PortalRegistrate implements OnInit {
             COUNTRY: [dataObjeto.COUNTRY],
             COUNTY: [dataObjeto.COUNTY],
             EMAIL_INST: [dataObjeto.EMAIL_INST],
-            EMPLID: [dataObjeto.EMPLID],
             FEC_NAC: [dataObjeto.FEC_NAC],
             NAME: [dataObjeto.NAME],
             NATIONAL_ID: [dataObjeto.NATIONAL_ID],
