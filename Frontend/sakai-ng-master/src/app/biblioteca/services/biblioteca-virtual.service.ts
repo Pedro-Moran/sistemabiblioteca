@@ -134,6 +134,20 @@ export class BibliotecaVirtualService {
             .pipe(map(resp => resp.data));
     }
 
+    obtenerProximoFin(equipoId: number): Observable<any> {
+        return this.http
+            .get<{ status: string; data: any }>(
+                `${this.apiUrl}/api/prestamos/equipos/${equipoId}/proximo-fin`,
+                {
+                    headers: new HttpHeaders().set(
+                        'Authorization',
+                        `Bearer ${this.authService.getToken()}`
+                    )
+                }
+            )
+            .pipe(map(resp => resp.data));
+    }
+
     solicitar(req: any): Observable<any> {
         // antes: this.http.post('/auth/api/prestamos/solicitar', req)
         return this.http.post(`${this.apiUrl}/api/prestamos/solicitar`, req, { headers: new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`) });

@@ -348,22 +348,17 @@ export class BibliotecaVirtualComponent {
                 const solicitudes = equipos.map((eq: any) => {
                     const id = eq?.id ?? eq?.equipo?.id ?? eq?.equipoLaboratorio?.id;
                     return id
-                        ? this.bibliotecaVirtualService.listarDetallePrestamoEquipo(id)
-                        : of([]);
+                        ? this.bibliotecaVirtualService.obtenerProximoFin(id)
+                        : of(null);
                 });
 
                 if (solicitudes.length) {
-                    forkJoin<any[]>(solicitudes).subscribe(
-                        (detallesPorEquipo) => {
-                            (detallesPorEquipo as any[][]).forEach((detalles, index) => {
+                    forkJoin(solicitudes).subscribe(
+                        (fechas) => {
+                            (fechas as any[]).forEach((fecha, index) => {
                                 const equipo = equipos[index];
-                                if (detalles && detalles.length) {
-                                    const ultimo = detalles.reduce((a: any, b: any) => {
-                                        const fa = new Date((a.fecha_fin || a.fechaFin || '').replace(' ', 'T'));
-                                        const fb = new Date((b.fecha_fin || b.fechaFin || '').replace(' ', 'T'));
-                                        return fb > fa ? b : a;
-                                    });
-                                    equipo.detallePrestamo = ultimo;
+                                if (fecha) {
+                                    equipo.detallePrestamo = { fechaFin: fecha };
                                 }
                             });
                             this.data = equipos;
@@ -452,7 +447,7 @@ export class BibliotecaVirtualComponent {
                                       : fin.replace(' ', 'T')
                               )
                             : fin;
-                    const hora = formatDate(fechaFin, 'hh:mm a', 'en-US');
+                    const hora = formatDate(fechaFin, 'HH:mm', 'es-PE');
                     return `${estado} hasta las ${hora}`;
                 }
             }
