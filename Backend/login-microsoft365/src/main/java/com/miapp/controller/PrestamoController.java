@@ -19,6 +19,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping({"/auth/api/prestamos", "/api/prestamos"})
@@ -330,7 +331,10 @@ public class PrestamoController {
     @GetMapping("/equipos/{equipoId}/proximo-fin")
     public ResponseEntity<?> obtenerProximoFin(@PathVariable Long equipoId) {
         LocalDateTime fecha = prestamoService.obtenerProximoFin(equipoId);
-        return ResponseEntity.ok(Map.of("status","0","data", fecha));
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("status", "0");
+        resp.put("data", fecha);
+        return ResponseEntity.ok(resp);
     }
 
     /** Lista equipos (id, nombre o ip) */
