@@ -188,6 +188,11 @@ export class AppMenu {
                         label: 'Autorizacion - Regularización',
                         icon: 'pi pi-fw pi-thumbtack',
                         routerLink: ['/main/biblioteca/autorizacion-regularizacion'],role: ['ROLE_BIBLIOTECA_AUTORIZACION_REGULARIZACION']
+                    },
+                    {
+                        label: 'Visitas',
+                        icon: 'pi pi-fw pi-user',
+                        routerLink: ['/main/biblioteca/visitas'],role: ['ROLE_BIBLIOTECA_VISITAS']
                     }
                 ]
             },
