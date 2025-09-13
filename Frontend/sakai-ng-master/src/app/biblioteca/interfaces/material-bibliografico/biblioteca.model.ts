@@ -152,4 +152,5 @@ export interface DetalleDisplay extends DetalleInput {
     tipoMaterial?: TipoMaterial | null;
     idEstado?: number;
     existencias?: string;
+    nroExistencia?: number | null;
 }

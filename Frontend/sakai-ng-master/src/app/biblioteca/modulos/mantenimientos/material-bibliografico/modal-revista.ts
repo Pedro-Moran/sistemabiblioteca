@@ -489,16 +489,16 @@ export class ModalRevistaComponent implements OnInit {
     formValidarDetalle() {
         this.formDetalle = this.fb.group({
             existencias: [this.objetoDetalle?.existencias, [Validators.required, Validators.maxLength(4), Validators.pattern('^[0-9]+$')]],
-            sede: [this.objetoDetalle?.sede, [Validators.required]],
-            fechaIngreso: [this.objetoDetalle?.fechaIngreso, [Validators.required]],
-            tipoAdquisicion: [this.objetoDetalle?.tipoAdquisicion, [Validators.required]],
+            sede: [this.objetoDetalle?.codigoSede ?? this.objetoDetalle?.sede?.id ?? null, [Validators.required]],
+            fechaIngreso: [this.objetoDetalle?.fechaIngreso ? new Date(this.objetoDetalle.fechaIngreso) : null, [Validators.required]],
+            tipoAdquisicion: [this.objetoDetalle?.tipoAdquisicionId ?? this.objetoDetalle?.tipoAdquisicion?.id ?? null, [Validators.required]],
             codigoBarra: [this.objetoDetalle?.codigoBarra, [Validators.required, Validators.maxLength(50), Validators.pattern('^[0-9]+$')]],
             horaInicio: [this.objetoDetalle?.horaInicio ? this.stringToDate(this.objetoDetalle.horaInicio) : null, [Validators.required]],
             horaFin: [this.objetoDetalle?.horaFin ? this.stringToDate(this.objetoDetalle.horaFin) : null, [Validators.required]],
             maxHoras: [this.objetoDetalle?.maxHoras ?? null, [Validators.required, Validators.min(1)]],
             costo: [this.objetoDetalle?.costo, [Validators.required, Validators.maxLength(4), Validators.pattern('^[0-9]+$')]],
             nroFactura: [
-                this.objetoDetalle?.nroFactura,
+                this.objetoDetalle?.numeroFactura ?? this.objetoDetalle?.nroFactura ?? null,
                 [
                     Validators.required,
                     Validators.maxLength(15),
@@ -759,6 +759,8 @@ export class ModalRevistaComponent implements OnInit {
                 const tipoMatObj = this.tipoMaterialLista.find((t) => t.id === tipoMat) ?? null;
                 const tipoAdqObj = this.tipoAdquisicionLista.find((t) => t.id === tipoAdq) ?? null;
 
+                const nroExist = (d as any).nroExistencia ?? (d as any).existencias ?? null;
+
                 return {
                     idDetalleBiblioteca: d.idDetalleBiblioteca,
                     codigoSede: sedeId,
@@ -771,7 +773,8 @@ export class ModalRevistaComponent implements OnInit {
                     numeroFactura: d.numeroFactura ?? d.nroFactura ?? null,
                     fechaIngreso: d.fechaIngreso ?? (d as any).fecha_ingreso ?? null,
                     codigoBarra: d.codigoBarra ?? null,
-                    existencias: (d as any).existencias ?? (d as any).nroExistencia ?? null,
+                    existencias: nroExist != null ? String(nroExist) : null,
+                    nroExistencia: nroExist != null ? Number(nroExist) : null,
                     sede: sedeObj,
                     tipoMaterial: tipoMatObj,
                     tipoAdquisicion: tipoAdqObj,
@@ -920,10 +923,12 @@ export class ModalRevistaComponent implements OnInit {
                 let tipoMaterialId = this.formDetalle.value.tipoMaterial as number;
 
                 const detDisplay: DetalleDisplay = {
+                    idDetalleBiblioteca: this.objetoDetalle?.idDetalleBiblioteca ?? null,
                     codigoSede: sedeId,
                     tipoAdquisicionId: tipoAdqId,
-                    tipoMaterialId: tipoMaterialId, // ← añade esta línea
+                    tipoMaterialId: tipoMaterialId,
                     existencias: this.formDetalle.value.existencias,
+                    nroExistencia: Number(this.formDetalle.value.existencias),
                     codigoBarra: this.formDetalle.value.codigoBarra,
                     horaInicio: this.timeToString(this.formDetalle.value.horaInicio ?? null),
                     horaFin: this.timeToString(this.formDetalle.value.horaFin ?? null),
@@ -988,7 +993,7 @@ export class ModalRevistaComponent implements OnInit {
                 fechaIngreso: d.fechaIngreso ?? null,
                 portadaLibroImg: d.portadaLibroImg ?? null,
                 codigoBarra: d.codigoBarra ?? null,
-                nroExistencia: d.existencias != null ? Number(d.existencias) : undefined,
+                nroExistencia: d.nroExistencia ?? (d.existencias != null ? Number(d.existencias) : undefined),
                 idEstado: 1
             };
         });
