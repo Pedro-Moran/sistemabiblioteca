@@ -59,7 +59,7 @@ public class DetalleBiblioteca {
     @Column(name = "NUMEROINGRESO")
     private Long numeroIngreso;
 
-    @Column(name = "NROEXISTENCIA", insertable = false, updatable = false)
+    @Column(name = "NROEXISTENCIA")
     private String nroExistencia;
 
     @Column(name = "FECHACREACION", insertable = false, updatable = false)
