@@ -401,18 +401,16 @@ onSaved(): void {
 
     switch (objeto.tipoMaterialId ?? this.tipoRecursoFiltro?.tipo?.id) {
       case 1: // Libro
-        await this.modalLibro.ListaEspecialidad();
-        await this.modalLibro.ListaPais();
-        this.modalLibro.editarRegistro(objeto, idTipo);
+        await this.modalLibro.editarRegistro(objeto, idTipo);
         break;
       case 2: // Revista
-        this.modalRevista.editarBiblioteca(objeto, idTipo);
+        await this.modalRevista.editarBiblioteca(objeto, idTipo);
         break;
       case 3: // Tesis
-        this.modalTesis.editarBiblioteca(objeto, idTipo);
+        await this.modalTesis.editarBiblioteca(objeto, idTipo);
         break;
       default: // Otros
-        this.modalOtros.editarBiblioteca(objeto, idTipo);
+        await this.modalOtros.editarBiblioteca(objeto, idTipo);
         break;
     }
 }
