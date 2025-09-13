@@ -1443,7 +1443,8 @@ export class ModalLibroComponent implements OnInit {
                 maxHoras: d0.maxHoras ?? null,
                 costo: d0.costo,
                 tipoMaterial: d0.tipoMaterialId,
-                nroFactura: d0.numeroFactura
+                nroFactura: d0.numeroFactura,
+                codigoBarra: d0.codigoBarra
             });
 
             /* ⇓ convertimos TODO el array a DetalleInput[] */
@@ -1463,6 +1464,7 @@ export class ModalLibroComponent implements OnInit {
                     costo: d.costo,
                     numeroFactura: d.numeroFactura,
                     fechaIngreso: d.fechaIngreso,
+                    codigoBarra: d.codigoBarra ?? null,
                     sede: sedeObj,
                     tipoAdquisicion: tipoAdqObj,
                     tipoMaterial: tipoMaterialObj,
