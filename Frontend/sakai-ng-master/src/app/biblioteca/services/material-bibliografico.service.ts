@@ -445,7 +445,7 @@ registrarEspecialidad(especialidad: any): Observable<any> {
         notasContenido: b.notaContenido ?? '',
         notasGeneral: b.notaGeneral ?? '',
         editorial: (b as any).editorial ?? null,
-        detalle: (b as any).detalles?.map((d: any) => new Detalle(d)) ?? []
+        detalle: (b as any).detalles?.map((d: any) => this.mapDetalle(d)) ?? []
       });
     }
 
@@ -471,7 +471,7 @@ registrarEspecialidad(especialidad: any): Observable<any> {
         urlPublicacion: b.linkPublicacion ?? '',
         descriptores: b.descriptor ?? '',
         portada: b.nombreImagen ? true : false,
-        detalle: (b as any).detalles?.map((d: any) => new Detalle(d)) ?? []
+        detalle: (b as any).detalles?.map((d: any) => this.mapDetalle(d)) ?? []
       });
     }
 
@@ -487,10 +487,10 @@ registrarEspecialidad(especialidad: any): Observable<any> {
         cantidad: b.existencias ?? 0,
         formatoDigital: b.fladigitalizado ?? false,
         urlPublicacion: b.linkPublicacion ?? '',
-        descriptores: b.descriptor ?? '',
-        notasGeneral: b.notaGeneral ?? '',
-        portada: b.nombreImagen ? true : false,
-      detalle: (b as any).detalles?.map((d: any) => new Detalle(d)) ?? []
+      descriptores: b.descriptor ?? '',
+      notasGeneral: b.notaGeneral ?? '',
+      portada: b.nombreImagen ? true : false,
+      detalle: (b as any).detalles?.map((d: any) => this.mapDetalle(d)) ?? []
     });
   }
 
@@ -499,19 +499,34 @@ registrarEspecialidad(especialidad: any): Observable<any> {
    * para sede y tipo de adquisición a partir de los códigos
    * recibidos desde el backend.
    */
-  private mapDetalle(d: any): Detalle {
-    const det = new Detalle(d);
+  private mapDetalle(d: any): DetalleBibliotecaDTO {
+    const det = new Detalle(d) as any;
+    // Aseguramos que el código de barras se asigne aunque el backend use otra nomenclatura
+    if (!det.codigoBarra) {
+      const codigo =
+        d.codigoBarra ??
+        d.codigo_barras ??
+        d.codigoBarras ??
+        d.codigo_barra ??
+        null;
+      if (codigo != null) {
+        det.codigoBarra = String(codigo);
+      }
+    }
     if (!det.sede && det.codigoSede != null) {
       det.sede = { id: Number(det.codigoSede), descripcion: String(det.codigoSede), activo: true } as any;
     }
+    if (det.tipoAdquisicionId != null && typeof det.tipoAdquisicionId !== 'number') {
+      det.tipoAdquisicionId = (det.tipoAdquisicionId as any).id;
+    }
     if (!det.tipoAdquisicion && det.tipoAdquisicionId != null) {
-      const id = typeof det.tipoAdquisicionId === 'number' ? det.tipoAdquisicionId : (det.tipoAdquisicionId as any).id;
+      const id = det.tipoAdquisicionId;
       det.tipoAdquisicion = { id, descripcion: String(id), activo: true } as any;
     }
     if (d.estadoDescripcion && !det.estadoDescripcion) {
       det.estadoDescripcion = d.estadoDescripcion;
     }
-    return det;
+    return det as DetalleBibliotecaDTO;
   }
 
   catalogo(
@@ -754,11 +769,20 @@ listarUsuariosOcurrencia(id: number): Observable<OcurrenciaUsuario[]> {
     );
 
     return this.http
-      .get<{ status: number; data: DetalleBibliotecaDTO[] }>(
+      .get<{ status: number; data: any }>(
         `${this.apiUrl}/api/biblioteca/${bibliotecaId}/detalles`,
         { headers, params }
       )
-      .pipe(map(resp => resp.data));
+      .pipe(
+        map(resp => {
+          const data = resp?.data ?? [];
+          const raw = Array.isArray(data)
+            ? data
+            : data.detalles ?? data.detalle ?? [];
+          const lista = Array.isArray(raw) ? raw : raw ? [raw] : [];
+          return lista.map((d: any) => this.mapDetalle(d));
+        })
+      );
   }
 
   listarBibliotecasReservadas(): Observable<BibliotecaDTO[]> {
