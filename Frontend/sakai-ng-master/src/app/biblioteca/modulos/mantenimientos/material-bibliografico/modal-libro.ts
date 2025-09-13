@@ -1379,7 +1379,10 @@ export class ModalLibroComponent implements OnInit {
             descripcion: clone.descriptor,
             notasContenido: clone.notaContenido,
             notaGeneral: clone.notaGeneral,
-            especialidad: clone.idEspecialidad,
+            // Ajustamos la especialidad para contemplar distintas estructuras
+            especialidad: clone.idEspecialidad ??
+                (clone.especialidad as any)?.idEspecialidad ??
+                (clone.especialidad as any)?.id ?? null,
             enSilabo: !!clone.flasyllabus || (clone.ciclos?.length ?? 0) > 0,
             formatoDigital: clone.fladigitalizado,
             urlPublicacion: clone.urlPublicacion,
