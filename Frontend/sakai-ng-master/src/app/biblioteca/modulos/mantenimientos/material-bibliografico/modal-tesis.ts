@@ -74,7 +74,7 @@ import { environment } from '../../../../../environments/environment';
                         <div class="flex flex-col gap-2 w-full">
                             <label for="especialidad">Especialidad</label>
                             <div class="flex items-center gap-x-2">
-                                <p-select appendTo="body" id="state" formControlName="especialidad" [options]="especialidadLista" optionLabel="descripcion" placeholder="Seleccionar" class="w-full"></p-select>
+                                <p-select appendTo="body" id="state" formControlName="especialidad" [options]="especialidadLista" optionLabel="descripcion" optionValue="idEspecialidad" placeholder="Seleccionar" class="w-full"></p-select>
                                 <button pButton type="button" class="p-button-rounded flex-none" icon="pi pi-plus" (click)="abrirModalEspecialidad()" [disabled]="loading" pTooltip="Agregar" tooltipPosition="bottom"></button>
                             </div>
 
@@ -435,7 +435,12 @@ export class ModalTesisComponent implements OnInit {
     formValidarDetalle() {
         this.formDetalle = this.fb.group({
             sede: [this.objetoDetalle?.sede, [Validators.required]],
-            fechaIngreso: [this.objetoDetalle?.fechaIngreso, [Validators.required]],
+            fechaIngreso: [
+                this.objetoDetalle?.fechaIngreso
+                    ? new Date(this.objetoDetalle.fechaIngreso)
+                    : null,
+                [Validators.required]
+            ],
             codigoBarra: [this.objetoDetalle?.codigoBarra, [Validators.required, Validators.maxLength(50), Validators.pattern('^[0-9]+$')]],
             horaInicio: [this.objetoDetalle?.horaInicio ? this.stringToDate(this.objetoDetalle.horaInicio) : null, [Validators.required]],
             horaFin: [this.objetoDetalle?.horaFin ? this.stringToDate(this.objetoDetalle.horaFin) : null, [Validators.required]],
@@ -475,7 +480,7 @@ export class ModalTesisComponent implements OnInit {
         this.tipoMaterialId = id;
         this.display = true;
     }
-    editarBiblioteca(mat: BibliotecaDTO, tipoId?: number | null) {
+    async editarBiblioteca(mat: BibliotecaDTO, tipoId?: number | null) {
         const id = tipoId ?? this.tipoMaterialId ?? null;
         this.formOtro.reset();
         this.objetoOtro.id = mat.id ?? 0;
@@ -491,7 +496,6 @@ export class ModalTesisComponent implements OnInit {
             titulo: mat.titulo,
             autorPrincipal: mat.autorPersonal,
             pais: mat.paisId,
-            ciudad: mat.ciudadCodigo,
             especialidad: mat.idEspecialidad,
             cantidad: mat.numeroPaginas,
             anio: mat.anioPublicacion,
@@ -501,6 +505,8 @@ export class ModalTesisComponent implements OnInit {
             formatoDigital: mat.fladigitalizado,
             urlPublicacion: mat.linkPublicacion
         });
+        await this.ListaCiudad();
+        this.formOtro.patchValue({ ciudad: mat.ciudadCodigo });
         this.tipoMaterialId = id;
         this.display = true;
         this.ListaDetalle();
