@@ -52,8 +52,8 @@ public class DetalleBiblioteca {
     @Column(name = "FECHAINGRESO")
     private LocalDateTime fechaIngreso;
 
-    // Campos “solo lectura” generados por BD
-    @Column(name = "CODIGOBARRA", insertable = false, updatable = false)
+    // Código de barras del ejemplar
+    @Column(name = "CODIGOBARRA")
     private String codigoBarra;
 
     @Column(name = "NUMEROINGRESO")

@@ -255,11 +255,19 @@ public class BibliotecaServiceImpl implements BibliotecaService {
         List<DetalleBiblioteca> lista = dto.getDetalles() == null
                 ? List.of()
                 : dto.getDetalles().stream().map(det -> {
-            DetalleBiblioteca e = new DetalleBiblioteca();
+            DetalleBiblioteca e;
+            if (det.getIdDetalleBiblioteca() != null) {
+                e = detalleBibliotecaRepository.findById(det.getIdDetalleBiblioteca())
+                        .orElseGet(DetalleBiblioteca::new);
+            } else {
+                e = new DetalleBiblioteca();
+            }
+
             // 1) Para el UPDATE: conserva el ID de detalle si viene
             if (det.getIdDetalleBiblioteca() != null) {
                 e.setIdDetalle(det.getIdDetalleBiblioteca());
             }
+
             // 2) Sede
             e.setSede(det.getCodigoSede() != null
                     ? sedeRepository.findById(det.getCodigoSede())
@@ -268,7 +276,6 @@ public class BibliotecaServiceImpl implements BibliotecaService {
                     : null);
 
             // 3) Tipo de Material
-            System.out.println("TipoMaterialId: " + det.getTipoMaterialId());
             if (det.getTipoMaterialId() != null) {
                 TipoMaterial tm = tipoMaterialRepository
                         .findById(det.getTipoMaterialId())
@@ -293,6 +300,9 @@ public class BibliotecaServiceImpl implements BibliotecaService {
             e.setCosto(det.getCosto());
             e.setNumeroFactura(det.getNumeroFactura());
             e.setFechaIngreso(det.getFechaIngreso());
+            if (det.getCodigoBarra() != null && !det.getCodigoBarra().isBlank()) {
+                e.setCodigoBarra(det.getCodigoBarra());
+            }
             e.setHoraInicio(det.getHoraInicio());
             e.setHoraFin(det.getHoraFin());
             e.setMaxHoras(det.getMaxHoras());
