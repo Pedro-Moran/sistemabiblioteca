@@ -200,7 +200,7 @@ import { environment } from '../../../../../environments/environment';
                     [rowHover]="true"
                     styleClass="p-datatable-gridlines"
                     [paginator]="true"
-                    [globalFilterFields]="['id', 'codigoBarra', 'existencias', 'sede.descripcion', 'tipoMaterial.descripcion', 'fechaIngreso', 'tipoAdquisicion.descripcion', 'costo', 'nroFactura']"
+                    [globalFilterFields]="['id', 'codigoBarra', 'existencias', 'sede.descripcion', 'tipoMaterial.descripcion', 'fechaIngreso', 'tipoAdquisicion.descripcion', 'costo', 'numeroFactura']"
                     responsiveLayout="scroll"
                 >
                     <ng-template pTemplate="caption">
@@ -219,7 +219,7 @@ import { environment } from '../../../../../environments/environment';
                             <th pSortableColumn="tipoAdquisicion.descripcion" style="min-width:200px">Tipo Adquisici&oacute;n<p-sortIcon field="tipoAdquisicion.descripcion"></p-sortIcon></th>
                             <th pSortableColumn="codigoBarra">Código Barra <p-sortIcon field="codigoBarra"></p-sortIcon></th>
                             <th style="width: 8rem" pSortableColumn="costo">Costo <p-sortIcon field="costo"></p-sortIcon></th>
-                            <th pSortableColumn="nroFactura">Nro Factura <p-sortIcon field="nroFactura"></p-sortIcon></th>
+                            <th pSortableColumn="numeroFactura">Nro Factura <p-sortIcon field="numeroFactura"></p-sortIcon></th>
                             <th pSortableColumn="fechaIngreso">Fecha Ingreso <p-sortIcon field="fechaIngreso"></p-sortIcon></th>
                             <th style="width: 4rem">Opciones</th>
                         </tr>
@@ -242,7 +242,7 @@ import { environment } from '../../../../../environments/environment';
                                 {{ detalle.costo }}
                             </td>
                             <td>
-                                {{ detalle.nroFactura }}
+                                {{ detalle.numeroFactura }}
                             </td>
                             <td>
                                 {{ detalle.fechaIngreso | date: 'dd-MM-yyyy' }}
@@ -669,7 +669,9 @@ export class ModalRevistaComponent implements OnInit {
     }
     async ListaPeriodicidad() {
         try {
-            const result: any = await this.materialBibliograficoService.lista_periodicidad('material-bibliografico/ciudad').toPromise();
+            const result: any = await this.materialBibliograficoService
+                .lista_periodicidad('material-bibliografico/periodicidad')
+                .toPromise();
             if (result.status == 0) {
                 this.periodicidadLista = result.data;
             }
@@ -749,9 +751,9 @@ export class ModalRevistaComponent implements OnInit {
             const data = await this.materialBibliograficoService.listarDetallesPorBiblioteca(idBib, false).toPromise();
 
             this.detalles = (data ?? []).map((d) => {
-                const sedeId = d.codigoSede ?? d.biblioteca?.sedeId ?? null;
-                const tipoMat = d.tipoMaterialId ?? d.biblioteca?.tipoMaterialId ?? null;
-                const tipoAdq = d.tipoAdquisicionId ?? d.biblioteca?.tipoAdquisicionId ?? null;
+                const sedeId = d.codigoSede ?? (d as any).sedeId ?? (d as any).sede?.id ?? d.biblioteca?.sedeId ?? null;
+                const tipoMat = d.tipoMaterialId ?? d.tipoMaterial?.id ?? d.biblioteca?.tipoMaterialId ?? null;
+                const tipoAdq = d.tipoAdquisicionId ?? d.tipoAdquisicion?.id ?? d.biblioteca?.tipoAdquisicionId ?? null;
 
                 const sedeObj = this.sedesLista.find((s) => s.id === sedeId) ?? null;
                 const tipoMatObj = this.tipoMaterialLista.find((t) => t.id === tipoMat) ?? null;
@@ -766,9 +768,10 @@ export class ModalRevistaComponent implements OnInit {
                     horaFin: d.horaFin ?? null,
                     maxHoras: d.maxHoras ?? null,
                     costo: d.costo ?? null,
-                    numeroFactura: d.numeroFactura ?? null,
-                    fechaIngreso: d.fechaIngreso ?? null,
+                    numeroFactura: d.numeroFactura ?? d.nroFactura ?? null,
+                    fechaIngreso: d.fechaIngreso ?? (d as any).fecha_ingreso ?? null,
                     codigoBarra: d.codigoBarra ?? null,
+                    existencias: (d as any).existencias ?? (d as any).nroExistencia ?? null,
                     sede: sedeObj,
                     tipoMaterial: tipoMatObj,
                     tipoAdquisicion: tipoAdqObj,
@@ -920,6 +923,7 @@ export class ModalRevistaComponent implements OnInit {
                     codigoSede: sedeId,
                     tipoAdquisicionId: tipoAdqId,
                     tipoMaterialId: tipoMaterialId, // ← añade esta línea
+                    existencias: this.formDetalle.value.existencias,
                     codigoBarra: this.formDetalle.value.codigoBarra,
                     horaInicio: this.timeToString(this.formDetalle.value.horaInicio ?? null),
                     horaFin: this.timeToString(this.formDetalle.value.horaFin ?? null),
@@ -984,10 +988,12 @@ export class ModalRevistaComponent implements OnInit {
                 fechaIngreso: d.fechaIngreso ?? null,
                 portadaLibroImg: d.portadaLibroImg ?? null,
                 codigoBarra: d.codigoBarra ?? null,
-                existencias: d.existencias,
+                nroExistencia: d.existencias != null ? Number(d.existencias) : undefined,
                 idEstado: 1
             };
         });
+
+        const fechaIngreso = this.detalles[0]?.fechaIngreso ?? undefined;
 
         return {
             /* ------ claves y datos propios de Biblioteca ------ */
@@ -1010,7 +1016,9 @@ export class ModalRevistaComponent implements OnInit {
             rutaImagen: keepPortada ? (this.selectedFile ? undefined : (this.rutaImagen ?? undefined)) : null,
             nombreImagen: keepPortada ? (this.selectedFile ? undefined : (this.nombreImagen ?? undefined)) : null,
             linkPublicacion: revista.urlPublicacion,
-            periodicidadId: this.formRevista.value.periodicidad,
+            periodicidadId: revista.periodicidad != null ? Number(revista.periodicidad) : undefined,
+            fechaIngreso,
+            existencias: this.detalles.length,
             usuarioCreacion: decoded.sub,
             fechaCreacion: new Date().toISOString(),
 

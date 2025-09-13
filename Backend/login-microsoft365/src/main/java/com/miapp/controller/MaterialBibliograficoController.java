@@ -22,19 +22,22 @@ public class MaterialBibliograficoController {
     private final IdiomaService idiomaService;
     private final CiudadService ciudadService;
     private final TipoAdquisicionService tipoAdquisicionService;
+    private final PeriodicidadService periodicidadService;
 
     public MaterialBibliograficoController(MaterialBibliograficoService service,
                                            EspecialidadService especialidadService,
                                            PaisService paisService,
                                            IdiomaService idiomaService,
                                            CiudadService ciudadService,
-                                           TipoAdquisicionService tipoAdquisicionService) {
+                                           TipoAdquisicionService tipoAdquisicionService,
+                                           PeriodicidadService periodicidadService) {
         this.service = service;
         this.especialidadService = especialidadService;
         this.paisService = paisService;
         this.idiomaService = idiomaService;
         this.ciudadService = ciudadService;
         this.tipoAdquisicionService = tipoAdquisicionService;
+        this.periodicidadService = periodicidadService;
     }
 
     @PostMapping("/register")
@@ -148,6 +151,12 @@ public class MaterialBibliograficoController {
     @GetMapping("/adquisicion")
     public ResponseEntity<?> Adquiscion() {
         List<TipoAdquisicion> all = tipoAdquisicionService.listAll();
+        return ResponseEntity.ok(Map.of("status", 0, "data", all));
+    }
+
+    @GetMapping("/periodicidad")
+    public ResponseEntity<?> listarPeriodicidad() {
+        List<Periodicidad> all = periodicidadService.listAll();
         return ResponseEntity.ok(Map.of("status", 0, "data", all));
     }
 

@@ -127,11 +127,10 @@ api_libros_lista(modulo: any): Observable<any> {
     );
 //     return this.http.get<any[]>('assets/demo/biblioteca/material-bibliografico/revistas.json');
   }
-  lista_periodicidad(modulo: any):Observable<any>{
-    /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
-    ,{ headers: new HttpHeaders().set('Authorization',`Bearer ${this.authService.getToken()}`)}
-    );*/
-    return this.http.get<any[]>('assets/demo/biblioteca/data.json');
+  lista_periodicidad(modulo: any): Observable<any> {
+    const token = this.authService.getToken();
+    const options = token ? { headers: new HttpHeaders().set('Authorization', `Bearer ${token}`) } : {};
+    return this.http.get<any[]>(`${this.apiUrl}/api/${modulo}`, options);
   }
   api_otros_lista(modulo: any):Observable<any>{
     /*return this.http.get<any[]>(`${this.apiUrl}/${modulo}`
@@ -525,6 +524,12 @@ registrarEspecialidad(especialidad: any): Observable<any> {
     }
     if (d.estadoDescripcion && !det.estadoDescripcion) {
       det.estadoDescripcion = d.estadoDescripcion;
+    }
+    if (det.existencias == null && (d.nroExistencia != null || d.existencias != null)) {
+      det.existencias = String(d.nroExistencia ?? d.existencias);
+    }
+    if (!det.numeroFactura && d.nroFactura != null) {
+      det.numeroFactura = d.nroFactura;
     }
     return det as DetalleBibliotecaDTO;
   }

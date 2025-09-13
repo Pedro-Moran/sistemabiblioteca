@@ -638,7 +638,7 @@ export class ModalTesisComponent implements OnInit {
     }
     async ListaPeriodicidad() {
         try {
-            const result: any = await this.materialBibliograficoService.lista_periodicidad('material-bibliografico/ciudad').toPromise();
+            const result: any = await this.materialBibliograficoService.lista_periodicidad('material-bibliografico/periodicidad').toPromise();
             if (result.status === 0) {
                 this.periodicidadLista = result.data;
             }

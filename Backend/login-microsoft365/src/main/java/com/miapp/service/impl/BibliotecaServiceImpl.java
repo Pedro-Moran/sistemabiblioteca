@@ -49,6 +49,7 @@ public class BibliotecaServiceImpl implements BibliotecaService {
     private final EmailService emailService;
     private final FileStorageService fileStorageService;
     private final BibliotecaCicloRepository bibliotecaCicloRepository;
+    private final PeriodicidadRepository periodicidadRepository;
 
     public BibliotecaServiceImpl(BibliotecaRepository bibliotecaRepository,
                                  TipoAdquisicionRepository tipoAdquisicionRepository,
@@ -66,7 +67,8 @@ public class BibliotecaServiceImpl implements BibliotecaService {
                                  NotificacionService notificacionService,
                                  EmailService emailService,
                                  FileStorageService fileStorageService,
-                                 BibliotecaCicloRepository bibliotecaCicloRepository) {
+                                 BibliotecaCicloRepository bibliotecaCicloRepository,
+                                 PeriodicidadRepository periodicidadRepository) {
         this.bibliotecaRepository = bibliotecaRepository;
         this.tipoAdquisicionRepository  = tipoAdquisicionRepository;
         this.especialidadRepository = especialidadRepository;
@@ -84,6 +86,7 @@ public class BibliotecaServiceImpl implements BibliotecaService {
         this.emailService = emailService;
         this.fileStorageService = fileStorageService;
         this.bibliotecaCicloRepository = bibliotecaCicloRepository;
+        this.periodicidadRepository = periodicidadRepository;
     }
 
     @Override
@@ -172,6 +175,7 @@ public class BibliotecaServiceImpl implements BibliotecaService {
         b.setIssn(dto.getIssn());
         b.setRutaImagen(dto.getRutaImagen());
         b.setNombreImagen(dto.getNombreImagen());
+        b.setFechaIngreso(dto.getFechaIngreso());
         b.setIdEstado(dto.getEstadoId());
         b.setExistencias(dto.getExistencias());
         // … asigna aquí todos tus campos de BibliotecaDTO a Biblioteca …
@@ -214,6 +218,15 @@ public class BibliotecaServiceImpl implements BibliotecaService {
             b.setCiudad(c);
         } else {
             b.setCiudad(null);
+        }
+
+        // **mapea Periodicidad**
+        if (dto.getPeriodicidadId() != null) {
+            Periodicidad p = periodicidadRepository.findById(dto.getPeriodicidadId())
+                    .orElseThrow(() -> new RuntimeException("Periodicidad no encontrada: " + dto.getPeriodicidadId()));
+            b.setPeriodicidad(p);
+        } else {
+            b.setPeriodicidad(null);
         }
 
         // **mapea Idioma**
@@ -303,6 +316,8 @@ public class BibliotecaServiceImpl implements BibliotecaService {
             if (det.getCodigoBarra() != null && !det.getCodigoBarra().isBlank()) {
                 e.setCodigoBarra(det.getCodigoBarra());
             }
+            e.setNumeroIngreso(det.getNumeroIngreso());
+            e.setNroExistencia(det.getNroExistencia());
             e.setHoraInicio(det.getHoraInicio());
             e.setHoraFin(det.getHoraFin());
             e.setMaxHoras(det.getMaxHoras());
