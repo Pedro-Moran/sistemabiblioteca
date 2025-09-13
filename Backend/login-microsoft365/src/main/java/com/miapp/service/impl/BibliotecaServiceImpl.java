@@ -496,33 +496,37 @@ public class BibliotecaServiceImpl implements BibliotecaService {
             Integer veces = detalle.getCantidadPrestamos();
             detalle.setCantidadPrestamos(veces == null ? 1 : veces + 1);
             detalleBibliotecaRepository.save(detalle);
-            notificacionService.crearNotificacion(
-                    solicitante,
-                    "Tu préstamo del material '" +
-                            detalle.getBiblioteca().getTitulo() + "' fue aprobado."
-            );
-            if (Objects.equals(estadoAnterior, 3L)) {
-                emailService.sendMaterialConfirmation(detalle);
+            if (solicitante != null) {
+                notificacionService.crearNotificacion(
+                        solicitante,
+                        "Tu préstamo del material '" +
+                                detalle.getBiblioteca().getTitulo() + "' fue aprobado."
+                );
+                if (Objects.equals(estadoAnterior, 3L)) {
+                    emailService.sendMaterialConfirmation(detalle);
+                }
             }
         } else if (Objects.equals(req.getIdEstado(), 2L)) {
             boolean canceladoPorUsuario = solicitante != null && solicitante.equals(req.getIdUsuario());
-            if (canceladoPorUsuario) {
-                notificacionService.crearNotificacion(
-                        solicitante,
-                        "Cancelaste tu solicitud del material '" +
-                                detalle.getBiblioteca().getTitulo() + "'."
-                );
-                if (Objects.equals(estadoAnterior, 3L)) {
-                    emailService.sendMaterialCancellation(detalle, solicitante);
-                }
-            } else {
-                notificacionService.crearNotificacion(
-                        solicitante,
-                        "Tu solicitud del material '" +
-                                detalle.getBiblioteca().getTitulo() + "' fue rechazada."
-                );
-                if (Objects.equals(estadoAnterior, 3L)) {
-                    emailService.sendMaterialRejection(detalle);
+            if (solicitante != null) {
+                if (canceladoPorUsuario) {
+                    notificacionService.crearNotificacion(
+                            solicitante,
+                            "Cancelaste tu solicitud del material '" +
+                                    detalle.getBiblioteca().getTitulo() + "'."
+                    );
+                    if (Objects.equals(estadoAnterior, 3L)) {
+                        emailService.sendMaterialCancellation(detalle, solicitante);
+                    }
+                } else {
+                    notificacionService.crearNotificacion(
+                            solicitante,
+                            "Tu solicitud del material '" +
+                                    detalle.getBiblioteca().getTitulo() + "' fue rechazada."
+                    );
+                    if (Objects.equals(estadoAnterior, 3L)) {
+                        emailService.sendMaterialRejection(detalle);
+                    }
                 }
             }
         }
