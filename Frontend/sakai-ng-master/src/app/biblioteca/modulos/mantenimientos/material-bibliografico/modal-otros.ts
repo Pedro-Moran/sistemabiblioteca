@@ -748,6 +748,7 @@ export class ModalOtrosComponent implements OnInit {
         this.formDetalle.patchValue({
             sede: det.sede ?? this.sedesLista.find((s) => s.id === det.codigoSede) ?? null,
             tipoMaterial: det.tipoMaterialId ?? this.tipoMaterialId,
+            codigoBarra: det.codigoBarra ?? null,
             fechaIngreso: det.fechaIngreso ? new Date(det.fechaIngreso) : null,
             horaInicio: det.horaInicio ? this.stringToDate(det.horaInicio) : null,
             horaFin: det.horaFin ? this.stringToDate(det.horaFin) : null,
