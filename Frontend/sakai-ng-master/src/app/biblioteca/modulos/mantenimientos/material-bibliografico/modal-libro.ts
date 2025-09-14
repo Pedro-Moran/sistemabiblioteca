@@ -30,6 +30,7 @@ import { AuthService } from '../../../services/auth.service';
 import { Input } from '@angular/core';
 import { Output, EventEmitter } from '@angular/core';
 import { environment } from '../../../../../environments/environment';
+import JsBarcode from 'jsbarcode';
 
 @Component({
     selector: 'app-modal-libro',
@@ -372,6 +373,7 @@ import { environment } from '../../../../../environments/environment';
                             <label for="codigoBarra">Código de barras</label>
                             <input pInputText id="codigoBarra" type="text" formControlName="codigoBarra" />
                             <app-input-validation [form]="formDetalle" modelo="codigoBarra" ver="Código de barras"></app-input-validation>
+                            <img *ngIf="barcodeDataUrl" [src]="barcodeDataUrl" alt="Código de barras" class="mt-2 h-24" />
                         </div>
                         <div class="flex flex-col gap-2 w-full">
                             <label for="fechaIngreso">Fecha Ingreso</label>
@@ -440,6 +442,7 @@ export class ModalLibroComponent implements OnInit {
     objetoDetalle: Detalle = new Detalle();
     //     detalles: Detalle[] = [];
     detalles: DetalleDisplay[] = [];
+    barcodeDataUrl: string | null = null;
     @ViewChild('filter') filter!: ElementRef;
     selectedItem: any;
     @ViewChild('menu') menu!: Menu;
@@ -681,6 +684,15 @@ export class ModalLibroComponent implements OnInit {
                     Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\\s.-/-]+$') // Permite letras, números, espacios, punto, guion, slash y paréntesis
                 ]
             ]
+        });
+        this.formDetalle.get('codigoBarra')?.valueChanges.subscribe((valor: string) => {
+            if (valor) {
+                const canvas = document.createElement('canvas');
+                JsBarcode(canvas, valor, { format: 'CODE128', displayValue: false });
+                this.barcodeDataUrl = canvas.toDataURL('image/png');
+            } else {
+                this.barcodeDataUrl = null;
+            }
         });
     }
 
