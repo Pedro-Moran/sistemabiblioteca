@@ -59,7 +59,7 @@ export class AppMenu {
                         label: 'Aceptaciones Equipos',
                         icon: 'pi pi-fw pi-check',
                         routerLink: ['/main/mantenimiento/aceptaciones-equipos'],role: ['ROLE_ACEPTACIONES_EQUIPOS']
-                    },
+                    }
                 ]
             },
             {
@@ -302,6 +302,16 @@ export class AppMenu {
                         label: 'Especialidades',
                         icon: 'pi pi-fw pi-star',
                         routerLink: ['/main/configuracion/especialidades'],role: ['ROLE_CONF_ESPECIALIDADES']
+                    },
+                    {
+                        label: 'Motivos de acción',
+                        icon: 'pi pi-fw pi-list',
+                        routerLink: ['/main/configuracion/motivos-accion'],role: ['ROLE_MOTIVO_ACCION']
+                    },
+                    {
+                        label: 'Programas de acción',
+                        icon: 'pi pi-fw pi-flag',
+                        routerLink: ['/main/configuracion/programas-accion'],role: ['ROLE_PROGRAMA_ACCION']
                     }
                 ]
             },
