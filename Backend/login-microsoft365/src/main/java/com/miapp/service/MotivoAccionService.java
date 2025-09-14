@@ -45,8 +45,6 @@ public class MotivoAccionService {
 
     @Transactional
     public void delete(Long id) {
-        MotivoAccion motivo = getById(id);
-        motivo.setEstado(false);
-        repository.save(motivo);
+        repository.deleteById(id);
     }
 }

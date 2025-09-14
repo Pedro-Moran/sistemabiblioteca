@@ -45,8 +45,6 @@ public class ProgramaAccionService {
 
     @Transactional
     public void delete(Long id) {
-        ProgramaAccion programa = getById(id);
-        programa.setEstado(false);
-        repository.save(programa);
+        repository.deleteById(id);
     }
 }
