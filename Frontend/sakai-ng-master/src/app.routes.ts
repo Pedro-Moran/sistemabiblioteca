@@ -33,6 +33,7 @@ export const appRoutes: Routes = [
             { path: 'configuracion', loadChildren: () => import('./app/biblioteca/configuracion/configuracion.routes')},
             { path: 'usuarios', loadChildren: () => import('./app/biblioteca/modulos/usuarios/usuarios.routes')},
             { path: 'recursos', loadChildren: () => import('./app/biblioteca/modulos/recursos/recursos.routes')},
+            { path: 'inventario', loadChildren: () => import('./app/biblioteca/modulos/inventario/inventario.routes')},
             { path: 'portal', loadChildren: () => import('./app/biblioteca/modulos/portal/portal.routes')},
         ]
     },

@@ -96,6 +96,15 @@ public class DetalleBibliotecaDTO {
     /** Descripción del estado */
     private String estadoDescripcion;
 
+    /** Estado del inventario físico */
+    private String estadoInventario;
+
+    /** Fecha de la última verificación de inventario */
+    private LocalDateTime fechaVerificacion;
+
+    /** Usuario que realizó la última verificación */
+    private String usuarioVerificacion;
+
     /** Número de préstamos realizados */
     private Integer cantidadPrestamos;
 

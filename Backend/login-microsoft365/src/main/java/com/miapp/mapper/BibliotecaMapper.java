@@ -410,6 +410,9 @@ public class BibliotecaMapper {
             estadoRepository.findById(d.getIdEstado())
                     .ifPresent(e -> tmp.setEstadoDescripcion(e.getDescripcion()));
         }
+        tmp.setEstadoInventario(d.getEstadoInventario());
+        tmp.setFechaVerificacion(d.getFechaVerificacion());
+        tmp.setUsuarioVerificacion(d.getUsuarioVerificacion());
         tmp.setCantidadPrestamos(d.getCantidadPrestamos());
 
         // Combinar fecha y hora para exponer un LocalDateTime completo

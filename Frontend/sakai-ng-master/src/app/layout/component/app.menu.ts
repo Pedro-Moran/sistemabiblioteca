@@ -173,6 +173,19 @@ export class AppMenu {
                 ]
             },
             {
+                label: 'Inventario',
+                icon: 'pi pi-fw pi-box',
+                role: ['ADMIN', 'EJECUTIVO'],
+                items: [
+                    {
+                        label: 'Verificación física',
+                        icon: 'pi pi-fw pi-barcode',
+                        routerLink: ['/main/inventario'],
+                        role: ['ROLE_INVENTARIO_VERIFICACION']
+                    }
+                ]
+            },
+            {
                 label: 'Biblioteca',
                 icon: 'pi pi-fw pi-briefcase',
                 role: ['ADMIN', 'EJECUTIVO'],
