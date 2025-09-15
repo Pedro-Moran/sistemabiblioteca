@@ -122,6 +122,15 @@ public class DetalleBiblioteca {
     @Column(name = "IDESTADO")
     private Long idEstado;
 
+    @Column(name = "ESTADOINVENTARIO")
+    private String estadoInventario;
+
+    @Column(name = "FECHAVERIFICACION")
+    private LocalDateTime fechaVerificacion;
+
+    @Column(name = "USUARIOVERIFICACION", length = 80)
+    private String usuarioVerificacion;
+
     // FK a tipoMaterial
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(

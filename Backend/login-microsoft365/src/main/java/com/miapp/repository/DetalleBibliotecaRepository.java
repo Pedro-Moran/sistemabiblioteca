@@ -26,6 +26,19 @@ public interface DetalleBibliotecaRepository extends JpaRepository<DetalleBiblio
     boolean existsByBiblioteca_IdAndSede_Id(Long bibliotecaId, Long sedeId);
     boolean existsByBiblioteca_IdAndTipoMaterial_IdTipoMaterial(Long bibliotecaId, Long tipoMaterialId);
     boolean existsByBiblioteca_IdAndIdEstado(Long bibliotecaId, Long idEstado);
+
+    @EntityGraph(attributePaths = {"biblioteca"})
+    @Query("SELECT d FROM DetalleBiblioteca d WHERE d.idDetalle = :id")
+    Optional<DetalleBiblioteca> findWithBibliotecaById(@Param("id") Long id);
+
+    @EntityGraph(attributePaths = {"biblioteca"})
+    Optional<DetalleBiblioteca> findFirstByCodigoBarra(String codigoBarra);
+
+    @EntityGraph(attributePaths = {"biblioteca"})
+    List<DetalleBiblioteca> findTop20ByCodigoBarraContainingIgnoreCaseOrderByIdDetalleAsc(String codigoBarra);
+
+    @EntityGraph(attributePaths = {"biblioteca"})
+    List<DetalleBiblioteca> findTop20ByBiblioteca_CodigoLocalizacionContainingIgnoreCaseOrderByIdDetalleAsc(String codigoLocalizacion);
     @Query("SELECT d " +
             "FROM DetalleBiblioteca d " +
             "     JOIN FETCH d.biblioteca b " +
@@ -49,5 +62,6 @@ public interface DetalleBibliotecaRepository extends JpaRepository<DetalleBiblio
      * Se usa {@code findFirst} para evitar excepciones cuando existan múltiples
      * registros con el mismo número.
      */
+    @EntityGraph(attributePaths = {"biblioteca"})
     Optional<DetalleBiblioteca> findFirstByNumeroIngreso(Long numeroIngreso);
 }
