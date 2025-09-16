@@ -3,6 +3,7 @@ package com.miapp.controller;
 import com.miapp.model.*;
 import com.miapp.model.dto.OcurrenciaBibliotecaDTO;
 import com.miapp.model.dto.UsuarioPrestamosDTO;
+import com.miapp.model.dto.VisitantesPorDiaDTO;
 import com.miapp.service.*;
 import com.miapp.repository.RolRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -258,23 +260,60 @@ public class PrestamoController {
         return ResponseEntity.ok(Map.of("status","0","data", lista));
     }
 
-    private LocalDateTime parseDate(String dateStr, boolean endOfDay) {
-        if (dateStr == null || dateStr.isBlank()) {
+    private static final DateTimeFormatter FORMATO_DD_MM_YYYY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter FORMATO_DD_MM_YYYY_GUION = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+    private static final DateTimeFormatter FORMATO_LOCALE_GMT =
+            DateTimeFormatter.ofPattern("EEE MMM dd yyyy HH:mm:ss 'GMT'XXX", Locale.ENGLISH);
+
+    private LocalDateTime parseDate(String dateStr, boolean endExclusive) {
+        LocalDate baseDate = resolveLocalDate(dateStr);
+        if (baseDate == null) {
+            return null;
+        }
+        LocalDateTime start = baseDate.atStartOfDay();
+        return endExclusive ? start.plusDays(1) : start;
+    }
+
+    private LocalDate resolveLocalDate(String dateStr) {
+        if (dateStr == null) {
+            return null;
+        }
+        String trimmed = dateStr.trim();
+        if (trimmed.isEmpty()) {
             return null;
         }
         try {
-            LocalDate d = LocalDate.parse(dateStr);
-            return endOfDay ? d.atTime(23, 59, 59) : d.atStartOfDay();
-        } catch (DateTimeParseException ex) {
+            return LocalDate.parse(trimmed);
+        } catch (DateTimeParseException ignored) {
+        }
+        try {
+            return LocalDate.parse(trimmed, FORMATO_DD_MM_YYYY);
+        } catch (DateTimeParseException ignored) {
+        }
+        try {
+            return LocalDate.parse(trimmed, FORMATO_DD_MM_YYYY_GUION);
+        } catch (DateTimeParseException ignored) {
+        }
+        if (trimmed.contains("T")) {
             try {
-                String trimmed = dateStr.contains("(") ? dateStr.substring(0, dateStr.indexOf('(')).trim() : dateStr;
-                DateTimeFormatter fmt = DateTimeFormatter.ofPattern("EEE MMM dd yyyy HH:mm:ss 'GMT'XXX", Locale.ENGLISH);
-                ZonedDateTime zdt = ZonedDateTime.parse(trimmed, fmt);
-                LocalDate d = zdt.withZoneSameInstant(ZoneId.systemDefault()).toLocalDate();
-                return endOfDay ? d.atTime(23, 59, 59) : d.atStartOfDay();
-            } catch (Exception e) {
-                return null;
+                return OffsetDateTime.parse(trimmed).toLocalDate();
+            } catch (DateTimeParseException ignored) {
+                try {
+                    return LocalDateTime.parse(trimmed).toLocalDate();
+                } catch (DateTimeParseException ignored2) {
+                    // continúa con los siguientes formatos
+                }
             }
+        }
+        String sanitized = trimmed.contains("(")
+                ? trimmed.substring(0, trimmed.indexOf('(')).trim()
+                : trimmed;
+        try {
+            return ZonedDateTime.parse(sanitized, FORMATO_LOCALE_GMT)
+                    .withZoneSameInstant(ZoneId.systemDefault())
+                    .toLocalDate();
+        } catch (DateTimeParseException ignored) {
+            return null;
         }
     }
 
@@ -282,12 +321,27 @@ public class PrestamoController {
     @GetMapping("/reporte/visitantes-biblioteca-virtual")
     public ResponseEntity<?> reporteVisitantesBibliotecaVirtual(
             @RequestParam(required = false) String fechaInicio,
+            @RequestParam(required = false) String fechaFin,
+            @RequestParam(required = false) String codigo
+    ) {
+        LocalDateTime inicio = parseDate(fechaInicio, false);
+        LocalDateTime finExclusiva = parseDate(fechaFin, true);
+
+        List<com.miapp.model.dto.VisitanteBibliotecaVirtualDTO> lista =
+                prestamoService.reporteVisitantesBibliotecaVirtual(inicio, finExclusiva, codigo);
+        return ResponseEntity.ok(Map.of("status","0","data", lista));
+    }
+
+    /** Reporte agregado por día de visitantes de biblioteca virtual */
+    @GetMapping("/reporte/visitantes-biblioteca-virtual/dias")
+    public ResponseEntity<?> reporteVisitantesBibliotecaVirtualPorDia(
+            @RequestParam(required = false) String fechaInicio,
             @RequestParam(required = false) String fechaFin
     ) {
-        LocalDateTime inicio = fechaInicio != null ? LocalDate.parse(fechaInicio).atStartOfDay() : null;
-        LocalDateTime fin    = fechaFin != null ? LocalDate.parse(fechaFin).atTime(23,59,59) : null;
+        LocalDateTime inicio = parseDate(fechaInicio, false);
+        LocalDateTime finExclusiva = parseDate(fechaFin, true);
 
-        List<com.miapp.model.dto.VisitanteBibliotecaVirtualDTO> lista = prestamoService.reporteVisitantesBibliotecaVirtual(inicio, fin);
+        List<VisitantesPorDiaDTO> lista = prestamoService.reporteVisitantesBibliotecaVirtualPorDia(inicio, finExclusiva);
         return ResponseEntity.ok(Map.of("status","0","data", lista));
     }
 

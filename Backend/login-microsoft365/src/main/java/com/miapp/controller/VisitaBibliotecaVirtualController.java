@@ -17,10 +17,15 @@ public class VisitaBibliotecaVirtualController {
     private final VisitaBibliotecaVirtualService service;
 
     @PostMapping
-    public ResponseEntity<VisitaBibliotecaVirtual> registrar(@RequestBody Map<String, Object> body) {
-        String codigo = (String) body.get("codigoUsuario");
-        Integer estado = Integer.parseInt(body.get("estado").toString());
-        VisitaBibliotecaVirtual visita = service.registrar(codigo, estado);
-        return ResponseEntity.status(HttpStatus.CREATED).body(visita);
+    public ResponseEntity<?> registrar(@RequestBody Map<String, Object> body) {
+        try {
+            String codigo = (String) body.get("codigoUsuario");
+            Integer estado = Integer.parseInt(body.get("estado").toString());
+            VisitaBibliotecaVirtual visita = service.registrar(codigo, estado);
+            return ResponseEntity.status(HttpStatus.CREATED).body(visita);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("status", -1, "message", ex.getMessage()));
+        }
     }
 }

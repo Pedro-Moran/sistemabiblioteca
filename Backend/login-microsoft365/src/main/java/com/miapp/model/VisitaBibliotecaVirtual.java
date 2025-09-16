@@ -18,7 +18,7 @@ public class VisitaBibliotecaVirtual {
     @Column(name = "IDVISITABIBVIR")
     private Long id;
 
-    @Column(name = "CODIGOUSUARIO", nullable = false, length = 50)
+    @Column(name = "CODIGOUSUARIO", nullable = false, length = 10)
     private String codigoUsuario;
 
     @Column(name = "FLGUSUARIO", nullable = false)

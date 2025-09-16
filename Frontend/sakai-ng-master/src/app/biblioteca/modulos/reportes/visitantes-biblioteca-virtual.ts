@@ -45,6 +45,16 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
                     <label for="ciclo" class="block text-sm font-medium">Ciclo</label>
                     <p-select [(ngModel)]="cicloFiltro" [options]="dataCiclo" optionLabel="descripcion" placeholder="Seleccionar" />
                     </div>
+                    <div class="flex flex-col gap-2 col-span-7 md:col-span-2 lg:col-span-2">
+                        <label for="codigo" class="block text-sm font-medium">Código usuario</label>
+                        <input
+                            id="codigo"
+                            type="text"
+                            pInputText
+                            placeholder="Ej. 10000"
+                            [(ngModel)]="codigoFiltro"
+                        />
+                    </div>
                     <div class="flex flex-col gap-2 col-span-3 md:col-span-2 lg:col-span-2">
                     <label for="tipoPrestamo" class="block text-sm font-medium">Fecha inicio</label>
                         <p-datepicker
@@ -145,6 +155,7 @@ export class ReporteVisitantesBibliotecaVirtual {
     basededatosFiltro: ClaseGeneral = new ClaseGeneral();
     dataTipoPrestamo: ClaseGeneral[] = [];
     tipoPrestamoFiltro: ClaseGeneral = new ClaseGeneral();
+    codigoFiltro: string = '';
     loading: boolean = false;
     resultados: VisitanteBibliotecaVirtualDTO[] = [];
     busquedaRealizada: boolean = false;
@@ -182,9 +193,10 @@ export class ReporteVisitantesBibliotecaVirtual {
         const { fechaInicio, fechaFin } = this.form.value as { fechaInicio: Date; fechaFin: Date };
         const fi = fechaInicio ? fechaInicio.toISOString().split('T')[0] : undefined;
         const ff = fechaFin ? fechaFin.toISOString().split('T')[0] : undefined;
+        const codigo = this.codigoFiltro?.trim();
         try {
             this.resultados =
-                (await firstValueFrom(this.svc.reporteVisitantesBibliotecaVirtual(fi, ff))) ?? [];
+                (await firstValueFrom(this.svc.reporteVisitantesBibliotecaVirtual(fi, ff, codigo || undefined))) ?? [];
         } catch (error: any) {
             const msg = error?.status === 403 ? 'No autorizado para ver el reporte.' : 'No fue posible cargar los datos.';
             this.messageService.add({ severity: 'error', detail: msg });
