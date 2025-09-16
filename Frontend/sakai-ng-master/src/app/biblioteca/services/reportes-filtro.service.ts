@@ -34,17 +34,22 @@ export class ReportesFiltroService {
           : Array.isArray(res)
             ? res
             : [];
-        this.cacheSedes = list.map(
-          (s: any) =>
-            new Sedes({
-              id: s.idSede ?? s.id ?? s.codigo ?? 0,
-              descripcion:
-                s.descripcion ?? s.nombre ?? s.descripcionSede ?? '',
-              activo: s.activo ?? true,
-            })
-        );
+        this.cacheSedes = [
+          new Sedes({ id: 0, descripcion: 'Todos', activo: true }),
+          ...list.map(
+            (s: any) =>
+              new Sedes({
+                id: s.idSede ?? s.id ?? s.codigo ?? 0,
+                descripcion:
+                  s.descripcion ?? s.nombre ?? s.descripcionSede ?? '',
+                activo: s.activo ?? true,
+              })
+          )
+        ];
       } catch {
-        this.cacheSedes = [];
+        this.cacheSedes = [
+          new Sedes({ id: 0, descripcion: 'Todos', activo: true })
+        ];
       }
     }
     return this.cacheSedes ?? [];

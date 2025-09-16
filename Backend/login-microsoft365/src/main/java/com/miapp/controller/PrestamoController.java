@@ -322,13 +322,29 @@ public class PrestamoController {
     public ResponseEntity<?> reporteVisitantesBibliotecaVirtual(
             @RequestParam(required = false) String fechaInicio,
             @RequestParam(required = false) String fechaFin,
-            @RequestParam(required = false) String codigo
+            @RequestParam(required = false) String codigo,
+            @RequestParam(required = false) String sede,
+            @RequestParam(required = false) Integer tipoUsuario,
+            @RequestParam(required = false) String escuela,
+            @RequestParam(required = false) String programa,
+            @RequestParam(required = false) String ciclo,
+            @RequestParam(name = "baseDatos", required = false) Long baseDatos
     ) {
         LocalDateTime inicio = parseDate(fechaInicio, false);
         LocalDateTime finExclusiva = parseDate(fechaFin, true);
 
         List<com.miapp.model.dto.VisitanteBibliotecaVirtualDTO> lista =
-                prestamoService.reporteVisitantesBibliotecaVirtual(inicio, finExclusiva, codigo);
+                prestamoService.reporteVisitantesBibliotecaVirtual(
+                        inicio,
+                        finExclusiva,
+                        codigo,
+                        sede,
+                        tipoUsuario,
+                        escuela,
+                        programa,
+                        ciclo,
+                        baseDatos
+                );
         return ResponseEntity.ok(Map.of("status","0","data", lista));
     }
 

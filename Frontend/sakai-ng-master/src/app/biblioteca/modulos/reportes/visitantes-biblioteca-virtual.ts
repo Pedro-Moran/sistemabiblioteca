@@ -82,7 +82,12 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
                 pButton
                 type="button"
                 class="p-button-rounded p-button-danger"
-                icon="pi pi-search"(click)="reporte()" [disabled]="loading"  pTooltip="Ver reporte" tooltipPosition="bottom">
+                icon="pi pi-search"
+                (click)="reporte()"
+                [disabled]="loading"
+                pTooltip="Ver reporte"
+                tooltipPosition="bottom"
+            >
             </button>
         </div>
                     <div class="flex col-span-1 md:col-span-2 lg:col-span-2">
@@ -182,6 +187,10 @@ export class ReporteVisitantesBibliotecaVirtual {
         this.escuelaFiltro = this.dataEscuela[0];
         this.dataCiclo = filtros.ciclos;
         this.cicloFiltro = this.dataCiclo[0];
+        this.dataBasededatos = [
+            new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 })
+        ];
+        this.basededatosFiltro = this.dataBasededatos[0];
     }
     async reporte() {
         if (this.form.invalid) {
@@ -191,17 +200,42 @@ export class ReporteVisitantesBibliotecaVirtual {
         this.loading = true;
         this.busquedaRealizada = true;
         const { fechaInicio, fechaFin } = this.form.value as { fechaInicio: Date; fechaFin: Date };
-        const fi = fechaInicio ? fechaInicio.toISOString().split('T')[0] : undefined;
-        const ff = fechaFin ? fechaFin.toISOString().split('T')[0] : undefined;
-        const codigo = this.codigoFiltro?.trim();
+        if (fechaInicio && fechaFin && fechaInicio.getTime() > fechaFin.getTime()) {
+            this.loading = false;
+            this.messageService.add({ severity: 'warn', detail: 'La fecha inicio no puede ser mayor a la fecha fin.' });
+            return;
+        }
+        const filtros = {
+            fechaInicio: this.formatearFecha(fechaInicio),
+            fechaFin: this.formatearFecha(fechaFin),
+            codigo: this.codigoFiltro?.trim() || undefined,
+            sede: this.normalizarId(this.sedeFiltro?.id),
+            tipoUsuario: this.normalizarId(this.tipoUsuarioFiltro?.id),
+            escuela: this.normalizarId(this.escuelaFiltro?.id),
+            programa: this.normalizarId(this.programaFiltro?.id),
+            ciclo: this.normalizarId(this.cicloFiltro?.id),
+            baseDatos: this.normalizarId(this.basededatosFiltro?.id)
+        };
         try {
-            this.resultados =
-                (await firstValueFrom(this.svc.reporteVisitantesBibliotecaVirtual(fi, ff, codigo || undefined))) ?? [];
+            this.resultados = (await firstValueFrom(this.svc.reporteVisitantesBibliotecaVirtual(filtros))) ?? [];
         } catch (error: any) {
             const msg = error?.status === 403 ? 'No autorizado para ver el reporte.' : 'No fue posible cargar los datos.';
             this.messageService.add({ severity: 'error', detail: msg });
         } finally {
             this.loading = false;
         }
+    }
+    private formatearFecha(fecha: Date | null): string | undefined {
+        if (!fecha) return undefined;
+        const year = fecha.getFullYear();
+        const month = String(fecha.getMonth() + 1).padStart(2, '0');
+        const day = String(fecha.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+    private normalizarId(valor?: number | null): number | undefined {
+        if (valor == null || valor === 0) {
+            return undefined;
+        }
+        return valor;
     }
 }
