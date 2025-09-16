@@ -636,12 +636,19 @@ public class PrestamoService {
     public List<com.miapp.model.dto.VisitanteBibliotecaVirtualDTO> reporteVisitantesBibliotecaVirtual(
             java.time.LocalDateTime fechaInicio,
             java.time.LocalDateTime fechaFinExclusiva,
-            String codigoUsuario) {
+            String codigoUsuario,
+            String codigoSede,
+            Integer tipoUsuario,
+            String codigoEscuela,
+            String codigoPrograma,
+            String ciclo,
+            Long baseId) {
         String codigoNormalizado = normalizarCodigoUsuario(codigoUsuario);
 
         StringBuilder sql = new StringBuilder("""
                 SELECT
                     s.DESCRIPCION AS SEDE,
+                    COALESCE(tbv.NOMBRE, 'N/A') AS BASE_DATOS,
                     u.LOGIN AS LOGIN_USUARIO,
                     TRIM(v.CODIGOUSUARIO) AS CODIGO_VISITA,
                     u.APELLIDOPATERNO,
@@ -664,6 +671,7 @@ public class PrestamoService {
                 LEFT JOIN ESPECIALIDAD e ON e.IDESPECIALIDAD = u.IDESPECIALIDAD
                 LEFT JOIN PROGRAMA p ON p.IDPROGRAMA = u.IDPROGRAMA
                 LEFT JOIN SEDE s ON s.ID = u.IDSEDE
+                LEFT JOIN TIPOBIBLIOTECAVIRTUAL tbv ON tbv.IDTIPOBIBVIRTUAL = v.IDBIBVIR
                 WHERE v.CODIGOUSUARIO IS NOT NULL
                   AND TRIM(v.CODIGOUSUARIO) <> ''
                 """);
@@ -689,10 +697,39 @@ public class PrestamoService {
             params.add(codigoNormalizado);
             params.add(codigoNormalizado);
         }
+        String sedeNormalizada = normalizarFiltroTexto(codigoSede);
+        if (sedeNormalizada != null) {
+            sql.append(" AND TRIM(UPPER(v.CODIGOSEDE)) = ?");
+            params.add(sedeNormalizada);
+        }
+        if (tipoUsuario != null && tipoUsuario != 0) {
+            sql.append(" AND v.TIPOUSUARIO = ?");
+            params.add(tipoUsuario);
+        }
+        String escuelaNormalizada = normalizarFiltroTexto(codigoEscuela);
+        if (escuelaNormalizada != null) {
+            sql.append(" AND TRIM(UPPER(v.CODIGOESPECIALIDAD)) = ?");
+            params.add(escuelaNormalizada);
+        }
+        String programaNormalizado = normalizarFiltroTexto(codigoPrograma);
+        if (programaNormalizado != null) {
+            sql.append(" AND TRIM(UPPER(v.PROGRAMA)) = ?");
+            params.add(programaNormalizado);
+        }
+        String cicloNormalizado = normalizarFiltroTexto(ciclo);
+        if (cicloNormalizado != null) {
+            sql.append(" AND TRIM(UPPER(v.CICLO)) = ?");
+            params.add(cicloNormalizado);
+        }
+        if (baseId != null && baseId != 0L) {
+            sql.append(" AND v.IDBIBVIR = ?");
+            params.add(baseId);
+        }
 
         sql.append("""
                 GROUP BY
                     s.DESCRIPCION,
+                    tbv.NOMBRE,
                     u.LOGIN,
                     TRIM(v.CODIGOUSUARIO),
                     u.APELLIDOPATERNO,
@@ -710,6 +747,7 @@ public class PrestamoService {
                 params.toArray(),
                 (rs, rowNum) -> mapearResumenVisitanteVirtual(new Object[]{
                         rs.getString("SEDE"),
+                        rs.getString("BASE_DATOS"),
                         rs.getString("LOGIN_USUARIO"),
                         rs.getString("CODIGO_VISITA"),
                         rs.getString("APELLIDOPATERNO"),
@@ -737,34 +775,35 @@ public class PrestamoService {
 
     private com.miapp.model.dto.VisitanteBibliotecaVirtualDTO mapearResumenVisitanteVirtual(Object[] fila) {
         String sede = textoSeguro(fila[0], "-");
-        String login = textoSeguro(fila[1], null);
-        String codigoVisita = textoSeguro(fila[2], null);
+        String baseDatos = textoSeguro(fila[1], "N/A");
+        String login = textoSeguro(fila[2], null);
+        String codigoVisita = textoSeguro(fila[3], null);
         String codigo = !esBlanco(login) ? login : textoSeguro(codigoVisita, "-");
 
         String apellidosNombres = concatenarNombre(
-                textoSeguro(fila[3], null),
                 textoSeguro(fila[4], null),
-                textoSeguro(fila[5], null));
+                textoSeguro(fila[5], null),
+                textoSeguro(fila[6], null));
         if (esBlanco(apellidosNombres)) {
             apellidosNombres = codigo;
         }
 
-        String tipoUsuario = textoSeguro(fila[6], "Sin Rol");
-        String especialidad = textoSeguro(fila[7], "-");
-        String programa = textoSeguro(fila[8], "-");
-        String ciclo = textoSeguro(fila[9], "-");
-        String correo = textoSeguro(fila[10], "-");
-        long totalVisitas = fila[11] instanceof Number ? ((Number) fila[11]).longValue() : 0L;
+        String tipoUsuario = textoSeguro(fila[7], "Sin Rol");
+        String especialidad = textoSeguro(fila[8], "-");
+        String programa = textoSeguro(fila[9], "-");
+        String cicloUsuario = textoSeguro(fila[10], "-");
+        String correo = textoSeguro(fila[11], "-");
+        long totalVisitas = fila[12] instanceof Number ? ((Number) fila[12]).longValue() : 0L;
 
         return new com.miapp.model.dto.VisitanteBibliotecaVirtualDTO(
                 sede,
-                "N/A",
+                baseDatos,
                 codigo,
                 apellidosNombres,
                 tipoUsuario,
                 especialidad,
                 programa,
-                ciclo,
+                cicloUsuario,
                 correo,
                 totalVisitas
         );
@@ -779,6 +818,17 @@ public class PrestamoService {
             return null;
         }
         return valor.toUpperCase();
+    }
+
+    private String normalizarFiltroTexto(String valor) {
+        if (valor == null) {
+            return null;
+        }
+        String trimmed = valor.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        return trimmed.toUpperCase();
     }
 
     private String textoSeguro(Object valor, String porDefecto) {

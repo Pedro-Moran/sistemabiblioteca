@@ -278,15 +278,32 @@ export class PrestamosService {
             .pipe(map((resp) => resp.data ?? []));
     }
     /** Obtiene los visitantes de biblioteca virtual */
-    reporteVisitantesBibliotecaVirtual(
-        fechaInicio?: string,
-        fechaFin?: string,
-        codigo?: string
-    ): Observable<VisitanteBibliotecaVirtualDTO[]> {
+    reporteVisitantesBibliotecaVirtual(filtros: {
+        fechaInicio?: string;
+        fechaFin?: string;
+        codigo?: string;
+        sede?: number | string;
+        tipoUsuario?: number | string;
+        escuela?: number | string;
+        programa?: number | string;
+        ciclo?: number | string;
+        baseDatos?: number | string;
+    }): Observable<VisitanteBibliotecaVirtualDTO[]> {
         let params = new HttpParams();
-        if (fechaInicio) params = params.set('fechaInicio', fechaInicio);
-        if (fechaFin) params = params.set('fechaFin', fechaFin);
-        if (codigo) params = params.set('codigo', codigo);
+        if (filtros?.fechaInicio) params = params.set('fechaInicio', filtros.fechaInicio);
+        if (filtros?.fechaFin) params = params.set('fechaFin', filtros.fechaFin);
+        if (filtros?.codigo) params = params.set('codigo', filtros.codigo);
+        const addParam = (key: string, value?: number | string | null) => {
+            if (value != null && value !== '' && value !== 0 && value !== '0') {
+                params = params.set(key, String(value));
+            }
+        };
+        addParam('sede', filtros?.sede);
+        addParam('tipoUsuario', filtros?.tipoUsuario);
+        addParam('escuela', filtros?.escuela);
+        addParam('programa', filtros?.programa);
+        addParam('ciclo', filtros?.ciclo);
+        addParam('baseDatos', filtros?.baseDatos);
 
         return this.http
             .get<{ status: string; data: VisitanteBibliotecaVirtualDTO[] }>(
