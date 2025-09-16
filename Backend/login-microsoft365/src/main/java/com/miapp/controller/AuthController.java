@@ -7,6 +7,7 @@ import com.miapp.service.*;
 import com.miapp.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Slf4j
 public class AuthController {
 
     private final UsuarioService usuarioService;
@@ -28,6 +30,7 @@ public class AuthController {
     private final EspecialidadService especialidadService;
     private final TipoMaterialService tipoMaterialService;
     private final PasswordResetService passwordResetService;
+    private final VisitaBibliotecaVirtualService visitaBibliotecaVirtualService;
 
     /**
      * Endpoint al que redirige Azure AD después de un login exitoso.
@@ -141,6 +144,7 @@ public class AuthController {
         }
 
         usuarioService.incrementarContadorLogins(usuario.getLogin());
+        registrarVisitaIngreso(usuario);
         String jwt = jwtUtil.generateToken(usuario.getEmail(), rolDescripcion);
 
         RefreshToken refresh = refreshTokenService.createRefreshToken(usuario);
@@ -162,6 +166,7 @@ public class AuthController {
                         .body(Map.of("message", "Rol no autorizado"));
             }
             usuarioService.incrementarContadorLogins(usuario.getLogin());
+            registrarVisitaIngreso(usuario);
             String jwt = jwtUtil.generateToken(usuario.getEmail(), requestedRole);
             RefreshToken refresh = refreshTokenService.createRefreshToken(usuario);
             System.out.println(jwt);
@@ -406,5 +411,12 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("status", 0, "data", lista));
     }
 
+    private void registrarVisitaIngreso(Usuario usuario) {
+        if (usuario == null) {
+            return;
+        }
+        visitaBibliotecaVirtualService.registrarIngresoAutomatico(usuario)
+                .ifPresent(visita -> log.debug("Visita virtual {} registrada para {}", visita.getId(), visita.getCodigoUsuario()));
+    }
 
 }

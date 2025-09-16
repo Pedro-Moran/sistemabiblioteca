@@ -13,6 +13,7 @@ import com.miapp.repository.EquipoRepository;
 import com.miapp.repository.EstadoRepository;
 import com.miapp.repository.OcurrenciaBibliotecaRepository;
 import com.miapp.repository.UsuarioRepository;
+import com.miapp.repository.VisitaBibliotecaVirtualRepository;
 import com.miapp.spec.DetallePrestamoSpecs;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
 import com.miapp.model.dto.IntranetVisitaDTO;
+import com.miapp.model.dto.VisitantesPorDiaDTO;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -54,6 +56,7 @@ public class PrestamoService {
     private final OcurrenciaBibliotecaRepository ocurrenciaBibliotecaRepository;
     private final UsuarioRepository usuarioRepository;
     private final DetalleBibliotecaRepository detalleBibliotecaRepository;
+    private final VisitaBibliotecaVirtualRepository visitaBibliotecaVirtualRepository;
     private final BibliotecaMapper bibliotecaMapper;
     private final JdbcTemplate jdbcTemplate;
 
@@ -624,12 +627,190 @@ public class PrestamoService {
     }
     /**
      * Reporte de visitantes de biblioteca virtual.
-     * Devuelve la cantidad de ocurrencias registradas por usuario.
+     * Devuelve la cantidad de ocurrencias registradas por usuario dentro del rango indicado.
+     *
+     * @param fechaInicio      instante inicial (inclusive) del filtro.
+     * @param fechaFinExclusiva instante final (exclusivo) del filtro; usar inicio del día siguiente para cortes diarios.
+     * @param codigoUsuario    identificador opcional a filtrar.
      */
     public List<com.miapp.model.dto.VisitanteBibliotecaVirtualDTO> reporteVisitantesBibliotecaVirtual(
             java.time.LocalDateTime fechaInicio,
-            java.time.LocalDateTime fechaFin) {
-        return usuarioRepository.reporteVisitantesBibliotecaVirtual(fechaInicio, fechaFin);
+            java.time.LocalDateTime fechaFinExclusiva,
+            String codigoUsuario) {
+        String codigoNormalizado = normalizarCodigoUsuario(codigoUsuario);
+
+        StringBuilder sql = new StringBuilder("""
+                SELECT
+                    s.DESCRIPCION AS SEDE,
+                    u.LOGIN AS LOGIN_USUARIO,
+                    TRIM(v.CODIGOUSUARIO) AS CODIGO_VISITA,
+                    u.APELLIDOPATERNO,
+                    u.APELLIDOMATERNO,
+                    u.NOMBREUSUARIO,
+                    MAX(r.DESCRIPCION) AS ROL_DESCRIPCION,
+                    e.DESCRIPCION AS ESPECIALIDAD,
+                    p.DESCRIPCION AS PROGRAMA,
+                    u.CICLO,
+                    u.EMAIL,
+                    COUNT(DISTINCT v.IDVISITABIBVIR) AS TOTAL_VISITAS
+                FROM VISITASBIBVIR v
+                LEFT JOIN USUARIO u ON (
+                        UPPER(TRIM(u.LOGIN)) = UPPER(TRIM(v.CODIGOUSUARIO))
+                     OR UPPER(TRIM(u.EMAIL)) = UPPER(TRIM(v.CODIGOUSUARIO))
+                     OR (u.EMPLID IS NOT NULL AND UPPER(TRIM(u.EMPLID)) = UPPER(TRIM(v.CODIGOUSUARIO)))
+                )
+                LEFT JOIN USUARIO_ROL ur ON ur.IDUSUARIO = u.IDUSUARIO
+                LEFT JOIN ROLUSUARIO r ON r.IDROL = ur.IDROL
+                LEFT JOIN ESPECIALIDAD e ON e.IDESPECIALIDAD = u.IDESPECIALIDAD
+                LEFT JOIN PROGRAMA p ON p.IDPROGRAMA = u.IDPROGRAMA
+                LEFT JOIN SEDE s ON s.ID = u.IDSEDE
+                WHERE v.CODIGOUSUARIO IS NOT NULL
+                  AND TRIM(v.CODIGOUSUARIO) <> ''
+                """);
+
+        List<Object> params = new ArrayList<>();
+        if (fechaInicio != null) {
+            sql.append(" AND COALESCE(v.FECHAREGISTRO, v.HORAINGRESO, v.HORASALIDA) >= ?");
+            params.add(java.sql.Timestamp.valueOf(fechaInicio));
+        }
+        if (fechaFinExclusiva != null) {
+            sql.append(" AND COALESCE(v.FECHAREGISTRO, v.HORAINGRESO, v.HORASALIDA) < ?");
+            params.add(java.sql.Timestamp.valueOf(fechaFinExclusiva));
+        }
+        if (codigoNormalizado != null) {
+            sql.append(" AND ("
+                    + " UPPER(TRIM(v.CODIGOUSUARIO)) = ?"
+                    + " OR (u.LOGIN IS NOT NULL AND UPPER(TRIM(u.LOGIN)) = ?)"
+                    + " OR (u.EMAIL IS NOT NULL AND UPPER(TRIM(u.EMAIL)) = ?)"
+                    + " OR (u.EMPLID IS NOT NULL AND UPPER(TRIM(u.EMPLID)) = ?)"
+                    + ")");
+            params.add(codigoNormalizado);
+            params.add(codigoNormalizado);
+            params.add(codigoNormalizado);
+            params.add(codigoNormalizado);
+        }
+
+        sql.append("""
+                GROUP BY
+                    s.DESCRIPCION,
+                    u.LOGIN,
+                    TRIM(v.CODIGOUSUARIO),
+                    u.APELLIDOPATERNO,
+                    u.APELLIDOMATERNO,
+                    u.NOMBREUSUARIO,
+                    e.DESCRIPCION,
+                    p.DESCRIPCION,
+                    u.CICLO,
+                    u.EMAIL
+                ORDER BY COUNT(DISTINCT v.IDVISITABIBVIR) DESC
+                """);
+
+        return jdbcTemplate.query(
+                sql.toString(),
+                params.toArray(),
+                (rs, rowNum) -> mapearResumenVisitanteVirtual(new Object[]{
+                        rs.getString("SEDE"),
+                        rs.getString("LOGIN_USUARIO"),
+                        rs.getString("CODIGO_VISITA"),
+                        rs.getString("APELLIDOPATERNO"),
+                        rs.getString("APELLIDOMATERNO"),
+                        rs.getString("NOMBREUSUARIO"),
+                        rs.getString("ROL_DESCRIPCION"),
+                        rs.getString("ESPECIALIDAD"),
+                        rs.getString("PROGRAMA"),
+                        rs.getString("CICLO"),
+                        rs.getString("EMAIL"),
+                        rs.getLong("TOTAL_VISITAS")
+                })
+        );
+    }
+
+    /**
+     * Reporte agregado de visitantes de biblioteca virtual por día.
+     */
+    public List<VisitantesPorDiaDTO> reporteVisitantesBibliotecaVirtualPorDia(
+            LocalDateTime fechaInicio,
+            LocalDateTime fechaFinExclusiva
+    ) {
+        return visitaBibliotecaVirtualRepository.contarVisitasPorDia(fechaInicio, fechaFinExclusiva);
+    }
+
+    private com.miapp.model.dto.VisitanteBibliotecaVirtualDTO mapearResumenVisitanteVirtual(Object[] fila) {
+        String sede = textoSeguro(fila[0], "-");
+        String login = textoSeguro(fila[1], null);
+        String codigoVisita = textoSeguro(fila[2], null);
+        String codigo = !esBlanco(login) ? login : textoSeguro(codigoVisita, "-");
+
+        String apellidosNombres = concatenarNombre(
+                textoSeguro(fila[3], null),
+                textoSeguro(fila[4], null),
+                textoSeguro(fila[5], null));
+        if (esBlanco(apellidosNombres)) {
+            apellidosNombres = codigo;
+        }
+
+        String tipoUsuario = textoSeguro(fila[6], "Sin Rol");
+        String especialidad = textoSeguro(fila[7], "-");
+        String programa = textoSeguro(fila[8], "-");
+        String ciclo = textoSeguro(fila[9], "-");
+        String correo = textoSeguro(fila[10], "-");
+        long totalVisitas = fila[11] instanceof Number ? ((Number) fila[11]).longValue() : 0L;
+
+        return new com.miapp.model.dto.VisitanteBibliotecaVirtualDTO(
+                sede,
+                "N/A",
+                codigo,
+                apellidosNombres,
+                tipoUsuario,
+                especialidad,
+                programa,
+                ciclo,
+                correo,
+                totalVisitas
+        );
+    }
+
+    private String normalizarCodigoUsuario(String codigo) {
+        if (codigo == null) {
+            return null;
+        }
+        String valor = codigo.trim();
+        if (valor.isEmpty()) {
+            return null;
+        }
+        return valor.toUpperCase();
+    }
+
+    private String textoSeguro(Object valor, String porDefecto) {
+        if (valor == null) {
+            return porDefecto;
+        }
+        String texto = valor.toString().trim();
+        return texto.isEmpty() ? porDefecto : texto;
+    }
+
+    private boolean esBlanco(String valor) {
+        return valor == null || valor.trim().isEmpty();
+    }
+
+    private String concatenarNombre(String paterno, String materno, String nombres) {
+        StringBuilder sb = new StringBuilder();
+        if (!esBlanco(paterno)) {
+            sb.append(paterno.trim());
+        }
+        if (!esBlanco(materno)) {
+            if (sb.length() > 0) {
+                sb.append(' ');
+            }
+            sb.append(materno.trim());
+        }
+        if (!esBlanco(nombres)) {
+            if (sb.length() > 0) {
+                sb.append(' ');
+            }
+            sb.append(nombres.trim());
+        }
+        return sb.toString();
     }
 
 }
