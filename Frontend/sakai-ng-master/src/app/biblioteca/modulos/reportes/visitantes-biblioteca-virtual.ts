@@ -173,24 +173,53 @@ export class ReporteVisitantesBibliotecaVirtual {
         });
     }
     async ngOnInit() {
+        this.establecerRangoFechasPorDefecto();
         await this.cargarFiltros();
     }
     private async cargarFiltros() {
         const filtros = await this.filtrosService.cargarFiltros();
-        this.dataSede = filtros.sedes;
-        this.sedeFiltro = this.dataSede[0];
-        this.dataPrograma = filtros.programas;
-        this.programaFiltro = this.dataPrograma[0];
-        this.dataTipoUsuario = filtros.tipoUsuarios;
-        this.tipoUsuarioFiltro = this.dataTipoUsuario[0];
-        this.dataEscuela = filtros.especialidades;
-        this.escuelaFiltro = this.dataEscuela[0];
-        this.dataCiclo = filtros.ciclos;
-        this.cicloFiltro = this.dataCiclo[0];
-        this.dataBasededatos = [
-            new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 })
-        ];
-        this.basededatosFiltro = this.dataBasededatos[0];
+
+        const { opciones: sedes, seleccion: sedeTodos } = this.asegurarOpcionTodos(
+            filtros.sedes,
+            () => new Sedes({ id: 0, descripcion: 'Todos', activo: true })
+        );
+        this.dataSede = sedes;
+        this.sedeFiltro = sedeTodos;
+
+        const { opciones: programas, seleccion: programaTodos } = this.asegurarOpcionTodos(
+            filtros.programas,
+            () => new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 })
+        );
+        this.dataPrograma = programas;
+        this.programaFiltro = programaTodos;
+
+        const { opciones: tiposUsuario, seleccion: tipoUsuarioTodos } = this.asegurarOpcionTodos(
+            filtros.tipoUsuarios,
+            () => new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 })
+        );
+        this.dataTipoUsuario = tiposUsuario;
+        this.tipoUsuarioFiltro = tipoUsuarioTodos;
+
+        const { opciones: escuelas, seleccion: escuelaTodos } = this.asegurarOpcionTodos(
+            filtros.especialidades,
+            () => new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 })
+        );
+        this.dataEscuela = escuelas;
+        this.escuelaFiltro = escuelaTodos;
+
+        const { opciones: ciclos, seleccion: cicloTodos } = this.asegurarOpcionTodos(
+            filtros.ciclos,
+            () => new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 })
+        );
+        this.dataCiclo = ciclos;
+        this.cicloFiltro = cicloTodos;
+
+        const { opciones: baseDatos, seleccion: baseDatosTodos } = this.asegurarOpcionTodos(
+            this.dataBasededatos,
+            () => new ClaseGeneral({ id: 0, descripcion: 'Todos', activo: true, estado: 1 })
+        );
+        this.dataBasededatos = baseDatos;
+        this.basededatosFiltro = baseDatosTodos;
     }
     async reporte() {
         if (this.form.invalid) {
@@ -232,10 +261,51 @@ export class ReporteVisitantesBibliotecaVirtual {
         const day = String(fecha.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     }
-    private normalizarId(valor?: number | null): number | undefined {
-        if (valor == null || valor === 0) {
+    private normalizarId(valor?: number | string | null): number | string | undefined {
+        if (valor == null) {
             return undefined;
         }
-        return valor;
+        if (typeof valor === 'number') {
+            return valor === 0 ? undefined : valor;
+        }
+        const texto = valor.toString().trim();
+        if (!texto) {
+            return undefined;
+        }
+        if (/^-?\d+$/.test(texto)) {
+            const numero = Number(texto);
+            if (Number.isFinite(numero) && numero === 0) {
+                return undefined;
+            }
+        }
+        return texto.toUpperCase();
+    }
+
+    private establecerRangoFechasPorDefecto(): void {
+        const fechaInicio = new Date(2025, 0, 1);
+        const fechaFin = new Date(2025, 11, 31);
+        this.form.setValue({ fechaInicio, fechaFin });
+    }
+
+    private asegurarOpcionTodos<T extends { id?: number | string }>(
+        lista: T[] | undefined,
+        crearTodos: () => T
+    ): { opciones: T[]; seleccion: T } {
+        const opciones = Array.isArray(lista) ? [...lista] : [];
+        let seleccion = opciones.find((item) => {
+            const id = item?.id;
+            return id !== undefined && Number(id) === 0;
+        });
+        if (!seleccion) {
+            seleccion = crearTodos();
+            opciones.unshift(seleccion);
+        } else {
+            const indiceSeleccion = opciones.indexOf(seleccion);
+            if (indiceSeleccion > 0) {
+                opciones.splice(indiceSeleccion, 1);
+                opciones.unshift(seleccion);
+            }
+        }
+        return { opciones, seleccion };
     }
 }
