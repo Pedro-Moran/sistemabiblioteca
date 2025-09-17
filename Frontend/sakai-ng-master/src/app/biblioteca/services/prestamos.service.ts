@@ -305,10 +305,15 @@ export class PrestamosService {
         addParam('ciclo', filtros?.ciclo);
         addParam('baseDatos', filtros?.baseDatos);
 
+        const headers = new HttpHeaders().set(
+            'Authorization',
+            `Bearer ${this.authService.getToken()}`
+        );
+
         return this.http
             .get<{ status: string; data: VisitanteBibliotecaVirtualDTO[] }>(
                 `${this.apiUrl}/api/prestamos/reporte/visitantes-biblioteca-virtual`,
-                { params }
+                { params, headers }
             )
             .pipe(map((resp) => resp.data ?? []));
     }
