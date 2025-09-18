@@ -18,6 +18,8 @@ import com.miapp.spec.DetallePrestamoSpecs;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.TaskScheduler;
@@ -62,6 +64,7 @@ public class PrestamoService {
     private final VisitaBibliotecaVirtualRepository visitaBibliotecaVirtualRepository;
     private final BibliotecaMapper bibliotecaMapper;
     private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     public DetallePrestamo solicitarPrestamo(Long equipoId,
                                              Integer tipoUsuario,
@@ -683,8 +686,8 @@ public class PrestamoService {
                     WHERE 1 = 1
                 """);
 
-        List<Object> params = new ArrayList<>();
-        aplicarFiltrosVisitas(sql, params, fechaInicio, fechaFinExclusiva,
+        MapSqlParameterSource parametros = new MapSqlParameterSource();
+        aplicarFiltrosVisitas(sql, parametros, fechaInicio, fechaFinExclusiva,
                 sedeNormalizada, tipoUsuario, escuelaNormalizada, programaNormalizado, cicloNormalizado, baseId,
                 "vf");
 
@@ -742,15 +745,12 @@ public class PrestamoService {
 
         if (codigoNormalizado != null) {
             sql.append(" AND ("
-                    + " va.CODIGO_VISITA = ?"
-                    + " OR (u.LOGIN IS NOT NULL AND UPPER(TRIM(u.LOGIN)) = ?)"
-                    + " OR (u.EMAIL IS NOT NULL AND UPPER(TRIM(u.EMAIL)) = ?)"
-                    + " OR (u.EMPLID IS NOT NULL AND UPPER(TRIM(u.EMPLID)) = ?)"
+                    + " va.CODIGO_VISITA = :codigoFiltro"
+                    + " OR (u.LOGIN IS NOT NULL AND UPPER(TRIM(u.LOGIN)) = :codigoFiltro)"
+                    + " OR (u.EMAIL IS NOT NULL AND UPPER(TRIM(u.EMAIL)) = :codigoFiltro)"
+                    + " OR (u.EMPLID IS NOT NULL AND UPPER(TRIM(u.EMPLID)) = :codigoFiltro)"
                     + ")");
-            params.add(codigoNormalizado);
-            params.add(codigoNormalizado);
-            params.add(codigoNormalizado);
-            params.add(codigoNormalizado);
+            parametros.addValue("codigoFiltro", codigoNormalizado);
         }
 
         sql.append("""
@@ -777,11 +777,11 @@ public class PrestamoService {
 
         String sqlFinal = sql.toString();
         System.out.println("[Reporte Visitantes Biblioteca Virtual][Backend] SQL generada:\n" + sqlFinal);
-        System.out.println("[Reporte Visitantes Biblioteca Virtual][Backend] Parámetros SQL: " + params);
+        System.out.println("[Reporte Visitantes Biblioteca Virtual][Backend] Parámetros SQL: " + parametros.getValues());
 
-        List<VisitanteBibliotecaVirtualDTO> filas = jdbcTemplate.query(
+        List<VisitanteBibliotecaVirtualDTO> filas = namedParameterJdbcTemplate.query(
                 sqlFinal,
-                params.toArray(),
+                parametros,
                 (rs, rowNum) -> mapearResumenVisitanteVirtual(rs)
         );
 
@@ -800,7 +800,7 @@ public class PrestamoService {
     }
 
     private void aplicarFiltrosVisitas(StringBuilder sql,
-                                       List<Object> params,
+                                       MapSqlParameterSource params,
                                        LocalDateTime fechaInicio,
                                        LocalDateTime fechaFinExclusiva,
                                        String sedeNormalizada,
@@ -812,36 +812,36 @@ public class PrestamoService {
                                        String aliasTabla) {
         String fechaReferenciaExpr = aliasTabla + ".FECHA_REFERENCIA";
         if (fechaInicio != null) {
-            sql.append(" AND ").append(fechaReferenciaExpr).append(" >= ?\n");
-            params.add(java.sql.Timestamp.valueOf(fechaInicio));
+            sql.append(" AND ").append(fechaReferenciaExpr).append(" >= :fechaInicio\n");
+            params.addValue("fechaInicio", java.sql.Timestamp.valueOf(fechaInicio));
         }
         if (fechaFinExclusiva != null) {
-            sql.append(" AND ").append(fechaReferenciaExpr).append(" < ?\n");
-            params.add(java.sql.Timestamp.valueOf(fechaFinExclusiva));
+            sql.append(" AND ").append(fechaReferenciaExpr).append(" < :fechaFinExclusiva\n");
+            params.addValue("fechaFinExclusiva", java.sql.Timestamp.valueOf(fechaFinExclusiva));
         }
         if (sedeNormalizada != null) {
-            sql.append(" AND ").append(aliasTabla).append(".CODIGO_SEDE = ?\n");
-            params.add(sedeNormalizada);
+            sql.append(" AND ").append(aliasTabla).append(".CODIGO_SEDE = :codigoSede\n");
+            params.addValue("codigoSede", sedeNormalizada);
         }
         if (tipoUsuario != null && tipoUsuario != 0) {
-            sql.append(" AND ").append(aliasTabla).append(".TIPOUSUARIO = ?\n");
-            params.add(tipoUsuario);
+            sql.append(" AND ").append(aliasTabla).append(".TIPOUSUARIO = :tipoUsuario\n");
+            params.addValue("tipoUsuario", tipoUsuario);
         }
         if (escuelaNormalizada != null) {
-            sql.append(" AND ").append(aliasTabla).append(".CODIGO_ESCUELA = ?\n");
-            params.add(escuelaNormalizada);
+            sql.append(" AND ").append(aliasTabla).append(".CODIGO_ESCUELA = :codigoEscuela\n");
+            params.addValue("codigoEscuela", escuelaNormalizada);
         }
         if (programaNormalizado != null) {
-            sql.append(" AND ").append(aliasTabla).append(".CODIGO_PROGRAMA = ?\n");
-            params.add(programaNormalizado);
+            sql.append(" AND ").append(aliasTabla).append(".CODIGO_PROGRAMA = :codigoPrograma\n");
+            params.addValue("codigoPrograma", programaNormalizado);
         }
         if (cicloNormalizado != null) {
-            sql.append(" AND ").append(aliasTabla).append(".CODIGO_CICLO = ?\n");
-            params.add(cicloNormalizado);
+            sql.append(" AND ").append(aliasTabla).append(".CODIGO_CICLO = :codigoCiclo\n");
+            params.addValue("codigoCiclo", cicloNormalizado);
         }
         if (baseId != null && baseId != 0L) {
-            sql.append(" AND ").append(aliasTabla).append(".IDBIBVIR = ?\n");
-            params.add(baseId);
+            sql.append(" AND ").append(aliasTabla).append(".IDBIBVIR = :baseId\n");
+            params.addValue("baseId", baseId);
         }
 
         // Solo aplica filtros dinámicos sobre el CTE VISITAS_FILTRADAS (alias vf).

@@ -264,7 +264,8 @@ public class PrestamoController {
     private static final DateTimeFormatter FORMATO_DD_MM_YYYY_GUION = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     private static final DateTimeFormatter FORMATO_LOCALE_GMT =
             DateTimeFormatter.ofPattern("EEE MMM dd yyyy HH:mm:ss 'GMT'XXX", Locale.ENGLISH);
-    private static final DateTimeFormatter FORMATO_LOG = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter FORMATO_LOG =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss,SSSSSSSSS");
 
     private LocalDateTime parseDate(String dateStr, boolean endExclusive) {
         LocalDate baseDate = resolveLocalDate(dateStr);
@@ -280,7 +281,10 @@ public class PrestamoController {
         if (finExclusiva == null) {
             return inicioLegible + " → sin fecha fin";
         }
-        LocalDateTime finInclusivo = finExclusiva.minusSeconds(1);
+        LocalDateTime finInclusivo = finExclusiva;
+        if (finExclusiva.isAfter(LocalDateTime.MIN)) {
+            finInclusivo = finExclusiva.minusNanos(1);
+        }
         return inicioLegible
                 + " → "
                 + formatearFechaLog(finInclusivo)
