@@ -310,6 +310,11 @@ export class PrestamosService {
             `Bearer ${this.authService.getToken()}`
         );
 
+        console.log(
+            '[Reporte Visitantes Biblioteca Virtual] Parámetros HTTP enviados:',
+            params.toString() || '(sin filtros)'
+        );
+
         return this.http
             .get<{ status: string; data: VisitanteBibliotecaVirtualDTO[] }>(
                 `${this.apiUrl}/api/prestamos/reporte/visitantes-biblioteca-virtual`,

@@ -273,6 +273,7 @@ export class ReporteVisitantesBibliotecaVirtual {
             this.resultados = (await firstValueFrom(this.svc.reporteVisitantesBibliotecaVirtual(filtros))) ?? [];
             this.actualizarResumen();
         } catch (error: any) {
+            console.error('[Reporte Visitantes Biblioteca Virtual] Error al obtener datos:', error);
             const msg = error?.status === 403 ? 'No autorizado para ver el reporte.' : 'No fue posible cargar los datos.';
             this.messageService.add({ severity: 'error', detail: msg });
             this.resultados = [];

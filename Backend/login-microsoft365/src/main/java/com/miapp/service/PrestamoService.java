@@ -802,6 +802,46 @@ public class PrestamoService {
             sql.append(" AND v.IDBIBVIR = ?");
             params.add(baseId);
         }
+
+        sql.append("""
+                GROUP BY
+                    s.DESCRIPCION,
+                    tbv.NOMBRE,
+                    u.LOGIN,
+                    TRIM(v.CODIGOUSUARIO),
+                    u.APELLIDOPATERNO,
+                    u.APELLIDOMATERNO,
+                    u.NOMBREUSUARIO,
+                    e.DESCRIPCION,
+                    p.DESCRIPCION,
+                    u.CICLO,
+                    u.EMAIL
+                ORDER BY COUNT(DISTINCT v.IDVISITABIBVIR) DESC
+                """);
+
+        String sqlFinal = sql.toString();
+        System.out.println("[Reporte Visitantes Biblioteca Virtual][Backend] SQL generada:\n" + sqlFinal);
+        System.out.println("[Reporte Visitantes Biblioteca Virtual][Backend] Parámetros SQL: " + params);
+
+        return jdbcTemplate.query(
+                sqlFinal,
+                params.toArray(),
+                (rs, rowNum) -> mapearResumenVisitanteVirtual(new Object[]{
+                        rs.getString("SEDE"),
+                        rs.getString("BASE_DATOS"),
+                        rs.getString("LOGIN_USUARIO"),
+                        rs.getString("CODIGO_VISITA"),
+                        rs.getString("APELLIDOPATERNO"),
+                        rs.getString("APELLIDOMATERNO"),
+                        rs.getString("NOMBREUSUARIO"),
+                        rs.getString("ROL_DESCRIPCION"),
+                        rs.getString("ESPECIALIDAD"),
+                        rs.getString("PROGRAMA"),
+                        rs.getString("CICLO"),
+                        rs.getString("EMAIL"),
+                        rs.getLong("TOTAL_VISITAS")
+                })
+        );
     }
 
     /**
