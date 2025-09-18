@@ -11,5 +11,14 @@ import java.util.Optional;
 public interface EspecialidadRepository extends JpaRepository<Especialidad, Long> {
     List<Especialidad> findByActivoTrue();
 
-    Optional<Especialidad> findByDescripcionIgnoreCase(String descripcion);
+    Optional<Especialidad> findByCodigoEspecialidadIgnoreCase(String codigoEspecialidad);
+
+    Optional<Especialidad> findByCodigoEspecialidadIgnoreCaseAndIdEspecialidadNot(String codigoEspecialidad,
+                                                                                 Long idEspecialidad);
+
+    Optional<Especialidad> findByProgramaIdProgramaAndDescripcionIgnoreCase(Long idPrograma, String descripcion);
+
+    Optional<Especialidad> findByProgramaIdProgramaAndDescripcionIgnoreCaseAndIdEspecialidadNot(Long idPrograma,
+                                                                                                String descripcion,
+                                                                                                Long idEspecialidad);
 }

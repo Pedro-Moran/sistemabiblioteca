@@ -1,7 +1,9 @@
 package com.miapp.service;
 
 import com.miapp.model.Especialidad;
+import com.miapp.model.Programa;
 import com.miapp.repository.EspecialidadRepository;
+import com.miapp.repository.ProgramaRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -11,18 +13,29 @@ import java.util.List;
 public class EspecialidadService {
 
     private final EspecialidadRepository especialidadRepository;
+    private final ProgramaRepository programaRepository;
 
-    public EspecialidadService(EspecialidadRepository especialidadRepository) {
+    public EspecialidadService(EspecialidadRepository especialidadRepository,
+                               ProgramaRepository programaRepository) {
         this.especialidadRepository = especialidadRepository;
+        this.programaRepository = programaRepository;
     }
 
     @Transactional
     public Especialidad create(Especialidad especialidad) {
-        String descripcion = especialidad.getDescripcion().trim();
-        if (especialidadRepository.findByDescripcionIgnoreCase(descripcion).isPresent()) {
-            throw new IllegalArgumentException("La especialidad ya se encuentra registrada");
-        }
+        Programa programa = obtenerPrograma(especialidad.getPrograma());
+        String codigo = normalizarCodigo(especialidad.getCodigoEspecialidad());
+        String descripcion = normalizarDescripcion(especialidad.getDescripcion());
+
+        validarCodigoDuplicado(codigo, null);
+        validarDescripcionDuplicada(programa.getIdPrograma(), descripcion, null);
+
+        especialidad.setPrograma(programa);
+        especialidad.setCodigoEspecialidad(codigo);
         especialidad.setDescripcion(descripcion);
+        if (especialidad.getActivo() == null) {
+            especialidad.setActivo(true);
+        }
         return especialidadRepository.save(especialidad);
     }
 
@@ -56,13 +69,34 @@ public class EspecialidadService {
     @Transactional
     public Especialidad update(Long id, Especialidad datos) {
         Especialidad especialidad = getById(id);
-        String descripcion = datos.getDescripcion().trim();
-        if (!especialidad.getDescripcion().equalsIgnoreCase(descripcion)
-                && especialidadRepository.findByDescripcionIgnoreCase(descripcion).isPresent()) {
-            throw new IllegalArgumentException("La especialidad ya se encuentra registrada");
+
+        if (datos.getPrograma() != null && datos.getPrograma().getIdPrograma() != null
+                && !datos.getPrograma().getIdPrograma().equals(especialidad.getPrograma().getIdPrograma())) {
+            Programa nuevoPrograma = obtenerPrograma(datos.getPrograma());
+            especialidad.setPrograma(nuevoPrograma);
         }
-        especialidad.setDescripcion(descripcion);
-        especialidad.setActivo(datos.getActivo());
+
+        if (datos.getCodigoEspecialidad() != null) {
+            String codigo = normalizarCodigo(datos.getCodigoEspecialidad());
+            if (!codigo.equalsIgnoreCase(especialidad.getCodigoEspecialidad())) {
+                validarCodigoDuplicado(codigo, especialidad.getIdEspecialidad());
+                especialidad.setCodigoEspecialidad(codigo);
+            }
+        }
+
+        if (datos.getDescripcion() != null) {
+            String descripcion = normalizarDescripcion(datos.getDescripcion());
+            if (!descripcion.equalsIgnoreCase(especialidad.getDescripcion())) {
+                validarDescripcionDuplicada(especialidad.getPrograma().getIdPrograma(), descripcion,
+                        especialidad.getIdEspecialidad());
+                especialidad.setDescripcion(descripcion);
+            }
+        }
+
+        if (datos.getActivo() != null) {
+            especialidad.setActivo(datos.getActivo());
+        }
+
         return especialidadRepository.save(especialidad);
     }
 
@@ -73,4 +107,52 @@ public class EspecialidadService {
         especialidadRepository.save(especialidad);
     }
 
+    private Programa obtenerPrograma(Programa programa) {
+        if (programa == null || programa.getIdPrograma() == null) {
+            throw new IllegalArgumentException("El programa asociado es obligatorio");
+        }
+        Long idPrograma = programa.getIdPrograma();
+        return programaRepository.findById(idPrograma)
+                .orElseThrow(() -> new IllegalArgumentException("Programa no encontrado: " + idPrograma));
+    }
+
+    private String normalizarCodigo(String codigo) {
+        if (codigo == null || codigo.isBlank()) {
+            throw new IllegalArgumentException("El código de la especialidad es obligatorio");
+        }
+        return codigo.trim().toUpperCase();
+    }
+
+    private String normalizarDescripcion(String descripcion) {
+        if (descripcion == null || descripcion.isBlank()) {
+            throw new IllegalArgumentException("La descripción de la especialidad es obligatoria");
+        }
+        return descripcion.trim();
+    }
+
+    private void validarCodigoDuplicado(String codigo, Long idExcluir) {
+        boolean existe = idExcluir == null
+                ? especialidadRepository.findByCodigoEspecialidadIgnoreCase(codigo).isPresent()
+                : especialidadRepository
+                        .findByCodigoEspecialidadIgnoreCaseAndIdEspecialidadNot(codigo, idExcluir)
+                        .isPresent();
+        if (existe) {
+            throw new IllegalArgumentException("El código de la especialidad ya se encuentra registrado");
+        }
+    }
+
+    private void validarDescripcionDuplicada(Long idPrograma, String descripcion, Long idExcluir) {
+        boolean existe = idExcluir == null
+                ? especialidadRepository
+                        .findByProgramaIdProgramaAndDescripcionIgnoreCase(idPrograma, descripcion)
+                        .isPresent()
+                : especialidadRepository
+                        .findByProgramaIdProgramaAndDescripcionIgnoreCaseAndIdEspecialidadNot(idPrograma, descripcion,
+                                idExcluir)
+                        .isPresent();
+        if (existe) {
+            throw new IllegalArgumentException(
+                    "La descripción de la especialidad ya se encuentra registrada para el programa seleccionado");
+        }
+    }
 }
