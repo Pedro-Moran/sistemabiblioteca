@@ -44,7 +44,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
                     "        COALESCE(u.nombreUsuario,''))," +
                     " COALESCE(r.descripcion, 'Sin Rol')," +
                     " COALESCE(e.descripcion, '-')," +
-                    " COALESCE(p.descripcion, '-')," +
+                    " COALESCE(p.descripcionPrograma, '-')," +
                     " COALESCE(u.ciclo, '-')," +
                     " COALESCE(u.email, '-')," +
                     " COALESCE(u.loginCount,0)," +
