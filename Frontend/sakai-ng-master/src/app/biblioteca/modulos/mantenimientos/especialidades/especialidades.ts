@@ -12,6 +12,7 @@ import { Table } from 'primeng/table';
   imports: [TemplateModule],
   providers: [MessageService, ConfirmationService],
   template: `
+    <p-toast></p-toast>
     <p-toolbar styleClass="mb-6">
       <ng-template #start>
         <p-button label="Nueva Especialidad" icon="pi pi-plus" (onClick)="openNew()" />
@@ -255,7 +256,7 @@ export class EspecialidadesComponent implements OnInit {
     this.especialidadService.delete(e.id).subscribe({
       next: () => {
         this.load();
-        this.messageService.add({ severity: 'success', summary: 'Eliminado' });
+        this.messageService.add({ severity: 'success', summary: 'Eliminado', detail: 'Registro eliminado' });
       },
       error: err => {
         const detail = err?.error?.message ?? 'No se pudo eliminar la especialidad';
