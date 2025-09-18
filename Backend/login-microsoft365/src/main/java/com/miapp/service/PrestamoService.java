@@ -652,28 +652,62 @@ public class PrestamoService {
         String programaNormalizado = normalizarFiltroTexto(codigoPrograma);
         String cicloNormalizado = normalizarFiltroTexto(ciclo);
 
+        // Usa la marca temporal más reciente disponible (salida, ingreso o registro) para filtrar dentro del rango solicitado.
         StringBuilder sql = new StringBuilder("""
-                WITH VISITAS_AGRUPADAS AS (
+                WITH VISITAS_BASE AS (
                     SELECT
                         TRIM(UPPER(v.CODIGOUSUARIO)) AS CODIGO_VISITA,
                         TRIM(v.CODIGOUSUARIO) AS CODIGO_VISITA_ORIGINAL,
                         v.IDBIBVIR,
-                        COUNT(*) AS TOTAL_VISITAS,
-                        SUM(COUNT(*)) OVER (PARTITION BY TRIM(UPPER(v.CODIGOUSUARIO))) AS TOTAL_SESIONES
+                        GREATEST(
+                            COALESCE(CAST(v.HORASALIDA AS TIMESTAMP), TIMESTAMP '1970-01-01 00:00:00'),
+                            COALESCE(CAST(v.HORAINGRESO AS TIMESTAMP), TIMESTAMP '1970-01-01 00:00:00'),
+                            COALESCE(CAST(v.FECHAREGISTRO AS TIMESTAMP), TIMESTAMP '1970-01-01 00:00:00')
+                        ) AS FECHA_REFERENCIA,
+                        TRIM(UPPER(v.CODIGOSEDE)) AS CODIGO_SEDE,
+                        v.TIPOUSUARIO,
+                        TRIM(UPPER(v.CODIGOESPECIALIDAD)) AS CODIGO_ESCUELA,
+                        TRIM(UPPER(v.PROGRAMA)) AS CODIGO_PROGRAMA,
+                        TRIM(UPPER(v.CICLO)) AS CODIGO_CICLO
                     FROM VISITASBIBVIR v
                     WHERE v.CODIGOUSUARIO IS NOT NULL
                       AND TRIM(v.CODIGOUSUARIO) <> ''
+                ),
+                VISITAS_FILTRADAS AS (
+                    SELECT
+                        CODIGO_VISITA,
+                        CODIGO_VISITA_ORIGINAL,
+                        IDBIBVIR,
+                        FECHA_REFERENCIA
+                    FROM VISITAS_BASE vf
+                    WHERE 1 = 1
                 """);
 
         List<Object> params = new ArrayList<>();
         aplicarFiltrosVisitas(sql, params, fechaInicio, fechaFinExclusiva,
-                sedeNormalizada, tipoUsuario, escuelaNormalizada, programaNormalizado, cicloNormalizado, baseId);
+                sedeNormalizada, tipoUsuario, escuelaNormalizada, programaNormalizado, cicloNormalizado, baseId,
+                "vf");
 
         sql.append("""
+                ),
+                VISITAS_AGRUPADAS AS (
+                    SELECT
+                        CODIGO_VISITA,
+                        CODIGO_VISITA_ORIGINAL,
+                        IDBIBVIR,
+                        COUNT(*) AS TOTAL_VISITAS
+                    FROM VISITAS_FILTRADAS
                     GROUP BY
-                        TRIM(UPPER(v.CODIGOUSUARIO)),
-                        TRIM(v.CODIGOUSUARIO),
-                        v.IDBIBVIR
+                        CODIGO_VISITA,
+                        CODIGO_VISITA_ORIGINAL,
+                        IDBIBVIR
+                ),
+                SESIONES_POR_USUARIO AS (
+                    SELECT
+                        CODIGO_VISITA,
+                        SUM(TOTAL_VISITAS) AS TOTAL_SESIONES
+                    FROM VISITAS_AGRUPADAS
+                    GROUP BY CODIGO_VISITA
                 )
                 SELECT
                     s.DESCRIPCION AS SEDE,
@@ -689,8 +723,9 @@ public class PrestamoService {
                     u.CICLO,
                     u.EMAIL,
                     va.TOTAL_VISITAS,
-                    va.TOTAL_SESIONES
+                    COALESCE(su.TOTAL_SESIONES, va.TOTAL_VISITAS) AS TOTAL_SESIONES
                 FROM VISITAS_AGRUPADAS va
+                LEFT JOIN SESIONES_POR_USUARIO su ON su.CODIGO_VISITA = va.CODIGO_VISITA
                 LEFT JOIN USUARIO u ON (
                         UPPER(TRIM(u.LOGIN)) = va.CODIGO_VISITA
                      OR UPPER(TRIM(u.EMAIL)) = va.CODIGO_VISITA
@@ -733,15 +768,19 @@ public class PrestamoService {
                     u.CICLO,
                     u.EMAIL,
                     va.TOTAL_VISITAS,
-                    va.TOTAL_SESIONES
+                    su.TOTAL_SESIONES
                 ORDER BY
-                    va.TOTAL_SESIONES DESC,
+                    TOTAL_SESIONES DESC,
                     va.TOTAL_VISITAS DESC,
                     va.CODIGO_VISITA_ORIGINAL
                 """);
 
+        String sqlFinal = sql.toString();
+        System.out.println("[Reporte Visitantes Biblioteca Virtual][Backend] SQL generada:\n" + sqlFinal);
+        System.out.println("[Reporte Visitantes Biblioteca Virtual][Backend] Parámetros SQL: " + params);
+
         List<VisitanteBibliotecaVirtualDTO> filas = jdbcTemplate.query(
-                sql.toString(),
+                sqlFinal,
                 params.toArray(),
                 (rs, rowNum) -> mapearResumenVisitanteVirtual(rs)
         );
@@ -769,79 +808,44 @@ public class PrestamoService {
                                        String escuelaNormalizada,
                                        String programaNormalizado,
                                        String cicloNormalizado,
-                                       Long baseId) {
+                                       Long baseId,
+                                       String aliasTabla) {
+        String fechaReferenciaExpr = aliasTabla + ".FECHA_REFERENCIA";
         if (fechaInicio != null) {
-            sql.append(" AND COALESCE(v.FECHAREGISTRO, v.HORAINGRESO, v.HORASALIDA) >= ?");
+            sql.append(" AND ").append(fechaReferenciaExpr).append(" >= ?\n");
             params.add(java.sql.Timestamp.valueOf(fechaInicio));
         }
         if (fechaFinExclusiva != null) {
-            sql.append(" AND COALESCE(v.FECHAREGISTRO, v.HORAINGRESO, v.HORASALIDA) < ?");
+            sql.append(" AND ").append(fechaReferenciaExpr).append(" < ?\n");
             params.add(java.sql.Timestamp.valueOf(fechaFinExclusiva));
         }
         if (sedeNormalizada != null) {
-            sql.append(" AND TRIM(UPPER(v.CODIGOSEDE)) = ?");
+            sql.append(" AND ").append(aliasTabla).append(".CODIGO_SEDE = ?\n");
             params.add(sedeNormalizada);
         }
         if (tipoUsuario != null && tipoUsuario != 0) {
-            sql.append(" AND v.TIPOUSUARIO = ?");
+            sql.append(" AND ").append(aliasTabla).append(".TIPOUSUARIO = ?\n");
             params.add(tipoUsuario);
         }
         if (escuelaNormalizada != null) {
-            sql.append(" AND TRIM(UPPER(v.CODIGOESPECIALIDAD)) = ?");
+            sql.append(" AND ").append(aliasTabla).append(".CODIGO_ESCUELA = ?\n");
             params.add(escuelaNormalizada);
         }
         if (programaNormalizado != null) {
-            sql.append(" AND TRIM(UPPER(v.PROGRAMA)) = ?");
+            sql.append(" AND ").append(aliasTabla).append(".CODIGO_PROGRAMA = ?\n");
             params.add(programaNormalizado);
         }
         if (cicloNormalizado != null) {
-            sql.append(" AND TRIM(UPPER(v.CICLO)) = ?");
+            sql.append(" AND ").append(aliasTabla).append(".CODIGO_CICLO = ?\n");
             params.add(cicloNormalizado);
         }
         if (baseId != null && baseId != 0L) {
-            sql.append(" AND v.IDBIBVIR = ?");
+            sql.append(" AND ").append(aliasTabla).append(".IDBIBVIR = ?\n");
             params.add(baseId);
         }
 
-        sql.append("""
-                GROUP BY
-                    s.DESCRIPCION,
-                    tbv.NOMBRE,
-                    u.LOGIN,
-                    TRIM(v.CODIGOUSUARIO),
-                    u.APELLIDOPATERNO,
-                    u.APELLIDOMATERNO,
-                    u.NOMBREUSUARIO,
-                    e.DESCRIPCION,
-                    p.DESCRIPCION,
-                    u.CICLO,
-                    u.EMAIL
-                ORDER BY COUNT(DISTINCT v.IDVISITABIBVIR) DESC
-                """);
-
-        String sqlFinal = sql.toString();
-        System.out.println("[Reporte Visitantes Biblioteca Virtual][Backend] SQL generada:\n" + sqlFinal);
-        System.out.println("[Reporte Visitantes Biblioteca Virtual][Backend] Parámetros SQL: " + params);
-
-        return jdbcTemplate.query(
-                sqlFinal,
-                params.toArray(),
-                (rs, rowNum) -> mapearResumenVisitanteVirtual(new Object[]{
-                        rs.getString("SEDE"),
-                        rs.getString("BASE_DATOS"),
-                        rs.getString("LOGIN_USUARIO"),
-                        rs.getString("CODIGO_VISITA"),
-                        rs.getString("APELLIDOPATERNO"),
-                        rs.getString("APELLIDOMATERNO"),
-                        rs.getString("NOMBREUSUARIO"),
-                        rs.getString("ROL_DESCRIPCION"),
-                        rs.getString("ESPECIALIDAD"),
-                        rs.getString("PROGRAMA"),
-                        rs.getString("CICLO"),
-                        rs.getString("EMAIL"),
-                        rs.getLong("TOTAL_VISITAS")
-                })
-        );
+        // Solo aplica filtros dinámicos sobre el CTE VISITAS_FILTRADAS (alias vf).
+        // El armado del SELECT final y la ejecución se realizan en el método llamante.
     }
 
     /**
