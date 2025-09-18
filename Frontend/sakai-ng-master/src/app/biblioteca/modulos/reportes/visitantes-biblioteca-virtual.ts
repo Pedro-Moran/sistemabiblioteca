@@ -98,6 +98,20 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
             </form>
 
     </p-toolbar>
+    <div *ngIf="busquedaRealizada" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div class="surface-card shadow-1 border-round p-4 flex flex-col gap-2">
+            <span class="text-sm text-color-secondary">Total de inicios de sesión</span>
+            <span class="text-2xl font-semibold">{{ resumen.totalSesiones | number:'1.0-0' }}</span>
+        </div>
+        <div class="surface-card shadow-1 border-round p-4 flex flex-col gap-2">
+            <span class="text-sm text-color-secondary">Usuarios únicos</span>
+            <span class="text-2xl font-semibold">{{ resumen.usuariosUnicos | number:'1.0-0' }}</span>
+        </div>
+        <div class="surface-card shadow-1 border-round p-4 flex flex-col gap-2">
+            <span class="text-sm text-color-secondary">Promedio por usuario</span>
+            <span class="text-2xl font-semibold">{{ resumen.promedioSesiones | number:'1.1-1' }}</span>
+        </div>
+    </div>
     <p-table [value]="resultados" [paginator]="true" [rows]="10" [loading]="loading">
         <ng-template pTemplate="header">
             <tr>
@@ -110,7 +124,8 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
                 <th>Programa</th>
                 <th>Ciclo</th>
                 <th>Correo</th>
-                <th>Total visitas</th>
+                <th>Ingresos en la base</th>
+                <th>Total inicios (usuario)</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-row>
@@ -125,11 +140,12 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
                 <td>{{ row.ciclo }}</td>
                 <td>{{ row.correo }}</td>
                 <td>{{ row.totalVisitas }}</td>
+                <td>{{ row.totalSesiones }}</td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="10">
+                <td colspan="11">
                     {{ busquedaRealizada ? 'No se encontraron registros.' : 'Seleccione un rango de fechas para mostrar resultados.' }}
                 </td>
             </tr>
@@ -165,6 +181,11 @@ export class ReporteVisitantesBibliotecaVirtual {
     resultados: VisitanteBibliotecaVirtualDTO[] = [];
     busquedaRealizada: boolean = false;
     form: FormGroup;
+    resumen = {
+        totalSesiones: 0,
+        usuariosUnicos: 0,
+        promedioSesiones: 0,
+    };
 
     constructor(private svc: PrestamosService, private messageService: MessageService, private filtrosService: ReportesFiltroService, private fb: FormBuilder) {
         this.form = this.fb.group({
@@ -223,11 +244,14 @@ export class ReporteVisitantesBibliotecaVirtual {
     }
     async reporte() {
         if (this.form.invalid) {
+            this.reiniciarResumen();
             this.messageService.add({ severity: 'warn', detail: 'Seleccione un rango de fechas.' });
             return;
         }
         this.loading = true;
         this.busquedaRealizada = true;
+        this.resultados = [];
+        this.reiniciarResumen();
         const { fechaInicio, fechaFin } = this.form.value as { fechaInicio: Date; fechaFin: Date };
         if (fechaInicio && fechaFin && fechaInicio.getTime() > fechaFin.getTime()) {
             this.loading = false;
@@ -246,16 +270,14 @@ export class ReporteVisitantesBibliotecaVirtual {
             baseDatos: this.normalizarId(this.basededatosFiltro?.id)
         };
         try {
-            console.log('[Reporte Visitantes Biblioteca Virtual] Filtros normalizados enviados:', filtros);
-            const respuesta = (await firstValueFrom(this.svc.reporteVisitantesBibliotecaVirtual(filtros))) ?? [];
-            console.log('[Reporte Visitantes Biblioteca Virtual] Respuesta cruda del servicio:', respuesta);
-            const resultados = Array.isArray(respuesta) ? respuesta : [];
-            console.log('[Reporte Visitantes Biblioteca Virtual] Total de registros recibidos:', resultados.length);
-            this.resultados = resultados;
+            this.resultados = (await firstValueFrom(this.svc.reporteVisitantesBibliotecaVirtual(filtros))) ?? [];
+            this.actualizarResumen();
         } catch (error: any) {
             console.error('[Reporte Visitantes Biblioteca Virtual] Error al obtener datos:', error);
             const msg = error?.status === 403 ? 'No autorizado para ver el reporte.' : 'No fue posible cargar los datos.';
             this.messageService.add({ severity: 'error', detail: msg });
+            this.resultados = [];
+            this.reiniciarResumen();
         } finally {
             this.loading = false;
         }
@@ -313,5 +335,48 @@ export class ReporteVisitantesBibliotecaVirtual {
             }
         }
         return { opciones, seleccion };
+    }
+
+    private reiniciarResumen(): void {
+        this.resumen = {
+            totalSesiones: 0,
+            usuariosUnicos: 0,
+            promedioSesiones: 0,
+        };
+    }
+
+    private actualizarResumen(): void {
+        if (!Array.isArray(this.resultados) || this.resultados.length === 0) {
+            this.reiniciarResumen();
+            return;
+        }
+        const acumulado = new Map<string, number>();
+        for (const fila of this.resultados) {
+            const clave = this.obtenerClaveUsuario(fila);
+            if (!acumulado.has(clave)) {
+                const sesiones = Number(fila?.totalSesiones ?? fila?.totalVisitas ?? 0);
+                acumulado.set(clave, Number.isFinite(sesiones) ? sesiones : 0);
+            }
+        }
+        const usuariosUnicos = acumulado.size;
+        const totalSesiones = Array.from(acumulado.values()).reduce((sum, valor) => sum + valor, 0);
+        const promedio = usuariosUnicos > 0 ? totalSesiones / usuariosUnicos : 0;
+        this.resumen = {
+            totalSesiones,
+            usuariosUnicos,
+            promedioSesiones: promedio,
+        };
+    }
+
+    private obtenerClaveUsuario(fila: VisitanteBibliotecaVirtualDTO): string {
+        const codigo = fila?.codigo?.trim();
+        if (codigo) {
+            return codigo.toUpperCase();
+        }
+        const correo = fila?.correo?.trim();
+        if (correo) {
+            return correo.toUpperCase();
+        }
+        return 'SIN_CODIGO';
     }
 }

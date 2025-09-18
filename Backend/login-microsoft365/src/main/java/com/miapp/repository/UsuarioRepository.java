@@ -47,6 +47,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
                     " COALESCE(p.descripcion, '-')," +
                     " COALESCE(u.ciclo, '-')," +
                     " COALESCE(u.email, '-')," +
+                    " COALESCE(u.loginCount,0)," +
                     " COALESCE(u.loginCount,0) )" +
                     "FROM Usuario u " +
                     "LEFT JOIN Sede s ON u.idSede = s.id " +
