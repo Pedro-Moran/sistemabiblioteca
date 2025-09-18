@@ -19,7 +19,7 @@ export class ProgramaService {
 
   list(): Observable<Programa[]> {
     return this.http
-      .get<{ data: any[] }>(`${this.apiUrl}/programa/lista-activo`, { headers: this.headers() })
+      .get<{ data: any[] }>(`${this.apiUrl}/programa/lista`, { headers: this.headers() })
       .pipe(
         map(res =>
           res.data.map(p =>
@@ -27,11 +27,28 @@ export class ProgramaService {
               id: p.idPrograma,
               programa: p.programa,
               descripcionPrograma: p.descripcionPrograma,
-              activo: p.activo
+              activo: this.normalizeActivo(p.activo)
             })
           )
         )
       );
+  }
+
+  private normalizeActivo(value: unknown): boolean {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+
+    if (typeof value === 'number') {
+      return value === 1;
+    }
+
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      return normalized === '1' || normalized === 'true' || normalized === 't';
+    }
+
+    return false;
   }
 
   private toPayload(programa: Programa) {
@@ -52,7 +69,7 @@ export class ProgramaService {
             id: res.data.idPrograma,
             programa: res.data.programa,
             descripcionPrograma: res.data.descripcionPrograma,
-            activo: res.data.activo
+            activo: this.normalizeActivo(res.data.activo)
           })
         )
       );
@@ -67,7 +84,7 @@ export class ProgramaService {
             id: res.data.idPrograma,
             programa: res.data.programa,
             descripcionPrograma: res.data.descripcionPrograma,
-            activo: res.data.activo
+            activo: this.normalizeActivo(res.data.activo)
           })
         )
       );

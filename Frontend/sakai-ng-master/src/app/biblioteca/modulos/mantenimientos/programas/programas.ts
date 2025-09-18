@@ -96,7 +96,7 @@ import { Table } from 'primeng/table';
 export class ProgramasComponent implements OnInit {
   programas: Programa[] = [];
   dialog = false;
-  programa: Programa = new Programa();
+  programa: Programa = new Programa({ activo: true });
   loading = false;
   @ViewChild('filter') filter!: ElementRef;
 
@@ -119,12 +119,12 @@ export class ProgramasComponent implements OnInit {
   }
 
   openNew() {
-    this.programa = new Programa();
+    this.programa = new Programa({ activo: true });
     this.dialog = true;
   }
 
   edit(p: Programa) {
-    this.programa = { ...p };
+    this.programa = new Programa(p);
     this.dialog = true;
   }
 
@@ -156,6 +156,7 @@ export class ProgramasComponent implements OnInit {
 
   hideDialog() {
     this.dialog = false;
+    this.programa = new Programa({ activo: true });
   }
 
   onGlobalFilter(table: Table, event: Event) {

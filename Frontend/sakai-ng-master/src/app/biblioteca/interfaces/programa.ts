@@ -7,7 +7,7 @@ export class Programa {
         this.id = 0;
         this.programa = '';
         this.descripcionPrograma = '';
-        this.activo = false;
+        this.activo = true;
         Object.assign(this, init);
     }
 }
