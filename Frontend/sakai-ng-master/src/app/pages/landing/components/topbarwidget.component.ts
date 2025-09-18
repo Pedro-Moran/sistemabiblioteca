@@ -1,13 +1,57 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
 import { Router, RouterModule } from '@angular/router';
 import { RippleModule } from 'primeng/ripple';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+
+import { AuthService } from '../../../biblioteca/services/auth.service';
+import { MicrosoftLoginViewModel } from '../../auth/microsoft-login.viewmodel';
 
 @Component({
     selector: 'topbar-widget',
-    imports: [RouterModule, StyleClassModule, ButtonModule, RippleModule],
-    template: `<a class="flex items-center" href="#">
+    imports: [CommonModule, RouterModule, StyleClassModule, ButtonModule, RippleModule, DialogModule],
+    styles: [`
+        :host ::ng-deep .role-dialog {
+            opacity: 0;
+            transform: scale(0.85);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        :host ::ng-deep .role-dialog.p-dialog-visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+    `],
+    template: `<p-dialog
+            [(visible)]="vm.roleDialogVisible"
+            [modal]="true"
+            [closable]="false"
+            [appendTo]="'body'"
+            [style]="{ width: '24rem' }"
+            styleClass="role-dialog"
+        >
+            <ng-template pTemplate="header">
+                <div class="w-full text-center">
+                    <span class="text-red-600 uppercase font-semibold">Seleccionar usuario</span>
+                </div>
+            </ng-template>
+            <div class="flex flex-col gap-2 w-full">
+                <button
+                    *ngFor="let role of vm.userRoles"
+                    (click)="vm.selectRole(role.value)"
+                    class="w-full border border-gray-300 py-3 text-center uppercase font-medium text-gray-700 hover:text-red-600 hover:border-red-600 transition-colors cursor-pointer"
+                >
+                    {{ role.label }}
+                </button>
+            </div>
+            <div class="mt-4 text-sm font-semibold text-center">
+                <span class="text-gray-700">Usuario:</span>
+                <span class="text-red-600">{{ vm.userEmail }}</span>
+            </div>
+        </p-dialog>
+        <a class="flex items-center" href="#">
             <svg viewBox="0 0 54 40" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-12 mr-2">
                 <path
                     fill-rule="evenodd"
@@ -61,11 +105,40 @@ import { ButtonModule } from 'primeng/button';
                 </li>
             </ul>
             <div class="flex border-t lg:border-t-0 border-surface py-4 lg:py-0 mt-4 lg:mt-0 gap-2">
-                <button pButton pRipple label="Iniciar sesión" routerLink="/auth/login" [rounded]="true" [text]="true"></button>
-                <button pButton pRipple label="Registrate" routerLink="/auth/login" [rounded]="true"></button>
+                <ng-container *ngIf="!vm.showUserActions; else loggedActions">
+                    <button
+                        pButton
+                        pRipple
+                        label="Iniciar sesión con Microsoft365"
+                        [rounded]="true"
+                        (click)="vm.startMicrosoftLogin()"
+                        [loading]="vm.loading"
+                    ></button>
+                </ng-container>
+                <ng-template #loggedActions>
+                    <button
+                        pButton
+                        pRipple
+                        [label]="vm.displayName"
+                        [rounded]="true"
+                        [text]="true"
+                        (click)="vm.openRoleDialog()"
+                    ></button>
+                    <button
+                        pButton
+                        pRipple
+                        label="Cerrar sesión"
+                        [rounded]="true"
+                        (click)="vm.logout()"
+                    ></button>
+                </ng-template>
             </div>
         </div> `
 })
 export class TopbarWidget {
-    constructor(public router: Router) {}
+    vm: MicrosoftLoginViewModel;
+
+    constructor(public router: Router, private authService: AuthService) {
+        this.vm = new MicrosoftLoginViewModel(this.authService, this.router);
+    }
 }

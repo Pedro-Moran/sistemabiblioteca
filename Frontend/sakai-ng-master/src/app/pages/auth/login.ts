@@ -1,11 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
-import { CheckboxModule } from 'primeng/checkbox';
-import { InputTextModule } from 'primeng/inputtext';
-import { PasswordModule } from 'primeng/password';
 import { DialogModule } from 'primeng/dialog';
 import { RippleModule } from 'primeng/ripple';
 import { AppFloatingConfigurator } from '../../layout/component/app.floatingconfigurator';
@@ -23,11 +19,7 @@ export interface LoginCredentials {
   imports: [
     CommonModule,
     ButtonModule,
-    CheckboxModule,
-    InputTextModule,
-    PasswordModule,
     DialogModule,
-    FormsModule,
     RouterModule,
     RippleModule,
     AppFloatingConfigurator
@@ -67,35 +59,20 @@ export interface LoginCredentials {
           <div class="w-full bg-surface-0 dark:bg-surface-900 py-12 px-8 sm:px-12" style="border-radius: 53px">
             <div class="text-center mb-8">
               <img src="assets/logo.png" alt="Logo" class="mb-8 w-30 shrink-0 mx-auto" />
-              <span class="text-muted-color font-medium mb-4">Inicia sesión para continuar</span>
-              <div class="flex justify-center w-full mt-4">
-                <p-button label="Iniciar sesión con Microsoft365" styleClass="w-full sm:w-auto" (click)="loginWithMicrosoft()"></p-button>
-              </div>
-              <div class="flex items-center my-4">
-                <div class="flex-grow border-t border-gray-300"></div>
-                <span class="mx-4 text-gray-500">O</span>
-                <div class="flex-grow border-t border-gray-300"></div>
-              </div>
+              <span class="block text-muted-color font-medium">Inicia sesión con tu cuenta institucional</span>
             </div>
-            <div class="flex flex-col gap-4">
-              <div>
-                <label for="email" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Correo electrónico</label>
-                <input pInputText id="email" type="text" placeholder="Email address" class="w-full" [(ngModel)]="credentials.email" name="email" />
+            <div class="flex flex-col gap-6 items-center">
+              <p-button
+                label="Iniciar sesión con Microsoft365"
+                styleClass="w-full sm:w-auto"
+                (click)="loginWithMicrosoft()"
+                [loading]="loadingMicrosoft"
+              ></p-button>
+              <div class="text-sm text-center text-gray-500">
+                Usa el botón superior para autenticarte con Microsoft 365. Tras elegir tu perfil,
+                serás redirigido automáticamente al panel principal.
               </div>
-
-              <div>
-                <label for="password" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Contraseña</label>
-                <p-password id="password" [(ngModel)]="credentials.password" placeholder="Contraseña" [toggleMask]="true" [fluid]="true" [feedback]="false"></p-password>
-              </div>
-
-              <div class="flex items-center justify-between mt-2 mb-4 gap-4">
-                <div class="flex items-center">
-                  <p-checkbox [(ngModel)]="checked" id="rememberme1" binary class="mr-2"></p-checkbox>
-                  <label for="rememberme1">Recordarme</label>
-                </div>
-                <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary" (click)="onForgotPassword()">¿Olvidaste tu contraseña?</span>
-              </div>
-              <p-button label="Iniciar sesión" styleClass="w-full" (click)="onLogin()"></p-button>
+              <span class="font-medium text-center text-primary cursor-pointer" (click)="onForgotPassword()">¿Olvidaste tu contraseña?</span>
             </div>
           </div>
         </div>
@@ -121,10 +98,15 @@ export class Login implements OnInit {
   credentials: LoginCredentials = { email: '', password: '', role: '' };
   roleDialogVisible = false;
   msToken: string = '';
+  loadingMicrosoft = false;
 
   constructor(private authService: AuthService, private router: Router) {}
 
   loginWithMicrosoft() {
+    if (this.loadingMicrosoft) {
+      return;
+    }
+    this.loadingMicrosoft = true;
     this.authService.getMicrosoftToken().subscribe({
       next: ({ email, token }) => {
         this.credentials.email = email;
@@ -137,16 +119,19 @@ export class Login implements OnInit {
             } else {
               this.selectRole(this.userRoles[0].value);
             }
+            this.loadingMicrosoft = false;
           },
           error: () => {
             this.userRoles = [{ label: 'ESTUDIANTE', value: 'ESTUDIANTE' }];
             this.selectRole('ESTUDIANTE');
+            this.loadingMicrosoft = false;
           }
         });
       },
       error: (error) => {
         console.error('Error en la autenticación con Microsoft:', error);
         alert(this.authService.obtenerMensajeError(error));
+        this.loadingMicrosoft = false;
       },
     });
   }
