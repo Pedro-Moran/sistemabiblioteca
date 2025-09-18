@@ -100,7 +100,7 @@ import { Ciudad } from '../../interfaces/material-bibliografico/ciudad';
                                         </div>
                                         <div class="flex flex-col gap-2">
                                             <label for="programa" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Programa</label>
-                                            <p-dropdown id="programa" [options]="programas" optionLabel="descripcion" optionValue="idPrograma" formControlName="programa" placeholder="Seleccione" [showClear]="true"></p-dropdown>
+                                            <p-dropdown id="programa" [options]="programas" optionLabel="descripcionPrograma" optionValue="idPrograma" formControlName="programa" placeholder="Seleccione" [showClear]="true"></p-dropdown>
                                         </div>
                                         <div class="flex flex-col gap-2">
                                             <label for="especialidad" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Especialidad</label>
@@ -186,7 +186,7 @@ export class PortalRegistrate implements OnInit {
         { code: '00', label: 'Otros' }
     ];
     roles: { idRol: number; descripcion: string }[] = [];
-    programas: { idPrograma: number; descripcion: string }[] = [];
+    programas: { idPrograma: number; programa: string; descripcionPrograma: string }[] = [];
     especialidades: { idEspecialidad: number; descripcion: string }[] = [];
     ciclos: { label: string; value: string | null }[] = [];
     paises: Pais[] = [];

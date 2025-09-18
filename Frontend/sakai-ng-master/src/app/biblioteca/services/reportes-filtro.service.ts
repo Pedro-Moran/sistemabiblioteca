@@ -117,7 +117,7 @@ export class ReportesFiltroService {
             (p) =>
               new ClaseGeneral({
                 id: p.idPrograma,
-                descripcion: p.descripcion,
+                descripcion: p.descripcionPrograma,
                 activo: true,
                 estado: 1,
               })

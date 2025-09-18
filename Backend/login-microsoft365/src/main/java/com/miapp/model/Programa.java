@@ -16,7 +16,11 @@ public class Programa {
     @Column(name = "IDPROGRAMA")
     private Long idPrograma;
 
-    private String descripcion;
+    @Column(name = "PROGRAMA", length = 20, nullable = false)
+    private String programa;
+
+    @Column(name = "DESCRIPCION_PROGRAMA", length = 150, nullable = false)
+    private String descripcionPrograma;
 
     @Column(name = "ACTIVO", columnDefinition = "NUMBER(1)")
     private Boolean activo = true;

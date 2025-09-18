@@ -1,10 +1,12 @@
 export class Programa {
     id: number;
-    descripcion: string;
+    programa: string;
+    descripcionPrograma: string;
     activo: boolean;
     constructor(init?: Partial<Programa>) {
         this.id = 0;
-        this.descripcion = '';
+        this.programa = '';
+        this.descripcionPrograma = '';
         this.activo = false;
         Object.assign(this, init);
     }
