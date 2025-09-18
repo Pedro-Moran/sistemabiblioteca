@@ -742,8 +742,12 @@ public class PrestamoService {
                 ORDER BY COUNT(DISTINCT v.IDVISITABIBVIR) DESC
                 """);
 
+        String sqlFinal = sql.toString();
+        System.out.println("[Reporte Visitantes Biblioteca Virtual][Backend] SQL generada:\n" + sqlFinal);
+        System.out.println("[Reporte Visitantes Biblioteca Virtual][Backend] Parámetros SQL: " + params);
+
         return jdbcTemplate.query(
-                sql.toString(),
+                sqlFinal,
                 params.toArray(),
                 (rs, rowNum) -> mapearResumenVisitanteVirtual(new Object[]{
                         rs.getString("SEDE"),

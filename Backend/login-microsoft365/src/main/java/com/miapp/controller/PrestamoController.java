@@ -264,6 +264,7 @@ public class PrestamoController {
     private static final DateTimeFormatter FORMATO_DD_MM_YYYY_GUION = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     private static final DateTimeFormatter FORMATO_LOCALE_GMT =
             DateTimeFormatter.ofPattern("EEE MMM dd yyyy HH:mm:ss 'GMT'XXX", Locale.ENGLISH);
+    private static final DateTimeFormatter FORMATO_LOG = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private LocalDateTime parseDate(String dateStr, boolean endExclusive) {
         LocalDate baseDate = resolveLocalDate(dateStr);
@@ -272,6 +273,24 @@ public class PrestamoController {
         }
         LocalDateTime start = baseDate.atStartOfDay();
         return endExclusive ? start.plusDays(1) : start;
+    }
+
+    private String describirRangoConsulta(LocalDateTime inicio, LocalDateTime finExclusiva) {
+        String inicioLegible = formatearFechaLog(inicio);
+        if (finExclusiva == null) {
+            return inicioLegible + " → sin fecha fin";
+        }
+        LocalDateTime finInclusivo = finExclusiva.minusSeconds(1);
+        return inicioLegible
+                + " → "
+                + formatearFechaLog(finInclusivo)
+                + " (límite exclusivo: "
+                + formatearFechaLog(finExclusiva)
+                + ')';
+    }
+
+    private String formatearFechaLog(LocalDateTime valor) {
+        return valor != null ? valor.format(FORMATO_LOG) : "sin fecha";
     }
 
     private LocalDate resolveLocalDate(String dateStr) {
@@ -333,19 +352,45 @@ public class PrestamoController {
         LocalDateTime inicio = parseDate(fechaInicio, false);
         LocalDateTime finExclusiva = parseDate(fechaFin, true);
 
-        List<com.miapp.model.dto.VisitanteBibliotecaVirtualDTO> lista =
-                prestamoService.reporteVisitantesBibliotecaVirtual(
-                        inicio,
-                        finExclusiva,
-                        codigo,
-                        sede,
-                        tipoUsuario,
-                        escuela,
-                        programa,
-                        ciclo,
-                        baseDatos
-                );
-        return ResponseEntity.ok(Map.of("status","0","data", lista));
+        Map<String, Object> filtros = new HashMap<>();
+        filtros.put("fechaInicio", inicio);
+        filtros.put("fechaFin", finExclusiva);
+        filtros.put("codigo", codigo);
+        filtros.put("sede", sede);
+        filtros.put("tipoUsuario", tipoUsuario);
+        filtros.put("escuela", escuela);
+        filtros.put("programa", programa);
+        filtros.put("ciclo", ciclo);
+        filtros.put("baseDatos", baseDatos);
+        System.out.println("[Reporte Visitantes Biblioteca Virtual][Backend] Filtros recibidos: " + filtros);
+        System.out.println("[Reporte Visitantes Biblioteca Virtual][Backend] Rango consultado (inclusive): "
+                + describirRangoConsulta(inicio, finExclusiva));
+
+        try {
+            List<com.miapp.model.dto.VisitanteBibliotecaVirtualDTO> lista =
+                    prestamoService.reporteVisitantesBibliotecaVirtual(
+                            inicio,
+                            finExclusiva,
+                            codigo,
+                            sede,
+                            tipoUsuario,
+                            escuela,
+                            programa,
+                            ciclo,
+                            baseDatos
+                    );
+            System.out.println(
+                    "[Reporte Visitantes Biblioteca Virtual][Backend] Registros devueltos: "
+                            + (lista != null ? lista.size() : 0)
+            );
+            System.out.println("[Reporte Visitantes Biblioteca Virtual][Backend] Respuesta cruda: " + lista);
+            return ResponseEntity.ok(Map.of("status","0","data", lista));
+        } catch (RuntimeException ex) {
+            System.out.println(
+                    "[Reporte Visitantes Biblioteca Virtual][Backend] Error al obtener datos: " + ex.getMessage()
+            );
+            throw ex;
+        }
     }
 
     /** Reporte agregado por día de visitantes de biblioteca virtual */

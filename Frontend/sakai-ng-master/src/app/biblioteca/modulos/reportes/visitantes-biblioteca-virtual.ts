@@ -246,8 +246,14 @@ export class ReporteVisitantesBibliotecaVirtual {
             baseDatos: this.normalizarId(this.basededatosFiltro?.id)
         };
         try {
-            this.resultados = (await firstValueFrom(this.svc.reporteVisitantesBibliotecaVirtual(filtros))) ?? [];
+            console.log('[Reporte Visitantes Biblioteca Virtual] Filtros normalizados enviados:', filtros);
+            const respuesta = (await firstValueFrom(this.svc.reporteVisitantesBibliotecaVirtual(filtros))) ?? [];
+            console.log('[Reporte Visitantes Biblioteca Virtual] Respuesta cruda del servicio:', respuesta);
+            const resultados = Array.isArray(respuesta) ? respuesta : [];
+            console.log('[Reporte Visitantes Biblioteca Virtual] Total de registros recibidos:', resultados.length);
+            this.resultados = resultados;
         } catch (error: any) {
+            console.error('[Reporte Visitantes Biblioteca Virtual] Error al obtener datos:', error);
             const msg = error?.status === 403 ? 'No autorizado para ver el reporte.' : 'No fue posible cargar los datos.';
             this.messageService.add({ severity: 'error', detail: msg });
         } finally {
