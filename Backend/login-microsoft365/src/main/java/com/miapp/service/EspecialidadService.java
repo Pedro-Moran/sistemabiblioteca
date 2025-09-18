@@ -2,11 +2,15 @@ package com.miapp.service;
 
 import com.miapp.model.Especialidad;
 import com.miapp.model.Programa;
+import com.miapp.repository.BibliotecaRepository;
 import com.miapp.repository.EspecialidadRepository;
+import com.miapp.repository.MaterialBibliograficoRepository;
 import com.miapp.repository.ProgramaRepository;
+import com.miapp.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -14,11 +18,20 @@ public class EspecialidadService {
 
     private final EspecialidadRepository especialidadRepository;
     private final ProgramaRepository programaRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final BibliotecaRepository bibliotecaRepository;
+    private final MaterialBibliograficoRepository materialBibliograficoRepository;
 
     public EspecialidadService(EspecialidadRepository especialidadRepository,
-                               ProgramaRepository programaRepository) {
+                               ProgramaRepository programaRepository,
+                               UsuarioRepository usuarioRepository,
+                               BibliotecaRepository bibliotecaRepository,
+                               MaterialBibliograficoRepository materialBibliograficoRepository) {
         this.especialidadRepository = especialidadRepository;
         this.programaRepository = programaRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.bibliotecaRepository = bibliotecaRepository;
+        this.materialBibliograficoRepository = materialBibliograficoRepository;
     }
 
     @Transactional
@@ -103,8 +116,30 @@ public class EspecialidadService {
     @Transactional
     public void delete(Long id) {
         Especialidad especialidad = getById(id);
-        especialidad.setActivo(false);
-        especialidadRepository.save(especialidad);
+        List<String> dependencias = new ArrayList<>();
+
+        long usuariosAsociados = usuarioRepository.countByEspecialidad_IdEspecialidad(id);
+        if (usuariosAsociados > 0) {
+            dependencias.add("usuarios (" + usuariosAsociados + ")");
+        }
+
+        long bibliotecasAsociadas = bibliotecaRepository.countByEspecialidadIdEspecialidad(id);
+        if (bibliotecasAsociadas > 0) {
+            dependencias.add("bibliotecas (" + bibliotecasAsociadas + ")");
+        }
+
+        long materialesAsociados = materialBibliograficoRepository.countByEspecialidad_IdEspecialidad(id);
+        if (materialesAsociados > 0) {
+            dependencias.add("materiales bibliográficos (" + materialesAsociados + ")");
+        }
+
+        if (!dependencias.isEmpty()) {
+            throw new IllegalStateException(
+                    "No se puede eliminar la especialidad porque existen registros relacionados en "
+                            + String.join(" y ", dependencias) + ".");
+        }
+
+        especialidadRepository.delete(especialidad);
     }
 
     private Programa obtenerPrograma(Programa programa) {

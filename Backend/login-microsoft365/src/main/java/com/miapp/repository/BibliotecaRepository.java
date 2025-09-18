@@ -32,4 +32,6 @@ public interface BibliotecaRepository
     Long findMaxNumeroDeIngreso();
 
     boolean existsByNumeroDeIngreso(Long numeroDeIngreso);
+
+    long countByEspecialidadIdEspecialidad(Long idEspecialidad);
 }

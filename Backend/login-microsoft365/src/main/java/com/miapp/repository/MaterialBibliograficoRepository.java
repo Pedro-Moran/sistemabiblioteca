@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface MaterialBibliograficoRepository extends JpaRepository<MaterialBibliografico, Long>, JpaSpecificationExecutor<MaterialBibliografico> {
+    long countByEspecialidad_IdEspecialidad(Long idEspecialidad);
 }
 
 

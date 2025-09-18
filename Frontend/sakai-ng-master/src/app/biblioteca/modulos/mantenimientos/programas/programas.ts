@@ -11,6 +11,7 @@ import { Table } from 'primeng/table';
   imports: [TemplateModule],
   providers: [MessageService, ConfirmationService],
   template: `
+    <p-toast></p-toast>
     <p-toolbar styleClass="mb-6">
       <ng-template #start>
         <p-button label="Nuevo Programa" icon="pi pi-plus" (onClick)="openNew()" />
@@ -112,9 +113,16 @@ export class ProgramasComponent implements OnInit {
 
   load() {
     this.loading = true;
-    this.programaService.list().subscribe(data => {
-      this.programas = data;
-      this.loading = false;
+    this.programaService.list().subscribe({
+      next: data => {
+        this.programas = data;
+        this.loading = false;
+      },
+      error: () => {
+        this.loading = false;
+        this.programas = [];
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los programas' });
+      }
     });
   }
 
@@ -129,14 +137,21 @@ export class ProgramasComponent implements OnInit {
   }
 
   save() {
-    const request = this.programa.id ?
-      this.programaService.update(this.programa.id, this.programa) :
-      this.programaService.create(this.programa);
+    const request = this.programa.id
+      ? this.programaService.update(this.programa.id, this.programa)
+      : this.programaService.create(this.programa);
 
-    request.subscribe(() => {
-      this.load();
-      this.dialog = false;
-      this.messageService.add({severity:'success', summary:'Éxito', detail:'Registro guardado'});
+    request.subscribe({
+      next: () => {
+        this.load();
+        this.dialog = false;
+        this.programa = new Programa({ activo: true });
+        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro guardado' });
+      },
+      error: err => {
+        const detail = err?.error?.message ?? 'No se pudo guardar el programa';
+        this.messageService.add({ severity: 'error', summary: 'Error', detail });
+      }
     });
   }
 
@@ -148,9 +163,15 @@ export class ProgramasComponent implements OnInit {
   }
 
   delete(p: Programa) {
-    this.programaService.delete(p.id).subscribe(() => {
-      this.load();
-      this.messageService.add({severity:'success', summary:'Eliminado'});
+    this.programaService.delete(p.id).subscribe({
+      next: () => {
+        this.load();
+        this.messageService.add({ severity: 'success', summary: 'Eliminado', detail: 'Registro eliminado' });
+      },
+      error: err => {
+        const detail = err?.error?.message ?? 'No se pudo eliminar el programa';
+        this.messageService.add({ severity: 'error', summary: 'Error', detail });
+      }
     });
   }
 

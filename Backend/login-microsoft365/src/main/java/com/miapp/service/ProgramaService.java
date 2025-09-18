@@ -1,19 +1,28 @@
 package com.miapp.service;
 
 import com.miapp.model.Programa;
+import com.miapp.repository.EspecialidadRepository;
 import com.miapp.repository.ProgramaRepository;
+import com.miapp.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class ProgramaService {
 
     private final ProgramaRepository repository;
+    private final EspecialidadRepository especialidadRepository;
+    private final UsuarioRepository usuarioRepository;
 
-    public ProgramaService(ProgramaRepository repository) {
+    public ProgramaService(ProgramaRepository repository,
+                           EspecialidadRepository especialidadRepository,
+                           UsuarioRepository usuarioRepository) {
         this.repository = repository;
+        this.especialidadRepository = especialidadRepository;
+        this.usuarioRepository = usuarioRepository;
     }
 
     public List<Programa> listActivos() {
@@ -60,8 +69,25 @@ public class ProgramaService {
     @Transactional
     public void delete(Long id) {
         Programa programa = getById(id);
-        programa.setActivo(false);
-        repository.save(programa);
+        List<String> dependencias = new ArrayList<>();
+
+        long especialidadesAsociadas = especialidadRepository.countByProgramaIdPrograma(id);
+        if (especialidadesAsociadas > 0) {
+            dependencias.add("especialidades (" + especialidadesAsociadas + ")");
+        }
+
+        long usuariosAsociados = usuarioRepository.countByPrograma_IdPrograma(id);
+        if (usuariosAsociados > 0) {
+            dependencias.add("usuarios (" + usuariosAsociados + ")");
+        }
+
+        if (!dependencias.isEmpty()) {
+            throw new IllegalStateException(
+                    "No se puede eliminar el programa porque existen registros relacionados en "
+                            + String.join(" y ", dependencias) + ".");
+        }
+
+        repository.delete(programa);
     }
 
     private String normalizarCodigo(String codigo) {

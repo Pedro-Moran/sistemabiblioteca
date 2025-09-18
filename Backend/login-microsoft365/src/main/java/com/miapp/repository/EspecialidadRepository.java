@@ -19,6 +19,8 @@ public interface EspecialidadRepository extends JpaRepository<Especialidad, Long
     Optional<Especialidad> findByProgramaIdProgramaAndDescripcionIgnoreCase(Long idPrograma, String descripcion);
 
     Optional<Especialidad> findByProgramaIdProgramaAndDescripcionIgnoreCaseAndIdEspecialidadNot(Long idPrograma,
-                                                                                                String descripcion,
-                                                                                                Long idEspecialidad);
+                                                                                               String descripcion,
+                                                                                               Long idEspecialidad);
+
+    long countByProgramaIdPrograma(Long idPrograma);
 }
