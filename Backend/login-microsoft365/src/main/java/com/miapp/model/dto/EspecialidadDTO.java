@@ -9,5 +9,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class EspecialidadDTO {
     private Long idEspecialidad;
+    private String codigoEspecialidad;
     private String descripcion;
+    private Long idPrograma;
+    private String codigoPrograma;
+    private String descripcionPrograma;
 }

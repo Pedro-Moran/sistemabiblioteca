@@ -223,7 +223,17 @@ public class BibliotecaMapper {
             dto.setIdEspecialidad(b.getEspecialidad().getIdEspecialidad());
             dto.setEspecialidad(new EspecialidadDTO(
                     b.getEspecialidad().getIdEspecialidad(),
-                    b.getEspecialidad().getDescripcion()
+                    b.getEspecialidad().getCodigoEspecialidad(),
+                    b.getEspecialidad().getDescripcion(),
+                    b.getEspecialidad().getPrograma() != null
+                            ? b.getEspecialidad().getPrograma().getIdPrograma()
+                            : null,
+                    b.getEspecialidad().getPrograma() != null
+                            ? b.getEspecialidad().getPrograma().getPrograma()
+                            : null,
+                    b.getEspecialidad().getPrograma() != null
+                            ? b.getEspecialidad().getPrograma().getDescripcionPrograma()
+                            : null
             ));
         }
         if (b.getCiclos() != null) {
