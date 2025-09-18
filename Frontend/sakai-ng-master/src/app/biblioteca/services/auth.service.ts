@@ -353,7 +353,7 @@ loginMicrosoft(msToken: string, role: string): void {
       );
   }
 
-  getProgramas(): Observable<{ idPrograma: number; descripcion: string }[]> {
+  getProgramas(): Observable<{ idPrograma: number; programa: string; descripcionPrograma: string }[]> {
     return this.http
       .get<any>(`${this.apiUrl}/api/catalogos/programas`)
       .pipe(

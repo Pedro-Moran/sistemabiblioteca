@@ -27,7 +27,7 @@ import { Table } from 'primeng/table';
       currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
       [rowHover]="true"
       styleClass="p-datatable-gridlines"
-      [globalFilterFields]="['descripcion','activo']"
+      [globalFilterFields]="['programa','descripcionPrograma','activo']"
       [loading]="loading"
       responsiveLayout="scroll"
     >
@@ -41,14 +41,16 @@ import { Table } from 'primeng/table';
       </ng-template>
       <ng-template pTemplate="header">
         <tr>
-          <th pSortableColumn="descripcion">Descripción<p-sortIcon field="descripcion"></p-sortIcon></th>
+          <th pSortableColumn="programa">Código<p-sortIcon field="programa"></p-sortIcon></th>
+          <th pSortableColumn="descripcionPrograma">Descripción<p-sortIcon field="descripcionPrograma"></p-sortIcon></th>
           <th pSortableColumn="activo" style="width:8rem">Activo<p-sortIcon field="activo"></p-sortIcon></th>
           <th style="width:8rem">Acciones</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-programa>
         <tr>
-          <td>{{ programa.descripcion }}</td>
+          <td>{{ programa.programa }}</td>
+          <td>{{ programa.descripcionPrograma }}</td>
           <td>
             <p-tag [value]="programa.activo ? 'Sí' : 'No'" [severity]="programa.activo ? 'success' : 'danger'"></p-tag>
           </td>
@@ -60,12 +62,12 @@ import { Table } from 'primeng/table';
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="3">No se encontraron registros.</td>
+          <td colspan="4">No se encontraron registros.</td>
         </tr>
       </ng-template>
       <ng-template pTemplate="loadingbody">
         <tr>
-          <td colspan="3">Cargando datos. Espere por favor.</td>
+          <td colspan="4">Cargando datos. Espere por favor.</td>
         </tr>
       </ng-template>
     </p-table>
@@ -73,8 +75,12 @@ import { Table } from 'primeng/table';
     <p-dialog [(visible)]="dialog" header="Programa" [modal]="true" [style]="{width: '400px'}" (onHide)="hideDialog()">
       <div class="flex flex-col gap-3">
         <div>
+          <label class="font-bold">Código</label>
+          <input pInputText [(ngModel)]="programa.programa" placeholder="Código del programa" />
+        </div>
+        <div>
           <label class="font-bold">Descripción</label>
-          <input pInputText [(ngModel)]="programa.descripcion" placeholder="Nombre del programa" />
+          <input pInputText [(ngModel)]="programa.descripcionPrograma" placeholder="Nombre del programa" />
         </div>
         <div>
           <p-checkbox [(ngModel)]="programa.activo" binary="true" label="Activo"></p-checkbox>

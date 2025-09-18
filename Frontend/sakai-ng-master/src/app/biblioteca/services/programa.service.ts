@@ -25,7 +25,8 @@ export class ProgramaService {
           res.data.map(p =>
             new Programa({
               id: p.idPrograma,
-              descripcion: p.descripcion,
+              programa: p.programa,
+              descripcionPrograma: p.descripcionPrograma,
               activo: p.activo
             })
           )
@@ -36,7 +37,8 @@ export class ProgramaService {
   private toPayload(programa: Programa) {
     return {
       idPrograma: programa.id || undefined,
-      descripcion: programa.descripcion,
+      programa: programa.programa,
+      descripcionPrograma: programa.descripcionPrograma,
       activo: programa.activo
     };
   }
@@ -48,7 +50,8 @@ export class ProgramaService {
         map(res =>
           new Programa({
             id: res.data.idPrograma,
-            descripcion: res.data.descripcion,
+            programa: res.data.programa,
+            descripcionPrograma: res.data.descripcionPrograma,
             activo: res.data.activo
           })
         )
@@ -62,7 +65,8 @@ export class ProgramaService {
         map(res =>
           new Programa({
             id: res.data.idPrograma,
-            descripcion: res.data.descripcion,
+            programa: res.data.programa,
+            descripcionPrograma: res.data.descripcionPrograma,
             activo: res.data.activo
           })
         )
