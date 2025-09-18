@@ -19,4 +19,14 @@ public class VisitanteBibliotecaVirtualDTO {
     private String ciclo;
     private String correo;
     private Long   totalVisitas;
+    /** Total de inicios de sesión registrados para el usuario dentro del rango consultado. */
+    private Long   totalSesiones;
+
+    public Long getTotalSesiones() {
+        return totalSesiones;
+    }
+
+    public void setTotalSesiones(Long totalSesiones) {
+        this.totalSesiones = totalSesiones;
+    }
 }

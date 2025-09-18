@@ -24,6 +24,7 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
 import com.miapp.model.dto.IntranetVisitaDTO;
+import com.miapp.model.dto.VisitanteBibliotecaVirtualDTO;
 import com.miapp.model.dto.VisitantesPorDiaDTO;
 
 import java.time.LocalDate;
@@ -34,10 +35,12 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.Map;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 
 import static com.miapp.spec.DetallePrestamoSpecs.conFetchEquipoYSede;
 
@@ -633,7 +636,7 @@ public class PrestamoService {
      * @param fechaFinExclusiva instante final (exclusivo) del filtro; usar inicio del día siguiente para cortes diarios.
      * @param codigoUsuario    identificador opcional a filtrar.
      */
-    public List<com.miapp.model.dto.VisitanteBibliotecaVirtualDTO> reporteVisitantesBibliotecaVirtual(
+    public List<VisitanteBibliotecaVirtualDTO> reporteVisitantesBibliotecaVirtual(
             java.time.LocalDateTime fechaInicio,
             java.time.LocalDateTime fechaFinExclusiva,
             String codigoUsuario,
@@ -644,13 +647,39 @@ public class PrestamoService {
             String ciclo,
             Long baseId) {
         String codigoNormalizado = normalizarCodigoUsuario(codigoUsuario);
+        String sedeNormalizada = normalizarFiltroTexto(codigoSede);
+        String escuelaNormalizada = normalizarFiltroTexto(codigoEscuela);
+        String programaNormalizado = normalizarFiltroTexto(codigoPrograma);
+        String cicloNormalizado = normalizarFiltroTexto(ciclo);
 
         StringBuilder sql = new StringBuilder("""
+                WITH VISITAS_AGRUPADAS AS (
+                    SELECT
+                        TRIM(UPPER(v.CODIGOUSUARIO)) AS CODIGO_VISITA,
+                        TRIM(v.CODIGOUSUARIO) AS CODIGO_VISITA_ORIGINAL,
+                        v.IDBIBVIR,
+                        COUNT(*) AS TOTAL_VISITAS,
+                        SUM(COUNT(*)) OVER (PARTITION BY TRIM(UPPER(v.CODIGOUSUARIO))) AS TOTAL_SESIONES
+                    FROM VISITASBIBVIR v
+                    WHERE v.CODIGOUSUARIO IS NOT NULL
+                      AND TRIM(v.CODIGOUSUARIO) <> ''
+                """);
+
+        List<Object> params = new ArrayList<>();
+        aplicarFiltrosVisitas(sql, params, fechaInicio, fechaFinExclusiva,
+                sedeNormalizada, tipoUsuario, escuelaNormalizada, programaNormalizado, cicloNormalizado, baseId);
+
+        sql.append("""
+                    GROUP BY
+                        TRIM(UPPER(v.CODIGOUSUARIO)),
+                        TRIM(v.CODIGOUSUARIO),
+                        v.IDBIBVIR
+                )
                 SELECT
                     s.DESCRIPCION AS SEDE,
                     COALESCE(tbv.NOMBRE, 'N/A') AS BASE_DATOS,
                     u.LOGIN AS LOGIN_USUARIO,
-                    TRIM(v.CODIGOUSUARIO) AS CODIGO_VISITA,
+                    va.CODIGO_VISITA_ORIGINAL AS CODIGO_VISITA,
                     u.APELLIDOPATERNO,
                     u.APELLIDOMATERNO,
                     u.NOMBREUSUARIO,
@@ -659,35 +688,26 @@ public class PrestamoService {
                     p.DESCRIPCION AS PROGRAMA,
                     u.CICLO,
                     u.EMAIL,
-                    COUNT(DISTINCT v.IDVISITABIBVIR) AS TOTAL_VISITAS
-                FROM VISITASBIBVIR v
+                    va.TOTAL_VISITAS,
+                    va.TOTAL_SESIONES
+                FROM VISITAS_AGRUPADAS va
                 LEFT JOIN USUARIO u ON (
-                        UPPER(TRIM(u.LOGIN)) = UPPER(TRIM(v.CODIGOUSUARIO))
-                     OR UPPER(TRIM(u.EMAIL)) = UPPER(TRIM(v.CODIGOUSUARIO))
-                     OR (u.EMPLID IS NOT NULL AND UPPER(TRIM(u.EMPLID)) = UPPER(TRIM(v.CODIGOUSUARIO)))
+                        UPPER(TRIM(u.LOGIN)) = va.CODIGO_VISITA
+                     OR UPPER(TRIM(u.EMAIL)) = va.CODIGO_VISITA
+                     OR (u.EMPLID IS NOT NULL AND UPPER(TRIM(u.EMPLID)) = va.CODIGO_VISITA)
                 )
                 LEFT JOIN USUARIO_ROL ur ON ur.IDUSUARIO = u.IDUSUARIO
                 LEFT JOIN ROLUSUARIO r ON r.IDROL = ur.IDROL
                 LEFT JOIN ESPECIALIDAD e ON e.IDESPECIALIDAD = u.IDESPECIALIDAD
                 LEFT JOIN PROGRAMA p ON p.IDPROGRAMA = u.IDPROGRAMA
                 LEFT JOIN SEDE s ON s.ID = u.IDSEDE
-                LEFT JOIN TIPOBIBLIOTECAVIRTUAL tbv ON tbv.IDTIPOBIBVIRTUAL = v.IDBIBVIR
-                WHERE v.CODIGOUSUARIO IS NOT NULL
-                  AND TRIM(v.CODIGOUSUARIO) <> ''
+                LEFT JOIN TIPOBIBLIOTECAVIRTUAL tbv ON tbv.IDTIPOBIBVIRTUAL = va.IDBIBVIR
+                WHERE 1 = 1
                 """);
 
-        List<Object> params = new ArrayList<>();
-        if (fechaInicio != null) {
-            sql.append(" AND COALESCE(v.FECHAREGISTRO, v.HORAINGRESO, v.HORASALIDA) >= ?");
-            params.add(java.sql.Timestamp.valueOf(fechaInicio));
-        }
-        if (fechaFinExclusiva != null) {
-            sql.append(" AND COALESCE(v.FECHAREGISTRO, v.HORAINGRESO, v.HORASALIDA) < ?");
-            params.add(java.sql.Timestamp.valueOf(fechaFinExclusiva));
-        }
         if (codigoNormalizado != null) {
             sql.append(" AND ("
-                    + " UPPER(TRIM(v.CODIGOUSUARIO)) = ?"
+                    + " va.CODIGO_VISITA = ?"
                     + " OR (u.LOGIN IS NOT NULL AND UPPER(TRIM(u.LOGIN)) = ?)"
                     + " OR (u.EMAIL IS NOT NULL AND UPPER(TRIM(u.EMAIL)) = ?)"
                     + " OR (u.EMPLID IS NOT NULL AND UPPER(TRIM(u.EMPLID)) = ?)"
@@ -697,7 +717,67 @@ public class PrestamoService {
             params.add(codigoNormalizado);
             params.add(codigoNormalizado);
         }
-        String sedeNormalizada = normalizarFiltroTexto(codigoSede);
+
+        sql.append("""
+                GROUP BY
+                    s.DESCRIPCION,
+                    COALESCE(tbv.NOMBRE, 'N/A'),
+                    u.LOGIN,
+                    va.CODIGO_VISITA,
+                    va.CODIGO_VISITA_ORIGINAL,
+                    u.APELLIDOPATERNO,
+                    u.APELLIDOMATERNO,
+                    u.NOMBREUSUARIO,
+                    e.DESCRIPCION,
+                    p.DESCRIPCION,
+                    u.CICLO,
+                    u.EMAIL,
+                    va.TOTAL_VISITAS,
+                    va.TOTAL_SESIONES
+                ORDER BY
+                    va.TOTAL_SESIONES DESC,
+                    va.TOTAL_VISITAS DESC,
+                    va.CODIGO_VISITA_ORIGINAL
+                """);
+
+        List<VisitanteBibliotecaVirtualDTO> filas = jdbcTemplate.query(
+                sql.toString(),
+                params.toArray(),
+                (rs, rowNum) -> mapearResumenVisitanteVirtual(rs)
+        );
+
+        if (filas.isEmpty()) {
+            return filas;
+        }
+
+        Comparator<VisitanteBibliotecaVirtualDTO> orden = Comparator
+                .comparingLong((VisitanteBibliotecaVirtualDTO dto) -> safeLong(dto.getTotalSesiones()))
+                .reversed()
+                .thenComparing(Comparator.comparingLong((VisitanteBibliotecaVirtualDTO dto) -> safeLong(dto.getTotalVisitas())).reversed())
+                .thenComparing(dto -> textoSeguro(dto.getCodigo(), ""), String.CASE_INSENSITIVE_ORDER);
+        filas.sort(orden);
+
+        return filas;
+    }
+
+    private void aplicarFiltrosVisitas(StringBuilder sql,
+                                       List<Object> params,
+                                       LocalDateTime fechaInicio,
+                                       LocalDateTime fechaFinExclusiva,
+                                       String sedeNormalizada,
+                                       Integer tipoUsuario,
+                                       String escuelaNormalizada,
+                                       String programaNormalizado,
+                                       String cicloNormalizado,
+                                       Long baseId) {
+        if (fechaInicio != null) {
+            sql.append(" AND COALESCE(v.FECHAREGISTRO, v.HORAINGRESO, v.HORASALIDA) >= ?");
+            params.add(java.sql.Timestamp.valueOf(fechaInicio));
+        }
+        if (fechaFinExclusiva != null) {
+            sql.append(" AND COALESCE(v.FECHAREGISTRO, v.HORAINGRESO, v.HORASALIDA) < ?");
+            params.add(java.sql.Timestamp.valueOf(fechaFinExclusiva));
+        }
         if (sedeNormalizada != null) {
             sql.append(" AND TRIM(UPPER(v.CODIGOSEDE)) = ?");
             params.add(sedeNormalizada);
@@ -706,17 +786,14 @@ public class PrestamoService {
             sql.append(" AND v.TIPOUSUARIO = ?");
             params.add(tipoUsuario);
         }
-        String escuelaNormalizada = normalizarFiltroTexto(codigoEscuela);
         if (escuelaNormalizada != null) {
             sql.append(" AND TRIM(UPPER(v.CODIGOESPECIALIDAD)) = ?");
             params.add(escuelaNormalizada);
         }
-        String programaNormalizado = normalizarFiltroTexto(codigoPrograma);
         if (programaNormalizado != null) {
             sql.append(" AND TRIM(UPPER(v.PROGRAMA)) = ?");
             params.add(programaNormalizado);
         }
-        String cicloNormalizado = normalizarFiltroTexto(ciclo);
         if (cicloNormalizado != null) {
             sql.append(" AND TRIM(UPPER(v.CICLO)) = ?");
             params.add(cicloNormalizado);
@@ -725,42 +802,6 @@ public class PrestamoService {
             sql.append(" AND v.IDBIBVIR = ?");
             params.add(baseId);
         }
-
-        sql.append("""
-                GROUP BY
-                    s.DESCRIPCION,
-                    tbv.NOMBRE,
-                    u.LOGIN,
-                    TRIM(v.CODIGOUSUARIO),
-                    u.APELLIDOPATERNO,
-                    u.APELLIDOMATERNO,
-                    u.NOMBREUSUARIO,
-                    e.DESCRIPCION,
-                    p.DESCRIPCION,
-                    u.CICLO,
-                    u.EMAIL
-                ORDER BY COUNT(DISTINCT v.IDVISITABIBVIR) DESC
-                """);
-
-        return jdbcTemplate.query(
-                sql.toString(),
-                params.toArray(),
-                (rs, rowNum) -> mapearResumenVisitanteVirtual(new Object[]{
-                        rs.getString("SEDE"),
-                        rs.getString("BASE_DATOS"),
-                        rs.getString("LOGIN_USUARIO"),
-                        rs.getString("CODIGO_VISITA"),
-                        rs.getString("APELLIDOPATERNO"),
-                        rs.getString("APELLIDOMATERNO"),
-                        rs.getString("NOMBREUSUARIO"),
-                        rs.getString("ROL_DESCRIPCION"),
-                        rs.getString("ESPECIALIDAD"),
-                        rs.getString("PROGRAMA"),
-                        rs.getString("CICLO"),
-                        rs.getString("EMAIL"),
-                        rs.getLong("TOTAL_VISITAS")
-                })
-        );
     }
 
     /**
@@ -773,29 +814,32 @@ public class PrestamoService {
         return visitaBibliotecaVirtualRepository.contarVisitasPorDia(fechaInicio, fechaFinExclusiva);
     }
 
-    private com.miapp.model.dto.VisitanteBibliotecaVirtualDTO mapearResumenVisitanteVirtual(Object[] fila) {
-        String sede = textoSeguro(fila[0], "-");
-        String baseDatos = textoSeguro(fila[1], "N/A");
-        String login = textoSeguro(fila[2], null);
-        String codigoVisita = textoSeguro(fila[3], null);
+    private VisitanteBibliotecaVirtualDTO mapearResumenVisitanteVirtual(ResultSet rs) throws SQLException {
+        String sede = textoSeguro(rs.getString("SEDE"), "-");
+        String baseDatos = textoSeguro(rs.getString("BASE_DATOS"), "N/A");
+        String login = textoSeguro(rs.getString("LOGIN_USUARIO"), null);
+        String codigoVisita = textoSeguro(rs.getString("CODIGO_VISITA"), null);
         String codigo = !esBlanco(login) ? login : textoSeguro(codigoVisita, "-");
 
         String apellidosNombres = concatenarNombre(
-                textoSeguro(fila[4], null),
-                textoSeguro(fila[5], null),
-                textoSeguro(fila[6], null));
+                textoSeguro(rs.getString("APELLIDOPATERNO"), null),
+                textoSeguro(rs.getString("APELLIDOMATERNO"), null),
+                textoSeguro(rs.getString("NOMBREUSUARIO"), null));
         if (esBlanco(apellidosNombres)) {
             apellidosNombres = codigo;
         }
 
-        String tipoUsuario = textoSeguro(fila[7], "Sin Rol");
-        String especialidad = textoSeguro(fila[8], "-");
-        String programa = textoSeguro(fila[9], "-");
-        String cicloUsuario = textoSeguro(fila[10], "-");
-        String correo = textoSeguro(fila[11], "-");
-        long totalVisitas = fila[12] instanceof Number ? ((Number) fila[12]).longValue() : 0L;
-
-        return new com.miapp.model.dto.VisitanteBibliotecaVirtualDTO(
+        String tipoUsuario = textoSeguro(rs.getString("ROL_DESCRIPCION"), "Sin Rol");
+        String especialidad = textoSeguro(rs.getString("ESPECIALIDAD"), "-");
+        String programa = textoSeguro(rs.getString("PROGRAMA"), "-");
+        String cicloUsuario = textoSeguro(rs.getString("CICLO"), "-");
+        String correo = textoSeguro(rs.getString("EMAIL"), "-");
+        long totalVisitas = readLong(rs, "TOTAL_VISITAS");
+        long totalSesiones = readLong(rs, "TOTAL_SESIONES");
+        if (totalSesiones <= 0L) {
+            totalSesiones = totalVisitas;
+        }
+        return new VisitanteBibliotecaVirtualDTO(
                 sede,
                 baseDatos,
                 codigo,
@@ -805,8 +849,18 @@ public class PrestamoService {
                 programa,
                 cicloUsuario,
                 correo,
-                totalVisitas
+                totalVisitas,
+                totalSesiones
         );
+    }
+
+    private long readLong(ResultSet rs, String column) throws SQLException {
+        long value = rs.getLong(column);
+        return rs.wasNull() ? 0L : value;
+    }
+
+    private long safeLong(Long valor) {
+        return valor != null ? valor : 0L;
     }
 
     private String normalizarCodigoUsuario(String codigo) {

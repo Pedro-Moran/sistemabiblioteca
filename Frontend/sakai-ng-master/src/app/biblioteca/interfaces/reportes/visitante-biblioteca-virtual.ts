@@ -9,4 +9,5 @@ export interface VisitanteBibliotecaVirtualDTO {
     ciclo: string;
     correo: string;
     totalVisitas: number;
+    totalSesiones: number;
 }
