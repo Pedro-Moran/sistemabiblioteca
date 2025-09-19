@@ -64,7 +64,8 @@ export interface LoginCredentials {
             <div class="flex flex-col gap-6 items-center">
               <p-button
                 label="Iniciar sesión con Microsoft365"
-                styleClass="w-full sm:w-auto"
+                icon="pi pi-microsoft"
+                styleClass="w-full sm:w-auto ms-login-button"
                 (click)="loginWithMicrosoft()"
                 [loading]="loadingMicrosoft"
               ></p-button>

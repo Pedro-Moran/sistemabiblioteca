@@ -74,6 +74,8 @@ import { MicrosoftLoginViewModel } from '../../../../pages/auth/microsoft-login.
           type="button"
           class="login"
           label="Iniciar sesión con Microsoft365"
+          icon="pi pi-microsoft"
+          styleClass="ms-login-button"
           (click)="vm.startMicrosoftLogin()"
           [loading]="vm.loading"
         ></button>

@@ -110,6 +110,8 @@ import { MicrosoftLoginViewModel } from '../../auth/microsoft-login.viewmodel';
                         pButton
                         pRipple
                         label="Iniciar sesión con Microsoft365"
+                        icon="pi pi-microsoft"
+                        styleClass="ms-login-button"
                         [rounded]="true"
                         (click)="vm.startMicrosoftLogin()"
                         [loading]="vm.loading"
