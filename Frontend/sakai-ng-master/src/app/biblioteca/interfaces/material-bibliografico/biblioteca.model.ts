@@ -114,6 +114,12 @@ export interface DetalleBibliotecaDTO {
     cantidadPrestamos?: number;
     /** Usuario que reservó el material */
     codigoUsuario?: string;
+    /** Código del programa académico asociado al préstamo */
+    codigoPrograma?: string | null;
+    /** Código de la especialidad asociada al préstamo */
+    codigoEspecialidad?: string | null;
+    /** Código del ciclo seleccionado para el préstamo */
+    codigoCiclo?: string | null;
     /** Nombre del usuario que hizo la reserva */
     nombreUsuario?: string;
     /** Nombre completo del usuario (apellidos y nombres) */

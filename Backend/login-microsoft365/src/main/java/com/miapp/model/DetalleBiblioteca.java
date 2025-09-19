@@ -75,6 +75,15 @@ public class DetalleBiblioteca {
     @Column(name = "CODIGOUSUARIO", length = 50)
     private String codigoUsuario;        // si quieres saber quién hizo la solicitud/reserva
 
+    @Column(name = "CODIGOPROGRAMA", length = 30)
+    private String codigoPrograma;
+
+    @Column(name = "CODIGOESPECIALIDAD", length = 30)
+    private String codigoEspecialidad;
+
+    @Column(name = "CODIGOCICLO", length = 30)
+    private String codigoCiclo;
+
     @Column(name = "FECHASOLICITUD", length = 20)
     private String fechaSolicitud;       // por ejemplo: "2025-06-01"
 
