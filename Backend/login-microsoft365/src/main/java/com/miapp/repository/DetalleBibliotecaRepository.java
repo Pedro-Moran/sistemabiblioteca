@@ -64,4 +64,8 @@ public interface DetalleBibliotecaRepository extends JpaRepository<DetalleBiblio
      */
     @EntityGraph(attributePaths = {"biblioteca"})
     Optional<DetalleBiblioteca> findFirstByNumeroIngreso(Long numeroIngreso);
+
+    long countByFechaPrestamoIsNotNullAndFechaFinIsNull();
+
+    long countByFechaPrestamoBetween(LocalDateTime inicio, LocalDateTime fin);
 }
