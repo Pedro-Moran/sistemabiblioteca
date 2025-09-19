@@ -7,6 +7,15 @@ export interface RoleOption {
   value: string;
 }
 
+interface MicrosoftPerfilResumen {
+  rolDescripcion?: string;
+  nombre?: string;
+}
+
+interface MicrosoftServiciosResumen {
+  perfilesDisponibles?: MicrosoftPerfilResumen[];
+}
+
 export class MicrosoftLoginViewModel {
   roleDialogVisible = false;
   userRoles: RoleOption[] = [];
@@ -49,7 +58,17 @@ export class MicrosoftLoginViewModel {
       next: ({ email, token }) => {
         this.msToken = token;
         this.userEmail = email;
-        this.loadRoles(email);
+        this.authService.obtenerServiciosMicrosoft(token).subscribe({
+          next: (response) => {
+            if (!this.applyRolesFromMicrosoft(response)) {
+              this.loadRolesFallback(email);
+            }
+          },
+          error: (error) => {
+            console.error('Error al consultar servicios de Microsoft para depuración:', error);
+            this.loadRolesFallback(email);
+          }
+        });
       },
       error: error => {
         this.loading = false;
@@ -62,7 +81,7 @@ export class MicrosoftLoginViewModel {
   openRoleDialog(): void {
     if (this.msToken) {
       if (!this.userRoles.length && this.userEmail) {
-        this.loadRoles(this.userEmail);
+        this.loadRolesFallback(this.userEmail);
         return;
       }
       if (!this.pendingRoleSelection) {
@@ -84,6 +103,7 @@ export class MicrosoftLoginViewModel {
 
   selectRole(role: string): void {
     const selectedRole = role || 'ESTUDIANTE';
+    console.log('✅ Rol seleccionado para autenticación:', selectedRole);
     this.pendingRoleSelection = false;
     this.roleDialogVisible = false;
     if (this.msToken) {
@@ -113,9 +133,10 @@ export class MicrosoftLoginViewModel {
     this.pendingRoleSelection = false;
   }
 
-  private loadRoles(email: string): void {
+  private loadRolesFallback(email: string): void {
     this.authService.getRolesByEmail(email).subscribe({
       next: roles => {
+        console.log('🟨 Roles obtenidos desde el backend para comparación:', roles.map(role => role.value));
         this.userRoles = roles.length ? roles : this.defaultRoles();
         this.showUserActions = true;
         this.pendingRoleSelection = this.userRoles.length > 1;
@@ -125,6 +146,7 @@ export class MicrosoftLoginViewModel {
         }
       },
       error: () => {
+        console.warn('⚠️ No se pudieron recuperar roles desde el backend; se utilizarán roles por defecto.');
         this.userRoles = this.defaultRoles();
         this.showUserActions = true;
         this.pendingRoleSelection = false;
@@ -143,6 +165,39 @@ export class MicrosoftLoginViewModel {
       .map(role => typeof role === 'string' ? role.trim().toUpperCase() : '')
       .filter(role => !!role)
       .map(role => ({ label: role, value: role }));
+  }
+
+  private applyRolesFromMicrosoft(response: MicrosoftServiciosResumen | null | undefined): boolean {
+    const perfiles: MicrosoftPerfilResumen[] = Array.isArray(response?.perfilesDisponibles)
+      ? (response?.perfilesDisponibles as MicrosoftPerfilResumen[])
+      : [];
+    const rawRoles = perfiles
+      .map(perfil => perfil?.rolDescripcion ?? perfil?.nombre ?? '')
+      .filter(valor => typeof valor === 'string' && valor.trim().length > 0);
+
+    console.log('🟦 Roles brutos desde Microsoft Graph:', rawRoles);
+
+    const normalizedRoles = this.normalizeRoles(rawRoles);
+    const uniqueRoles = Array.from(new Map(normalizedRoles.map(role => [role.value, role])).values());
+
+    console.log('🟢 Roles normalizados desde Microsoft Graph:', uniqueRoles.map(role => role.value));
+    if (!uniqueRoles.length) {
+      console.log('🟡 Microsoft Graph no proporcionó roles configurados; se usará el respaldo del backend.');
+      return false;
+    }
+
+    this.userRoles = uniqueRoles;
+    this.showUserActions = true;
+    this.pendingRoleSelection = this.userRoles.length > 1;
+    this.loading = false;
+
+    console.log('🔄 Roles que se presentarán al usuario tras comparar con Microsoft:', this.userRoles.map(role => role.value));
+
+    if (!this.pendingRoleSelection) {
+      this.selectRole(this.userRoles[0].value);
+    }
+
+    return true;
   }
 
   private defaultRoles(): RoleOption[] {

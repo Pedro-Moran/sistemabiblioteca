@@ -18,8 +18,13 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpStatusCodeException;
+
+import com.miapp.model.dto.GraphGroupDTO;
+import com.miapp.model.dto.GraphGroupResponseDTO;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -148,6 +153,76 @@ public class AzureService {
             return response.getStatusCode().is2xxSuccessful(); // Si el usuario existe en el tenant, retorna true
         } catch (Exception e) {
             return false; // Si la petición falla, el usuario no pertenece al tenant
+        }
+    }
+
+    /**
+     * Obtiene los grupos (perfiles/servicios) a los que pertenece el usuario autenticado utilizando su token delegado.
+     *
+     * @param userAccessToken token de acceso emitido para el usuario final (obtenido desde el frontend con MSAL, por ejemplo).
+     * @return listado de grupos asociados al usuario en Azure AD.
+     */
+    public List<GraphGroupDTO> obtenerServiciosConTokenUsuario(String userAccessToken) {
+        if (userAccessToken == null || userAccessToken.isBlank()) {
+            throw new IllegalArgumentException("El token de Microsoft es obligatorio para consultar los servicios.");
+        }
+
+        String url = "https://graph.microsoft.com/v1.0/me/transitiveMemberOf/microsoft.graph.group?$count=true";
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = createHeaders(userAccessToken);
+        headers.set("ConsistencyLevel", "eventual"); // Requerido para utilizar $count en la consulta
+
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<GraphGroupResponseDTO> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    GraphGroupResponseDTO.class
+            );
+
+            GraphGroupResponseDTO body = response.getBody();
+            if (body == null || body.getValue() == null) {
+                return Collections.emptyList();
+            }
+
+            List<GraphGroupDTO> groups = body.getValue();
+            Integer count = body.getCount();
+            System.out.println("✅ Servicios obtenidos desde Microsoft Graph: " +
+                    (count != null ? count : groups.size()));
+            if (groups != null && !groups.isEmpty()) {
+                System.out.println("📋 Detalle de roles/grupos recibidos desde Microsoft:");
+                for (GraphGroupDTO group : groups) {
+                    if (group == null) {
+                        continue;
+                    }
+                    String id = group.getId() != null ? group.getId() : "(sin id)";
+                    String nombre = group.getDisplayName() != null ? group.getDisplayName() : "(sin nombre)";
+                    String alias = group.getMailNickname();
+                    String descripcion = group.getDescription();
+                    StringBuilder detalle = new StringBuilder("   • ")
+                            .append(id)
+                            .append(" | ")
+                            .append(nombre);
+                    if (alias != null && !alias.isBlank()) {
+                        detalle.append(" | alias: ").append(alias);
+                    }
+                    if (descripcion != null && !descripcion.isBlank()) {
+                        detalle.append(" | descripción: ").append(descripcion);
+                    }
+                    System.out.println(detalle);
+                }
+            } else {
+                System.out.println("📋 Microsoft Graph no devolvió roles/grupos para el token proporcionado.");
+            }
+            return groups;
+        } catch (HttpStatusCodeException ex) {
+            System.err.println("❌ Error al consultar Microsoft Graph: " + ex.getStatusCode() + " - " + ex.getResponseBodyAsString());
+            throw new RuntimeException("Error al consultar Microsoft Graph: " + ex.getResponseBodyAsString(), ex);
+        } catch (Exception e) {
+            System.err.println("❌ Error inesperado al consultar Microsoft Graph: " + e.getMessage());
+            throw new RuntimeException("Error inesperado al consultar Microsoft Graph", e);
         }
     }
 

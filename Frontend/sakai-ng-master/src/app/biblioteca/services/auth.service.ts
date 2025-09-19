@@ -20,6 +20,29 @@ interface ResponseDTO<T> {
   data: T;
 }
 
+interface GraphGroup {
+  id?: string;
+  displayName?: string;
+  description?: string;
+  mail?: string;
+  mailNickname?: string;
+  securityIdentifier?: string;
+  groupTypes?: string[];
+}
+
+interface PerfilMicrosoftResponse {
+  rolDescripcion?: string;
+  nombre?: string;
+  graphGroupId?: string;
+  graphGroup?: GraphGroup | null;
+}
+
+interface MicrosoftServiciosResponse {
+  perfilesDisponibles: PerfilMicrosoftResponse[];
+  gruposDelegados: GraphGroup[];
+  gruposSinConfiguracion: GraphGroup[];
+}
+
 
 const httpOptions = {
   headers: new HttpHeaders({
@@ -40,6 +63,8 @@ export class AuthService {
   private currentUserSubject: BehaviorSubject<Usuario>;
   public currentUser: Observable<Usuario>;
   public currentUsuario: Usuario | undefined;
+
+  private lastLoggedToken: string | null = null;
 
   private inactivityTimer: any;
   private activityEvents = ['mousemove', 'keydown', 'click', 'scroll'];
@@ -172,9 +197,25 @@ export class AuthService {
 
 
   getUser(){
-    const decoded = this.helper.decodeToken(this.getToken());
-    console.log('decoded token:', decoded);
-    return decoded;
+    const token = this.getToken();
+    if (!token || token === 'null') {
+      if (this.lastLoggedToken !== null) {
+        console.warn('No existe un token JWT válido en almacenamiento.');
+        this.lastLoggedToken = null;
+      }
+      return {} as any;
+    }
+
+    const decoded = this.helper.decodeToken(token);
+    if (decoded && this.lastLoggedToken !== token) {
+      console.log('decoded token:', decoded);
+      this.lastLoggedToken = token;
+    } else if (!decoded && this.lastLoggedToken !== null) {
+      console.warn('No fue posible decodificar el token JWT almacenado.');
+      this.lastLoggedToken = null;
+    }
+
+    return decoded || ({} as any);
   }
 
   /**
@@ -250,7 +291,33 @@ getMicrosoftToken(): Observable<{ email: string; token: string }> {
     );
   }
 
-loginMicrosoft(msToken: string, role: string): void {
+  obtenerServiciosMicrosoft(msToken: string): Observable<MicrosoftServiciosResponse> {
+    return this.http
+      .post<MicrosoftServiciosResponse>(`${this.apiUrl}/microsoft/servicios`, { token: msToken })
+      .pipe(
+        tap((response) => {
+          console.log('📦 Respuesta de Microsoft Graph:', response);
+          const delegados = Array.isArray(response?.gruposDelegados) ? response.gruposDelegados : [];
+          if (delegados.length) {
+            console.log('🟦 Grupos Microsoft recibidos:', delegados.map((g) => `${g.displayName ?? '(sin nombre)'} (${g.id ?? 'sin id'})`));
+          } else {
+            console.log('🟦 Microsoft Graph no devolvió grupos delegados para el token proporcionado.');
+          }
+          const perfiles = Array.isArray(response?.perfilesDisponibles) ? response.perfilesDisponibles : [];
+          if (perfiles.length) {
+            console.log('🟩 Perfiles configurados en BD:', perfiles.map((p) => `${p.rolDescripcion ?? p.nombre ?? '(sin descripción)'}`));
+          } else {
+            console.log('🟩 No existen perfiles configurados vinculados a los grupos de Microsoft.');
+          }
+          const sinConfig = Array.isArray(response?.gruposSinConfiguracion) ? response.gruposSinConfiguracion : [];
+          if (sinConfig.length) {
+            console.log('🟧 Grupos de Microsoft sin configuración local:', sinConfig.map((g) => `${g.displayName ?? '(sin nombre)'} (${g.id ?? 'sin id'})`));
+          }
+        })
+      );
+  }
+
+  loginMicrosoft(msToken: string, role: string): void {
     this.http.post<LoginResponse>(`${this.apiUrl}/login-microsoft`, { token: msToken, role })
       .subscribe({
         next: (backendResponse) => {
