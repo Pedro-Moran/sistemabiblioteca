@@ -45,6 +45,10 @@ public interface DetallePrestamoRepository
     List<DetallePrestamo> findByFechaFinBetweenAndReminder48SentFalse(
             LocalDateTime start, LocalDateTime end);
 
+    long countByFechaPrestamoIsNotNullAndFechaRecepcionIsNull();
+
+    long countByFechaPrestamoBetween(LocalDateTime inicio, LocalDateTime fin);
+
     @org.springframework.data.jpa.repository.Query(
             "SELECT new com.miapp.model.dto.UsuarioPrestamosDTO(" +
                     " MAX(dp.id)," +

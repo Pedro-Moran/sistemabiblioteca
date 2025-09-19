@@ -37,6 +37,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
                                                                              String email);
     List<Usuario> findByEmailContainingIgnoreCase(String email);
 
+    long countByIdEstadoIgnoreCase(String estado);
+
     /** Reporte de visitantes de biblioteca virtual a partir del contador de logeos */
     @Query(
             "SELECT new com.miapp.model.dto.VisitanteBibliotecaVirtualDTO(" +
