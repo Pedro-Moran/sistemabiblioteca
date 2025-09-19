@@ -930,10 +930,23 @@ export class CatalogoEnLineaComponent {
         }
 
         const valores = this.formAcademico.value as { programa: string; especialidad: string; ciclo: string };
+        const detalleSeleccionado = this.informacionAcademicaDisponible.find(
+            (item) =>
+                item.gradoAcademico === valores.programa &&
+                item.carrera === valores.especialidad &&
+                item.cicloNivel === valores.ciclo
+        );
         const seleccion: SeleccionAcademica = {
             programa: valores.programa,
             especialidad: valores.especialidad,
-            ciclo: valores.ciclo
+            ciclo: valores.ciclo,
+            estadoPrograma: this.obtenerValorCadena(detalleSeleccionado, [
+                'estadoPrograma',
+                'estado_programa',
+                'programaEstado',
+                'estadoProg'
+            ]),
+            motaccion: this.obtenerValorCadena(detalleSeleccionado, ['motaccion', 'motAccion', 'motivoAccion'])
         };
 
         this.seleccionAcademicaConfirmada = seleccion;
@@ -1056,6 +1069,22 @@ export class CatalogoEnLineaComponent {
         return fallback;
     }
 
+    private obtenerValorCadena(
+        det: InformacionAcademicaDetalle | undefined,
+        claves: string[]
+    ): string | undefined {
+        if (!det) {
+            return undefined;
+        }
+        for (const clave of claves) {
+            const valor = (det as any)?.[clave];
+            if (typeof valor === 'string' && valor.trim()) {
+                return valor.trim();
+            }
+        }
+        return undefined;
+    }
+
     private construirResumenSeleccion(seleccion: SeleccionAcademica): { programa: string; especialidad: string; ciclo: string } {
         const programa =
             this.extraerOpciones('gradoAcademico', ['descripcionGradoAcademico', 'gradoAcademicoDescripcion', 'gradoAcademicoDesc']).find(
@@ -1090,7 +1119,7 @@ export class CatalogoEnLineaComponent {
 
     private ejecutarReserva(seleccion: SeleccionAcademica): void {
         const requests = this.reservas.map((it) => {
-            const payload = {
+            const payload: any = {
                 idDetalleBiblioteca: it.idDetalleBiblioteca ?? it.id,
                 idEstado: 3,
                 idUsuario: this.user?.sub ?? this.user?.idusuario ?? 0,
@@ -1099,6 +1128,12 @@ export class CatalogoEnLineaComponent {
                 codigoEspecialidad: seleccion.especialidad,
                 codigoCiclo: seleccion.ciclo
             };
+            if (seleccion.estadoPrograma) {
+                payload.estadoPrograma = seleccion.estadoPrograma;
+            }
+            if (seleccion.motaccion) {
+                payload.motaccion = seleccion.motaccion;
+            }
             return this.genericoService.conf_event_put(payload, 'api/biblioteca/detalles/estado');
         });
 

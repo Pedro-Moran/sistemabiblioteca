@@ -11,4 +11,6 @@ public class CambioEstadoDetalleRequest {
     private String codigoPrograma;
     private String codigoEspecialidad;
     private String codigoCiclo;
+    private String estadoPrograma;
+    private String motaccion;
 }

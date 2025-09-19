@@ -762,10 +762,23 @@ export class BibliotecaVirtualComponent {
         }
 
         const valores = this.formAcademico.value as { programa: string; especialidad: string; ciclo: string };
+        const detalleSeleccionado = this.informacionAcademicaDisponible.find(
+            (item) =>
+                item.gradoAcademico === valores.programa &&
+                item.carrera === valores.especialidad &&
+                item.cicloNivel === valores.ciclo
+        );
         const seleccion: SeleccionAcademica = {
             programa: valores.programa,
             especialidad: valores.especialidad,
-            ciclo: valores.ciclo
+            ciclo: valores.ciclo,
+            estadoPrograma: this.obtenerValorCadena(detalleSeleccionado, [
+                'estadoPrograma',
+                'estado_programa',
+                'programaEstado',
+                'estadoProg'
+            ]),
+            motaccion: this.obtenerValorCadena(detalleSeleccionado, ['motaccion', 'motAccion', 'motivoAccion'])
         };
 
         this.seleccionAcademicaConfirmada = seleccion;
@@ -888,6 +901,22 @@ export class BibliotecaVirtualComponent {
         return fallback;
     }
 
+    private obtenerValorCadena(
+        det: InformacionAcademicaDetalle | undefined,
+        claves: string[]
+    ): string | undefined {
+        if (!det) {
+            return undefined;
+        }
+        for (const clave of claves) {
+            const valor = (det as any)?.[clave];
+            if (typeof valor === 'string' && valor.trim()) {
+                return valor.trim();
+            }
+        }
+        return undefined;
+    }
+
     private construirResumenSeleccion(seleccion: SeleccionAcademica): { programa: string; especialidad: string; ciclo: string } {
         const programa =
             this.extraerOpciones('gradoAcademico', ['descripcionGradoAcademico', 'gradoAcademicoDescripcion', 'gradoAcademicoDesc'])
@@ -960,6 +989,12 @@ export class BibliotecaVirtualComponent {
             fechaInicio: this.formatLocalDateTime(dtInicio),
             fechaFin: this.formatLocalDateTime(dtFin)
         };
+        if (seleccion.estadoPrograma) {
+            dto.estadoPrograma = seleccion.estadoPrograma;
+        }
+        if (seleccion.motaccion) {
+            dto.motaccion = seleccion.motaccion;
+        }
         if (sedeId != null) {
             dto.codigoSede = String(sedeId);
         }
