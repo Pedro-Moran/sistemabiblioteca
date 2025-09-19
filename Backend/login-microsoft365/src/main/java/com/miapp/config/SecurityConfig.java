@@ -34,7 +34,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Permite OPTIONS en todas las rutas
-                    .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/login-microsoft").permitAll()
+                    .requestMatchers(HttpMethod.POST,
+                            "/auth/login",
+                            "/auth/login-microsoft",
+                            "/auth/microsoft/servicios").permitAll()
                     .requestMatchers(
                             "/auth/forgot-password",
                             "/reset-password",

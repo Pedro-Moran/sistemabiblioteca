@@ -2,19 +2,21 @@ package com.miapp.controller;
 
 
 import com.miapp.model.*;
-import com.miapp.repository.RolRepository;
+import com.miapp.model.dto.GraphGroupDTO;
+import com.miapp.model.dto.MicrosoftServiciosResponseDTO;
+import com.miapp.model.dto.PerfilMicrosoftDTO;
 import com.miapp.service.*;
 import com.miapp.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/auth")
@@ -26,6 +28,7 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
     private final AzureService azureService;
+    private final PerfilMicrosoftService perfilMicrosoftService;
     private final TipoDocumentoService tipoDocumentoService;
     private final EspecialidadService especialidadService;
     private final TipoMaterialService tipoMaterialService;
@@ -93,6 +96,62 @@ public class AuthController {
     }
 
     /**
+     * Obtiene los servicios/perfiles desde Microsoft Graph para el usuario autenticado.
+     * Se espera el token delegado emitido para el usuario (por ejemplo, obtenido mediante MSAL en el frontend).
+     */
+    @PostMapping("/microsoft/servicios")
+    public ResponseEntity<?> obtenerServiciosMicrosoft(@RequestBody Map<String, String> request) {
+        String microsoftToken = request.get("token");
+        if (microsoftToken == null || microsoftToken.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Token de Microsoft requerido"));
+        }
+
+        try {
+            List<GraphGroupDTO> servicios = azureService.obtenerServiciosConTokenUsuario(microsoftToken);
+            MicrosoftServiciosResponseDTO response = perfilMicrosoftService.construirRespuestaServicios(servicios);
+            System.out.println("🧭 Perfiles configurados disponibles tras la consulta a Microsoft:");
+            if (response.getPerfilesDisponibles() != null && !response.getPerfilesDisponibles().isEmpty()) {
+                response.getPerfilesDisponibles().forEach(perfil -> {
+                    if (perfil == null) {
+                        return;
+                    }
+                    System.out.println("   • Perfil BD: " +
+                            (perfil.getRolDescripcion() != null ? perfil.getRolDescripcion() : "(sin rol local)") +
+                            " | Grupo: " + (perfil.getGraphGroupId() != null ? perfil.getGraphGroupId() : "(sin id)") +
+                            " | Nombre Microsoft: " +
+                            (perfil.getGraphGroup() != null && perfil.getGraphGroup().getDisplayName() != null
+                                    ? perfil.getGraphGroup().getDisplayName()
+                                    : perfil.getNombre()));
+                });
+            } else {
+                System.out.println("   • No hay perfiles configurados vinculados al token proporcionado.");
+            }
+            if (response.getGruposSinConfiguracion() != null && !response.getGruposSinConfiguracion().isEmpty()) {
+                System.out.println("🛈 Grupos sin configuración local detectados:");
+                response.getGruposSinConfiguracion().forEach(grupo -> {
+                    if (grupo == null) {
+                        return;
+                    }
+                    System.out.println("   • " +
+                            (grupo.getId() != null ? grupo.getId() : "(sin id)") +
+                            " | " +
+                            (grupo.getDisplayName() != null ? grupo.getDisplayName() : "(sin nombre)"));
+                });
+            }
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        } catch (Exception ex) {
+            log.error("Error al obtener servicios desde Microsoft Graph", ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "message", "Error al consultar Microsoft Graph",
+                            "detail", ex.getMessage()
+                    ));
+        }
+    }
+
+    /**
      * Endpoint para login con Office 365.
      * Se espera recibir desde el frontend el token de Office 365 obtenido (ej. mediante MSAL Angular)
      */
@@ -123,24 +182,111 @@ public class AuthController {
 
         Usuario usuario = usuarioOpt.get();
 
+        List<GraphGroupDTO> graphGroups;
+        try {
+            graphGroups = azureService.obtenerServiciosConTokenUsuario(microsoftToken);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        } catch (Exception ex) {
+            log.error("Error al validar servicios de Microsoft durante el login", ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "message", "Error al validar perfiles en Microsoft 365",
+                            "detail", ex.getMessage()
+                    ));
+        }
+
+        MicrosoftServiciosResponseDTO serviciosResponse = perfilMicrosoftService.construirRespuestaServicios(graphGroups);
+        System.out.println("🧭 Resultado de la validación de roles Microsoft durante el login:");
+        if (serviciosResponse.getPerfilesDisponibles() != null && !serviciosResponse.getPerfilesDisponibles().isEmpty()) {
+            serviciosResponse.getPerfilesDisponibles().forEach(perfil -> {
+                if (perfil == null) {
+                    return;
+                }
+                System.out.println("   • Perfil BD: " +
+                        (perfil.getRolDescripcion() != null ? perfil.getRolDescripcion() : "(sin rol local)") +
+                        " | Grupo: " + (perfil.getGraphGroupId() != null ? perfil.getGraphGroupId() : "(sin id)") +
+                        " | Nombre Microsoft: " +
+                        (perfil.getGraphGroup() != null && perfil.getGraphGroup().getDisplayName() != null
+                                ? perfil.getGraphGroup().getDisplayName()
+                                : perfil.getNombre()));
+            });
+        } else {
+            System.out.println("   • No se encontraron perfiles configurados para los grupos de Microsoft del usuario.");
+        }
+
+        Map<String, PerfilMicrosoftDTO> perfilesDisponibles = new LinkedHashMap<>();
+        serviciosResponse.getPerfilesDisponibles().stream()
+                .filter(Objects::nonNull)
+                .forEach(perfil -> {
+                    registrarPerfilPorClave(perfilesDisponibles, perfil.getRolDescripcion(), perfil);
+                    registrarPerfilPorClave(perfilesDisponibles, perfil.getNombre(), perfil);
+                });
+
+        if (perfilesDisponibles.isEmpty()) {
+            System.out.println("🔎 [Microsoft] No se registraron roles provenientes de Microsoft 365 para comparar.");
+        } else {
+            System.out.println("🔎 [Microsoft] Roles normalizados obtenidos desde Microsoft 365:");
+            perfilesDisponibles.forEach((clave, perfil) -> {
+                if (perfil == null) {
+                    return;
+                }
+                String origen = perfil.getRolDescripcion() != null ? perfil.getRolDescripcion() : perfil.getNombre();
+                String grupo = perfil.getGraphGroupId() != null ? perfil.getGraphGroupId() : "(sin id)";
+                System.out.println("   • clave=" + clave + " | origen=" + (origen != null ? origen : "(sin nombre)") + " | grupo=" + grupo);
+            });
+        }
+
+        Set<String> rolesUsuario = usuario.getRoles().stream()
+                .map(Rol::getDescripcion)
+                .filter(Objects::nonNull)
+                .map(valor -> valor.toUpperCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+
+        if (rolesUsuario.isEmpty()) {
+            System.out.println("🗄️ [Backend] El usuario no posee roles locales asociados en la base de datos.");
+        } else {
+            System.out.println("🗄️ [Backend] Roles locales del usuario (normalizados):");
+            rolesUsuario.forEach(rol -> System.out.println("   • " + rol));
+        }
+
         String rolDescripcion;
         if (requestedRole != null && !requestedRole.isBlank()) {
-            boolean hasRole = usuario.getRoles().stream()
-                    .anyMatch(r -> r.getDescripcion().equalsIgnoreCase(requestedRole));
-            if (!hasRole) {
+            String requestedUpper = requestedRole.toUpperCase(Locale.ROOT);
+            System.out.println("🎯 Rol solicitado por el frontend: " + requestedUpper);
+            PerfilMicrosoftDTO perfilSeleccionado = perfilesDisponibles.get(requestedUpper);
+            if (perfilSeleccionado == null) {
+                System.out.println("❌ El rol " + requestedUpper + " no coincide con ningún perfil configurado proveniente de Microsoft 365.");
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("message", "Rol no autorizado"));
+                        .body(Map.of("message", "El rol seleccionado no está habilitado en Microsoft 365"));
             }
-            rolDescripcion = requestedRole;
+            String rolConfigurado = perfilSeleccionado.getRolDescripcion();
+            String rolConfiguradoUpper = rolConfigurado != null ? rolConfigurado.toUpperCase(Locale.ROOT) : null;
+            if (rolConfiguradoUpper != null && !rolesUsuario.contains(rolConfiguradoUpper) && !rolesUsuario.contains(requestedUpper)) {
+                System.out.println("❌ El rol " + requestedUpper + " fue validado en Microsoft, pero el usuario no cuenta con el rol local "
+                        + rolConfiguradoUpper + ". Roles locales del usuario: " + rolesUsuario);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("message", "Rol no autorizado para el usuario"));
+            }
+            rolDescripcion = rolConfigurado != null
+                    ? rolConfigurado
+                    : perfilSeleccionado.getNombre() != null ? perfilSeleccionado.getNombre() : requestedRole;
+            System.out.println("✅ Rol autorizado tras validar Microsoft y backend: " + rolDescripcion);
         } else {
-            rolDescripcion = usuario.getRoles().stream()
-                    .filter(r -> r.getDescripcion().equalsIgnoreCase("ESTUDIANTE"))
+            rolDescripcion = perfilesDisponibles.values().stream()
+                    .map(PerfilMicrosoftDTO::getRolDescripcion)
+                    .filter(Objects::nonNull)
+                    .filter(valor -> rolesUsuario.contains(valor.toUpperCase(Locale.ROOT)))
                     .findFirst()
-                    .map(Rol::getDescripcion)
                     .orElseGet(() -> usuario.getRoles().stream()
+                            .filter(r -> r.getDescripcion() != null && r.getDescripcion().equalsIgnoreCase("ESTUDIANTE"))
                             .findFirst()
                             .map(Rol::getDescripcion)
-                            .orElse("Sin Rol"));
+                            .orElseGet(() -> usuario.getRoles().stream()
+                                    .findFirst()
+                                    .map(Rol::getDescripcion)
+                                    .orElse("Sin Rol")));
+            System.out.println("🤖 Rol seleccionado automáticamente para el token de Microsoft: " + rolDescripcion);
         }
 
         usuarioService.incrementarContadorLogins(usuario.getLogin());
@@ -409,6 +555,19 @@ public class AuthController {
         // Puedes usar listAll() o listActivos() según lo requieras
         List<TipoMaterial> lista = tipoMaterialService.listAll();
         return ResponseEntity.ok(Map.of("status", 0, "data", lista));
+    }
+
+    private void registrarPerfilPorClave(Map<String, PerfilMicrosoftDTO> perfilesDisponibles,
+                                         String clave,
+                                         PerfilMicrosoftDTO perfil) {
+        if (clave == null || perfil == null) {
+            return;
+        }
+        String normalizada = clave.trim();
+        if (normalizada.isEmpty()) {
+            return;
+        }
+        perfilesDisponibles.putIfAbsent(normalizada.toUpperCase(Locale.ROOT), perfil);
     }
 
     private void registrarVisitaIngreso(Usuario usuario) {

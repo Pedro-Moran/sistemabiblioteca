@@ -1,0 +1,13 @@
+-- Script de creación de la tabla PERFIL_MICROSOFT
+-- Ejecutar en la base de datos antes de levantar el backend con spring.jpa.hibernate.ddl-auto=validate
+
+CREATE TABLE PERFIL_MICROSOFT (
+    GRAPH_GROUP_ID   VARCHAR2(64 CHAR)    NOT NULL,
+    NOMBRE           VARCHAR2(100 CHAR)   NOT NULL,
+    IDROL            NUMBER(10, 0)        NOT NULL,
+    CONSTRAINT PK_PERFIL_MICROSOFT PRIMARY KEY (GRAPH_GROUP_ID),
+    CONSTRAINT FK_PERFIL_MICROSOFT_ROL FOREIGN KEY (IDROL)
+        REFERENCES ROLUSUARIO (IDROL)
+);
+
+CREATE INDEX IDX_PERFIL_MICROSOFT_ROL ON PERFIL_MICROSOFT (IDROL);
