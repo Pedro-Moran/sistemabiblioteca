@@ -3,6 +3,8 @@ package com.miapp.service;
 import com.miapp.model.Rol;
 import com.miapp.model.TipoDocumento;
 import com.miapp.model.Usuario;
+import com.miapp.model.dto.IntegracionPersonaDetalleDTO;
+import com.miapp.model.dto.IntegracionPersonaResultDTO;
 import com.miapp.repository.RolRepository;
 import com.miapp.repository.TipoDocumentoRepository;
 import com.miapp.repository.UsuarioRepository;
@@ -13,10 +15,16 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.ArrayList;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class UsuarioService {
@@ -149,6 +157,56 @@ public class UsuarioService {
         usuario.setIdEstado("ACTIVO");
 
         // Guardar en base de datos
+        return usuarioRepository.save(usuario);
+    }
+
+    public Usuario registrarInvitadoDesdeIntegracion(String email,
+                                                     String microsoftId,
+                                                     IntegracionPersonaResultDTO persona,
+                                                     String country) {
+        Usuario usuario = new Usuario();
+        usuario.setLogin(email);
+        usuario.setEmail(email);
+        usuario.setPassword(passwordEncoder.encode(microsoftId));
+        usuario.setIdEstado("ACTIVO");
+
+        Rol rolInvitado = rolRepository.findByDescripcion("INVITADO")
+                .orElseThrow(() -> new RuntimeException("Rol 'INVITADO' no encontrado"));
+        usuario.getRoles().add(rolInvitado);
+
+        if (persona != null) {
+            usuario.setNombreUsuario(persona.getNombre());
+            usuario.setApellidoPaterno(persona.getApellidoPaterno());
+            usuario.setApellidoMaterno(persona.getApellidoMaterno());
+            usuario.setEmailInst(persona.getCorreo());
+            usuario.setEmplid(persona.getEmplId());
+            usuario.setNationalIdType(persona.getNacionalidadTipo());
+            usuario.setNationalId(persona.getNacionalidadId());
+            usuario.setName(construirNombreCompleto(persona.getNombre(),
+                    persona.getApellidoPaterno(), persona.getApellidoMaterno()));
+            usuario.setFecNac(persona.getFechaNacimiento());
+            usuario.setSex(persona.getSexo());
+            usuario.setCountry(country);
+            usuario.setUsuarioCreacion("MICROSOFT 365");
+
+            if (persona.getFechaNacimiento() != null && !persona.getFechaNacimiento().isBlank()) {
+                try {
+                    LocalDate nacimiento = LocalDate.parse(persona.getFechaNacimiento());
+                    usuario.setFechaNacimiento(nacimiento.atStartOfDay());
+                    usuario.setAge(Period.between(nacimiento, LocalDate.now()).getYears());
+                } catch (DateTimeParseException ignored) {
+                    // Se omite el cálculo si el formato de fecha no es válido
+                }
+            }
+
+            if (persona.getDetalleInformacionAcademica() != null) {
+                persona.getDetalleInformacionAcademica().stream()
+                        .filter(Objects::nonNull)
+                        .findFirst()
+                        .ifPresent(detalle -> asignarDetalleAcademico(usuario, detalle));
+            }
+        }
+
         return usuarioRepository.save(usuario);
     }
 
@@ -372,5 +430,26 @@ public class UsuarioService {
             u.setLoginCount(count + 1);
             usuarioRepository.save(u);
         });
+    }
+
+    private void asignarDetalleAcademico(Usuario usuario, IntegracionPersonaDetalleDTO detalle) {
+        String programa = seleccionarValorPreferido(detalle.getDescCarrera(), detalle.getCarrera());
+        String campus = seleccionarValorPreferido(detalle.getDescCampus(), detalle.getCampus());
+        usuario.setProgram(programa);
+        usuario.setCampus(campus);
+    }
+
+    private String construirNombreCompleto(String nombre, String apellidoPaterno, String apellidoMaterno) {
+        return Stream.of(nombre, apellidoPaterno, apellidoMaterno)
+                .filter(valor -> valor != null && !valor.isBlank())
+                .collect(Collectors.joining(" "))
+                .trim();
+    }
+
+    private String seleccionarValorPreferido(String preferido, String alterno) {
+        if (preferido != null && !preferido.isBlank()) {
+            return preferido;
+        }
+        return alterno;
     }
 }

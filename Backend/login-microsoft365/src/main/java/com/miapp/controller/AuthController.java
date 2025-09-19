@@ -3,6 +3,7 @@ package com.miapp.controller;
 
 import com.miapp.model.*;
 import com.miapp.model.dto.GraphGroupDTO;
+import com.miapp.model.dto.IntegracionPersonaResultDTO;
 import com.miapp.model.dto.MicrosoftServiciosResponseDTO;
 import com.miapp.model.dto.PerfilMicrosoftDTO;
 import com.miapp.service.*;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -34,6 +36,7 @@ public class AuthController {
     private final TipoMaterialService tipoMaterialService;
     private final PasswordResetService passwordResetService;
     private final VisitaBibliotecaVirtualService visitaBibliotecaVirtualService;
+    private final IntegracionPersonaService integracionPersonaService;
 
     /**
      * Endpoint al que redirige Azure AD después de un login exitoso.
@@ -172,12 +175,40 @@ public class AuthController {
         Optional<Usuario> usuarioOpt = usuarioService.buscarPorEmail(email);
 
         if (usuarioOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of(
-                            "message", "Usuario no registrado",
-                            "email", email,
-                            "microsoftId", microsoftId
-                    ));
+            try {
+                Optional<IntegracionPersonaResultDTO> personaOpt = integracionPersonaService.obtenerInformacionPersona(email);
+                if (personaOpt.isEmpty()) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(Map.of(
+                                    "message", "Usuario no registrado",
+                                    "detail", "No se encontró información en integración académica",
+                                    "email", email,
+                                    "microsoftId", microsoftId
+                            ));
+                }
+                Usuario invitado = usuarioService.registrarInvitadoDesdeIntegracion(
+                        email,
+                        microsoftId,
+                        personaOpt.get(),
+                        integracionPersonaService.getCountryHeader()
+                );
+                usuarioOpt = Optional.of(invitado);
+            } catch (ResponseStatusException ex) {
+                log.error("Error al consultar integración académica para {}", email, ex);
+                return ResponseEntity.status(ex.getStatusCode())
+                        .body(Map.of(
+                                "message", "No se pudo registrar al usuario automáticamente",
+                                "detail", ex.getReason(),
+                                "email", email
+                        ));
+            } catch (RuntimeException ex) {
+                log.error("Error al registrar usuario invitado para {}", email, ex);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of(
+                                "message", "Error al registrar usuario automáticamente",
+                                "detail", ex.getMessage()
+                        ));
+            }
         }
 
         Usuario usuario = usuarioOpt.get();
