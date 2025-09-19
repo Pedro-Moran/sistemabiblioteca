@@ -1,17 +1,16 @@
+import { CommonModule, formatDate, registerLocaleData } from '@angular/common';
 import { Component } from '@angular/core';
-import { MessageService, ConfirmationService } from 'primeng/api';
-import { TemplateModule } from '../../template.module';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 import { Sedes } from '../../interfaces/sedes';
-import { FormBuilder } from '@angular/forms';
-import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { BibliotecaVirtualService } from '../../services/biblioteca-virtual.service';
 import { GenericoService } from '../../services/generico.service';
+import { MaterialBibliograficoService } from '../../services/material-bibliografico.service';
+import { InformacionAcademicaDetalle, SeleccionAcademica } from '../../interfaces/material-bibliografico/informacion-academica';
 
-import { CommonModule, formatDate, registerLocaleData } from '@angular/common';
 import localeEsPe from '@angular/common/locales/es-PE';
 registerLocaleData(localeEsPe);
-import { FormsModule } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
 
 // PrimeNG Modules que vas a usar:
@@ -32,8 +31,8 @@ import { ToastModule } from 'primeng/toast';
 @Component({
     selector: 'app-biblioteca-virtual',
     standalone: true,
-    imports: [CommonModule, FormsModule, ToolbarModule, DataViewModule, SelectModule, SelectButtonModule, DialogModule, RadioButtonModule, CheckboxModule, CalendarModule, ButtonModule, TagModule, TooltipModule, ToastModule],
-    providers: [MessageService, ConfirmationService],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, ToolbarModule, DataViewModule, SelectModule, SelectButtonModule, DialogModule, RadioButtonModule, CheckboxModule, CalendarModule, ButtonModule, TagModule, TooltipModule, ToastModule],
+    providers: [MessageService],
     template: `
         <div class="card flex flex-col gap-4 w-full">
             <h5>{{ titulo }}</h5>
@@ -197,12 +196,128 @@ import { ToastModule } from 'primeng/toast';
                                 <p-calendar name="fechaFinTime" [(ngModel)]="prestamo.fechaFinTime" timeOnly="true" hourFormat="24" appendTo="body" [minDate]="minHora" [maxDate]="maxHora" (ngModelChange)="onDateRangeChange()"> </p-calendar>
                             </div>
                         </div>
+                        <div class="border border-surface-200 dark:border-surface-700 rounded-md p-3 mt-2">
+                            <div class="flex justify-between gap-3 items-start">
+                                <div>
+                                    <div class="text-sm font-medium text-color-secondary">Información académica</div>
+                                    <ng-container *ngIf="resumenSeleccionAcademica; else seleccionPendiente">
+                                        <div class="text-sm mt-2">
+                                            <span class="font-semibold">Programa:</span>
+                                            {{ resumenSeleccionAcademica.programa }}
+                                        </div>
+                                        <div class="text-sm">
+                                            <span class="font-semibold">Especialidad:</span>
+                                            {{ resumenSeleccionAcademica.especialidad }}
+                                        </div>
+                                        <div class="text-sm">
+                                            <span class="font-semibold">Ciclo:</span>
+                                            {{ resumenSeleccionAcademica.ciclo }}
+                                        </div>
+                                    </ng-container>
+                                    <ng-template #seleccionPendiente>
+                                        <div class="text-sm mt-2 text-color-secondary">
+                                            Selecciona tu programa, especialidad y ciclo antes de confirmar la reserva.
+                                        </div>
+                                    </ng-template>
+                                </div>
+                                <button
+                                    pButton
+                                    type="button"
+                                    class="p-button-sm p-button-text"
+                                    icon="pi pi-pencil"
+                                    label="{{ resumenSeleccionAcademica ? 'Cambiar' : 'Seleccionar' }}"
+                                    (click)="abrirFormularioAcademico()"
+                                ></button>
+                            </div>
+                        </div>
                     </div>
                 </ng-template>
 
                 <ng-template pTemplate="footer">
                     <button pButton label="Confirmar" (click)="confirmarPrestamo()" [disabled]="!selectedTipo" class="p-button-success mr-2"></button>
                     <button pButton label="Cancelar" (click)="closeDialog()" class="p-button-secondary"></button>
+                </ng-template>
+            </p-dialog>
+
+            <p-dialog
+                [(visible)]="mostrarFormularioAcademico"
+                [modal]="true"
+                [draggable]="false"
+                [resizable]="false"
+                header="Información académica del usuario"
+                appendTo="body"
+                [style]="{ width: '28rem' }"
+                (onHide)="onCancelarFormularioAcademico()"
+            >
+                <ng-template pTemplate="content">
+                    <div *ngIf="cargandoInformacionAcademica" class="py-6 text-center text-sm text-color-secondary">
+                        Cargando información académica...
+                    </div>
+                    <form *ngIf="!cargandoInformacionAcademica" [formGroup]="formAcademico" class="flex flex-col gap-4">
+                        <div class="flex flex-col gap-2">
+                            <label for="programaAcademico" class="font-medium text-sm">Programa</label>
+                            <p-select
+                                id="programaAcademico"
+                                appendTo="body"
+                                formControlName="programa"
+                                [options]="opcionesProgramaAcademico"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Seleccionar"
+                            ></p-select>
+                            <small class="text-xs text-red-500" *ngIf="formAcademico.get('programa')?.touched && formAcademico.get('programa')?.invalid">
+                                Seleccione un programa.
+                            </small>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label for="especialidadAcademica" class="font-medium text-sm">Especialidad</label>
+                            <p-select
+                                id="especialidadAcademica"
+                                appendTo="body"
+                                formControlName="especialidad"
+                                [options]="opcionesEspecialidadAcademica"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Seleccionar"
+                            ></p-select>
+                            <small class="text-xs text-red-500" *ngIf="formAcademico.get('especialidad')?.touched && formAcademico.get('especialidad')?.invalid">
+                                Seleccione una especialidad.
+                            </small>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label for="cicloAcademico" class="font-medium text-sm">Ciclo</label>
+                            <p-select
+                                id="cicloAcademico"
+                                appendTo="body"
+                                formControlName="ciclo"
+                                [options]="opcionesCicloAcademico"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Seleccionar"
+                            ></p-select>
+                            <small class="text-xs text-red-500" *ngIf="formAcademico.get('ciclo')?.touched && formAcademico.get('ciclo')?.invalid">
+                                Seleccione un ciclo.
+                            </small>
+                        </div>
+                    </form>
+                </ng-template>
+                <ng-template pTemplate="footer">
+                    <button
+                        pButton
+                        type="button"
+                        class="p-button-outlined p-button-danger"
+                        label="Cancelar"
+                        (click)="onCancelarFormularioAcademico()"
+                        [disabled]="cargandoInformacionAcademica"
+                    ></button>
+                    <button
+                        pButton
+                        type="button"
+                        class="p-button-success"
+                        label="Confirmar"
+                        (click)="confirmarSeleccionAcademica()"
+                        [disabled]="formAcademico.invalid || cargandoInformacionAcademica"
+                    ></button>
                 </ng-template>
             </p-dialog>
 
@@ -285,6 +400,16 @@ export class BibliotecaVirtualComponent {
     minDate: Date = new Date();
     minHora: Date | null = null;
     maxHora: Date | null = null;
+    formAcademico: FormGroup;
+    mostrarFormularioAcademico = false;
+    cargandoInformacionAcademica = false;
+    informacionAcademicaDisponible: InformacionAcademicaDetalle[] = [];
+    opcionesProgramaAcademico: { label: string; value: string }[] = [];
+    opcionesEspecialidadAcademica: { label: string; value: string }[] = [];
+    opcionesCicloAcademico: { label: string; value: string }[] = [];
+    resumenSeleccionAcademica: { programa: string; especialidad: string; ciclo: string } | null = null;
+    private seleccionAcademicaConfirmada: SeleccionAcademica | null = null;
+    private onSeleccionAcademicaListo: ((seleccion: SeleccionAcademica) => void) | null = null;
     prestamo: {
         equipoId?: number;
         tipoUsuario?: number;
@@ -310,12 +435,26 @@ export class BibliotecaVirtualComponent {
     constructor(
         private bibliotecaVirtualService: BibliotecaVirtualService,
         private genericoService: GenericoService,
+        private materialBibliograficoService: MaterialBibliograficoService,
         private fb: FormBuilder,
-        private router: Router,
         private authService: AuthService,
-        private confirmationService: ConfirmationService,
         private messageService: MessageService
-    ) {}
+    ) {
+        this.formAcademico = this.fb.group({
+            programa: [null, Validators.required],
+            especialidad: [null, Validators.required],
+            ciclo: [null, Validators.required]
+        });
+
+        this.formAcademico.get('programa')?.valueChanges.subscribe((valor: string | null) => {
+            this.actualizarEspecialidades(valor ?? null);
+        });
+
+        this.formAcademico.get('especialidad')?.valueChanges.subscribe((valor: string | null) => {
+            const programaActual = this.formAcademico.get('programa')?.value ?? null;
+            this.actualizarCiclos(programaActual ?? null, valor ?? null);
+        });
+    }
     async ngOnInit() {
         await this.ListaSede();
         await this.listar();
@@ -457,6 +596,7 @@ export class BibliotecaVirtualComponent {
     reservar(item: any) {
         this.selectedItem = item;
         this.selectedTipo = undefined;
+        this.acceptedTerms = false;
         const now = new Date();
         if (item.horaInicio && item.horaFin) {
             this.minHora = this.parseTimeAtDate(item.horaInicio, now);
@@ -504,7 +644,6 @@ export class BibliotecaVirtualComponent {
             return;
         }
 
-        // 2) validamos que acepte términos
         if (!this.prestamo.fechaInicioDate || !this.prestamo.fechaInicioTime || !this.prestamo.fechaFinDate || !this.prestamo.fechaFinTime) {
             this.messageService.add({ severity: 'warn', detail: 'Por favor selecciona fecha y hora de inicio y de devolución' });
             return;
@@ -515,9 +654,6 @@ export class BibliotecaVirtualComponent {
             return;
         }
 
-        const email = this.authService.getEmail();
-
-        // 2) Ahora TS sabe que no son null/undefined
         const inicioDate = this.prestamo.fechaInicioDate;
         const inicioTime = this.prestamo.fechaInicioTime;
         const dtInicio = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate(), inicioTime.getHours(), inicioTime.getMinutes());
@@ -525,11 +661,11 @@ export class BibliotecaVirtualComponent {
         const finDate = this.prestamo.fechaFinDate;
         const finTime = this.prestamo.fechaFinTime;
         const dtFin = new Date(finDate.getFullYear(), finDate.getMonth(), finDate.getDate(), finTime.getHours(), finTime.getMinutes());
+
         if (this.selectedItem.horaInicio && this.selectedItem.horaFin) {
             const inicioPermitido = this.parseTimeAtDate(this.selectedItem.horaInicio, dtInicio);
             const finPermitido = this.parseTimeAtDate(this.selectedItem.horaFin, dtInicio);
             if (finPermitido <= inicioPermitido) {
-                // rango cruza medianoche
                 if (dtFin < inicioPermitido) {
                     finPermitido.setDate(finPermitido.getDate() + 1);
                 } else {
@@ -537,7 +673,7 @@ export class BibliotecaVirtualComponent {
                 }
             }
             if (dtInicio < inicioPermitido || dtFin > finPermitido) {
-                this.messageService.add({ severity: 'warn', detail: 'El horario seleccionado est\u00e1 fuera del rango permitido.' });
+                this.messageService.add({ severity: 'warn', detail: 'El horario seleccionado está fuera del rango permitido.' });
                 return;
             }
         }
@@ -545,33 +681,302 @@ export class BibliotecaVirtualComponent {
         if (this.selectedItem.maxHoras) {
             const diff = (dtFin.getTime() - dtInicio.getTime()) / 3600000;
             if (diff > this.selectedItem.maxHoras) {
-                this.messageService.add({ severity: 'warn', detail: `M\u00e1ximo ${this.selectedItem.maxHoras} horas de pr\u00e9stamo.` });
+                this.messageService.add({ severity: 'warn', detail: `Máximo ${this.selectedItem.maxHoras} horas de préstamo.` });
                 return;
             }
         }
-        const dto = {
-            equipoId: this.selectedItem.idEquipo,
+
+        const inicioFinal = new Date(dtInicio);
+        const finFinal = new Date(dtFin);
+        this.solicitarSeleccionAcademica((seleccion) => this.enviarSolicitudPrestamo(inicioFinal, finFinal, seleccion));
+    }
+
+    abrirFormularioAcademico(): void {
+        this.solicitarSeleccionAcademica();
+    }
+
+    private solicitarSeleccionAcademica(continuacion?: (seleccion: SeleccionAcademica) => void): void {
+        const correo = this.obtenerCorreoUsuario();
+        if (!correo) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Usuario sin correo',
+                detail: 'No se pudo determinar el correo electrónico del usuario autenticado.'
+            });
+            return;
+        }
+
+        this.onSeleccionAcademicaListo = continuacion ?? null;
+        this.mostrarFormularioAcademico = true;
+        this.cargandoInformacionAcademica = true;
+        this.formAcademico.reset();
+        this.formAcademico.markAsPristine();
+        this.formAcademico.markAsUntouched();
+        this.formAcademico.enable({ emitEvent: false });
+        this.informacionAcademicaDisponible = [];
+        this.opcionesProgramaAcademico = [];
+        this.opcionesEspecialidadAcademica = [];
+        this.opcionesCicloAcademico = [];
+
+        const preseleccion = this.seleccionAcademicaConfirmada;
+
+        this.materialBibliograficoService.obtenerInformacionAcademica(correo).subscribe({
+            next: (lista: InformacionAcademicaDetalle[]) => {
+                this.cargandoInformacionAcademica = false;
+                if (!lista.length) {
+                    this.messageService.add({
+                        severity: 'warn',
+                        summary: 'Información no disponible',
+                        detail: 'El usuario no cuenta con información académica registrada.'
+                    });
+                    this.onSeleccionAcademicaListo = null;
+                    this.cerrarFormularioAcademico();
+                    return;
+                }
+
+                this.informacionAcademicaDisponible = lista;
+                this.actualizarProgramas(preseleccion?.programa ?? null);
+                const programaActual = this.formAcademico.get('programa')?.value ?? preseleccion?.programa ?? null;
+                this.actualizarEspecialidades(programaActual ?? null, preseleccion?.especialidad ?? null, preseleccion?.ciclo ?? null);
+            },
+            error: () => {
+                this.cargandoInformacionAcademica = false;
+                this.onSeleccionAcademicaListo = null;
+                this.cerrarFormularioAcademico();
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo obtener la información académica del usuario.'
+                });
+            }
+        });
+    }
+
+    confirmarSeleccionAcademica(): void {
+        if (this.cargandoInformacionAcademica) {
+            return;
+        }
+        if (this.formAcademico.invalid) {
+            this.formAcademico.markAllAsTouched();
+            return;
+        }
+
+        const valores = this.formAcademico.value as { programa: string; especialidad: string; ciclo: string };
+        const seleccion: SeleccionAcademica = {
+            programa: valores.programa,
+            especialidad: valores.especialidad,
+            ciclo: valores.ciclo
+        };
+
+        this.seleccionAcademicaConfirmada = seleccion;
+        this.resumenSeleccionAcademica = this.construirResumenSeleccion(seleccion);
+
+        const continuar = this.onSeleccionAcademicaListo;
+        this.onSeleccionAcademicaListo = null;
+
+        this.cerrarFormularioAcademico();
+
+        if (continuar) {
+            continuar(seleccion);
+        } else {
+            this.messageService.add({ severity: 'success', detail: 'Información académica actualizada.' });
+        }
+    }
+
+    onCancelarFormularioAcademico(): void {
+        this.onSeleccionAcademicaListo = null;
+        this.cerrarFormularioAcademico();
+    }
+
+    private cerrarFormularioAcademico(): void {
+        this.mostrarFormularioAcademico = false;
+        this.cargandoInformacionAcademica = false;
+        this.formAcademico.enable({ emitEvent: false });
+        this.formAcademico.reset();
+        this.informacionAcademicaDisponible = [];
+        this.opcionesProgramaAcademico = [];
+        this.opcionesEspecialidadAcademica = [];
+        this.opcionesCicloAcademico = [];
+    }
+
+    private actualizarProgramas(preseleccion?: string | null): void {
+        this.opcionesProgramaAcademico = this.extraerOpciones(
+            'gradoAcademico',
+            ['descripcionGradoAcademico', 'gradoAcademicoDescripcion', 'gradoAcademicoDesc']
+        );
+        const control = this.formAcademico.get('programa');
+        const actual = preseleccion ?? (control?.value as string | null) ?? null;
+        let valor = actual && this.opcionesProgramaAcademico.some((opt) => opt.value === actual) ? actual : null;
+        if (!valor && this.opcionesProgramaAcademico.length === 1) {
+            valor = this.opcionesProgramaAcademico[0].value;
+        }
+        control?.setValue(valor, { emitEvent: false });
+    }
+
+    private actualizarEspecialidades(
+        programa: string | null,
+        preseleccion?: string | null,
+        preseleccionCiclo?: string | null
+    ): void {
+        this.opcionesEspecialidadAcademica = this.extraerOpciones(
+            'carrera',
+            ['descripcionCarrera', 'carreraDescripcion', 'carreraDesc'],
+            programa ?? null
+        );
+        const control = this.formAcademico.get('especialidad');
+        const actual = control?.value as string | null;
+        let valor = preseleccion ?? (actual && this.opcionesEspecialidadAcademica.some((opt) => opt.value === actual) ? actual : null);
+        if (!valor && this.opcionesEspecialidadAcademica.length === 1) {
+            valor = this.opcionesEspecialidadAcademica[0].value;
+        }
+        control?.setValue(valor, { emitEvent: false });
+        this.actualizarCiclos(programa, valor ?? null, preseleccionCiclo ?? null);
+    }
+
+    private actualizarCiclos(
+        programa: string | null,
+        especialidad: string | null,
+        preseleccion?: string | null
+    ): void {
+        this.opcionesCicloAcademico = this.extraerOpciones(
+            'cicloNivel',
+            ['descripcionCicloNivel', 'cicloNivelDescripcion', 'cicloDescripcion'],
+            programa ?? null,
+            especialidad ?? null
+        );
+        const control = this.formAcademico.get('ciclo');
+        const actual = control?.value as string | null;
+        let valor = preseleccion ?? (actual && this.opcionesCicloAcademico.some((opt) => opt.value === actual) ? actual : null);
+        if (!valor && this.opcionesCicloAcademico.length === 1) {
+            valor = this.opcionesCicloAcademico[0].value;
+        }
+        control?.setValue(valor, { emitEvent: false });
+    }
+
+    private extraerOpciones(
+        campo: 'gradoAcademico' | 'carrera' | 'cicloNivel',
+        clavesDescripcion: string[],
+        programa?: string | null,
+        especialidad?: string | null
+    ): { label: string; value: string }[] {
+        const mapa = new Map<string, string>();
+        this.informacionAcademicaDisponible.forEach((item) => {
+            if (programa && item.gradoAcademico !== programa) {
+                return;
+            }
+            if (especialidad && item.carrera !== especialidad) {
+                return;
+            }
+            const valor = (item as any)[campo];
+            if (typeof valor !== 'string' || !valor) {
+                return;
+            }
+            if (!mapa.has(valor)) {
+                mapa.set(valor, this.obtenerEtiqueta(item, clavesDescripcion, valor));
+            }
+        });
+        return Array.from(mapa.entries()).map(([value, label]) => ({ value, label }));
+    }
+
+    private obtenerEtiqueta(det: InformacionAcademicaDetalle, claves: string[], fallback: string): string {
+        for (const clave of claves) {
+            const valor = (det as any)?.[clave];
+            if (typeof valor === 'string' && valor.trim()) {
+                return valor.trim();
+            }
+        }
+        return fallback;
+    }
+
+    private construirResumenSeleccion(seleccion: SeleccionAcademica): { programa: string; especialidad: string; ciclo: string } {
+        const programa =
+            this.extraerOpciones('gradoAcademico', ['descripcionGradoAcademico', 'gradoAcademicoDescripcion', 'gradoAcademicoDesc'])
+                .find((opt) => opt.value === seleccion.programa)?.label ?? seleccion.programa;
+        const especialidad =
+            this.extraerOpciones('carrera', ['descripcionCarrera', 'carreraDescripcion', 'carreraDesc'], seleccion.programa)
+                .find((opt) => opt.value === seleccion.especialidad)?.label ?? seleccion.especialidad;
+        const ciclo =
+            this.extraerOpciones('cicloNivel', ['descripcionCicloNivel', 'cicloNivelDescripcion', 'cicloDescripcion'], seleccion.programa, seleccion.especialidad)
+                .find((opt) => opt.value === seleccion.ciclo)?.label ?? seleccion.ciclo;
+        return { programa, especialidad, ciclo };
+    }
+
+    private obtenerCorreoUsuario(): string | null {
+        const actual = this.authService.currentUserValue as any;
+        if (actual?.email && typeof actual.email === 'string' && actual.email.includes('@')) {
+            return actual.email;
+        }
+        const tokenUser: any = this.authService.getUser();
+        const posibles = ['email', 'correo', 'upn', 'preferred_username', 'userprincipalname', 'unique_name', 'sub'];
+        for (const clave of posibles) {
+            const valor = tokenUser?.[clave];
+            if (typeof valor === 'string' && valor.includes('@')) {
+                return valor;
+            }
+        }
+        return null;
+    }
+
+    private obtenerEquipoId(item: any): number | null {
+        if (!item) {
+            return null;
+        }
+        const posibles = [item.idEquipo, item.id, item.equipoId, item?.equipo?.id, item?.equipoLaboratorio?.id];
+        for (const posible of posibles) {
+            const id = Number(posible);
+            if (Number.isFinite(id) && id > 0) {
+                return id;
+            }
+        }
+        return null;
+    }
+
+    private enviarSolicitudPrestamo(dtInicio: Date, dtFin: Date, seleccion: SeleccionAcademica): void {
+        const correo = this.obtenerCorreoUsuario() ?? this.authService.getEmail();
+        if (!correo) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Usuario sin correo',
+                detail: 'No se pudo determinar el correo electrónico del usuario autenticado.'
+            });
+            return;
+        }
+
+        const equipoId = this.obtenerEquipoId(this.selectedItem);
+        if (!equipoId) {
+            this.messageService.add({ severity: 'error', detail: 'No se pudo determinar el equipo seleccionado.' });
+            return;
+        }
+
+        const sedeId = this.selectedItem?.sede?.id ?? this.sedeFiltro?.id ?? null;
+        const dto: any = {
+            equipoId,
             tipoPrestamo: this.selectedTipo,
-            tipoUsuario: 1, // por ejemplo
-            codigoUsuario: email,
-            codigoSede: this.selectedItem.sede.id, // o item.sede.descripcion si es string
-            codigoSemestre: '2025-I',
-            codigoPrograma: 'ISC',
-            codigoEscuela: 'FISI',
-            codigoTurno: 'Mañana',
-            codigoCiclo: '1',
+            tipoUsuario: 1,
+            codigoUsuario: correo,
+            codigoPrograma: seleccion.programa,
+            codigoEscuela: seleccion.especialidad,
+            codigoCiclo: seleccion.ciclo,
             fechaInicio: this.formatLocalDateTime(dtInicio),
             fechaFin: this.formatLocalDateTime(dtFin)
         };
+        if (sedeId != null) {
+            dto.codigoSede = String(sedeId);
+        }
+        dto.codigoSemestre = this.selectedItem?.codigoSemestre ?? '2025-I';
+        dto.codigoTurno = this.selectedItem?.codigoTurno ?? 'Mañana';
+
         this.bibliotecaVirtualService.solicitar(dto).subscribe({
             next: () => {
                 this.messageService.add({ severity: 'success', detail: 'Solicitud enviada.' });
-                this.listar(); // refresca lista para ver nuevo estado
+                this.listar(this.sedeFiltro?.id);
+                this.closeDialog();
+                this.acceptedTerms = false;
+                this.selectedTipo = undefined;
             },
             error: () => {
                 this.messageService.add({ severity: 'error', detail: 'Error al solicitar.' });
             }
         });
-        this.closeDialog();
     }
 }
