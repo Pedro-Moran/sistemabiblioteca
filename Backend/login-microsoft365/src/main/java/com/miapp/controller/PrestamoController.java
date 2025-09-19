@@ -54,7 +54,9 @@ public class PrestamoController {
                 dto.getTipoPrestamo(),
                 dto.getFechaInicio(),      // ← nuevo
                 dto.getFechaFin(),         // ← nuevo
-                usuario
+                usuario,
+                dto.getEstadoPrograma(),
+                dto.getMotaccion()
         );
         return ResponseEntity.ok(Map.of("status","0","data",creado));
     }

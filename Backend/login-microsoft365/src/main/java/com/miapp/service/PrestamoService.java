@@ -65,6 +65,7 @@ public class PrestamoService {
     private final BibliotecaMapper bibliotecaMapper;
     private final JdbcTemplate jdbcTemplate;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+    private final ProgramaMotivoAccionService programaMotivoAccionService;
 
     public DetallePrestamo solicitarPrestamo(Long equipoId,
                                              Integer tipoUsuario,
@@ -78,7 +79,11 @@ public class PrestamoService {
                                              TipoPrestamo tipoPrestamo,
                                              LocalDateTime fechaInicio,
                                              LocalDateTime fechaFin,
-                                             String usuarioLogueado) {
+                                             String usuarioLogueado,
+                                             String estadoPrograma,
+                                             String motaccion) {
+        programaMotivoAccionService.validarReservaPermitida(estadoPrograma, motaccion);
+
         Equipo eq = equipoRepository.findById(equipoId)
                 .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
         // 1) Estado “RESERVADO”

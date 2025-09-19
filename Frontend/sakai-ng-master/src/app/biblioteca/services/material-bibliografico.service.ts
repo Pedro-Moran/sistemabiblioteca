@@ -873,6 +873,12 @@ listarUsuariosOcurrencia(id: number): Observable<OcurrenciaUsuario[]> {
       payload.codigoPrograma = seleccion.programa;
       payload.codigoEspecialidad = seleccion.especialidad;
       payload.codigoCiclo = seleccion.ciclo;
+      if (seleccion.estadoPrograma) {
+        payload.estadoPrograma = seleccion.estadoPrograma;
+      }
+      if (seleccion.motaccion) {
+        payload.motaccion = seleccion.motaccion;
+      }
     }
     return this.http.put<any>(
       `${this.apiUrl}/api/biblioteca/detalles/estado`,

@@ -8,6 +8,7 @@ import com.miapp.service.BibliotecaService;
 import com.miapp.service.EmailService;
 import com.miapp.service.NotificacionService;
 import com.miapp.service.FileStorageService;
+import com.miapp.service.ProgramaMotivoAccionService;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -17,7 +18,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import java.time.format.DateTimeFormatter;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -50,6 +50,7 @@ public class BibliotecaServiceImpl implements BibliotecaService {
     private final FileStorageService fileStorageService;
     private final BibliotecaCicloRepository bibliotecaCicloRepository;
     private final PeriodicidadRepository periodicidadRepository;
+    private final ProgramaMotivoAccionService programaMotivoAccionService;
 
     public BibliotecaServiceImpl(BibliotecaRepository bibliotecaRepository,
                                  TipoAdquisicionRepository tipoAdquisicionRepository,
@@ -68,7 +69,8 @@ public class BibliotecaServiceImpl implements BibliotecaService {
                                  EmailService emailService,
                                  FileStorageService fileStorageService,
                                  BibliotecaCicloRepository bibliotecaCicloRepository,
-                                 PeriodicidadRepository periodicidadRepository) {
+                                 PeriodicidadRepository periodicidadRepository,
+                                 ProgramaMotivoAccionService programaMotivoAccionService) {
         this.bibliotecaRepository = bibliotecaRepository;
         this.tipoAdquisicionRepository  = tipoAdquisicionRepository;
         this.especialidadRepository = especialidadRepository;
@@ -87,6 +89,7 @@ public class BibliotecaServiceImpl implements BibliotecaService {
         this.fileStorageService = fileStorageService;
         this.bibliotecaCicloRepository = bibliotecaCicloRepository;
         this.periodicidadRepository = periodicidadRepository;
+        this.programaMotivoAccionService = programaMotivoAccionService;
     }
 
     @Override
@@ -520,6 +523,10 @@ public class BibliotecaServiceImpl implements BibliotecaService {
             detalle.setTipoPrestamo(req.getTipoPrestamo());
         }
         if (req.getIdEstado() != null && req.getIdEstado() == 3L) {
+            programaMotivoAccionService.validarReservaPermitida(
+                    req.getEstadoPrograma(),
+                    req.getMotaccion()
+            );
             // Al reservar registramos la fecha de solicitud/reserva
             detalle.setFechaSolicitud(
                     LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))

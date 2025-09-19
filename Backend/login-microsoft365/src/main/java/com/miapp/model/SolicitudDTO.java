@@ -23,5 +23,8 @@ public class SolicitudDTO {
 
     @JsonFormat(pattern="yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime fechaFin;
+
+    private String estadoPrograma;
+    private String motaccion;
 }
 
