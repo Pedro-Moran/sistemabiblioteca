@@ -29,6 +29,12 @@ public class DetalleBibliotecaDTO {
 
     private String codigoUsuario;
 
+    private String codigoPrograma;
+
+    private String codigoEspecialidad;
+
+    private String codigoCiclo;
+
     private String tipoPrestamo;
 
     /** Hora de inicio permitida para préstamo */

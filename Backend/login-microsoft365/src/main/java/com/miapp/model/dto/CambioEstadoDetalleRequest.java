@@ -8,4 +8,7 @@ public class CambioEstadoDetalleRequest {
     private Long idEstado;
     private String idUsuario;
     private String tipoPrestamo;
+    private String codigoPrograma;
+    private String codigoEspecialidad;
+    private String codigoCiclo;
 }

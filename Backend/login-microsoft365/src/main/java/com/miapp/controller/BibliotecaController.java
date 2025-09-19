@@ -6,6 +6,7 @@ import com.miapp.model.Ciudad;
 import com.miapp.model.dto.*;
 import com.miapp.service.CiudadService;
 import com.miapp.service.DetalleBibliotecaService;
+import com.miapp.service.InformacionAcademicaService;
 import com.miapp.service.impl.BibliotecaServiceImpl;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,12 +29,15 @@ public class BibliotecaController {
     private final BibliotecaServiceImpl bibliotecaService;
     private final DetalleBibliotecaService detalleService;
     private final CiudadService ciudadService;
+    private final InformacionAcademicaService informacionAcademicaService;
 
     public BibliotecaController(BibliotecaServiceImpl service, CiudadService ciudadService,
-                                DetalleBibliotecaService detalleService) {
+                                DetalleBibliotecaService detalleService,
+                                InformacionAcademicaService informacionAcademicaService) {
         this.bibliotecaService = service;
         this.ciudadService = ciudadService;
         this.detalleService = detalleService;
+        this.informacionAcademicaService = informacionAcademicaService;
     }
 
     @PostMapping("/register")
@@ -163,6 +167,16 @@ public class BibliotecaController {
         return ResponseEntity.ok(Map.of(
                 "p_status", 0,
                 "message",  "Estado actualizado con éxito"
+        ));
+    }
+
+    @PostMapping("/usuarios/informacion-academica")
+    public ResponseEntity<?> obtenerInformacionAcademica(@RequestBody InformacionAcademicaRequest request) {
+        String correo = request != null ? request.getCorreo() : null;
+        List<InformacionAcademicaDetalleDTO> detalles = informacionAcademicaService.obtenerInformacionAcademica(correo);
+        return ResponseEntity.ok(Map.of(
+                "status", 0,
+                "data", detalles
         ));
     }
 

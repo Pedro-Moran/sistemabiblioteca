@@ -317,6 +317,9 @@ public class BibliotecaServiceImpl implements BibliotecaService {
                 e.setCodigoBarra(det.getCodigoBarra());
             }
             e.setNumeroIngreso(det.getNumeroIngreso());
+            e.setCodigoPrograma(det.getCodigoPrograma());
+            e.setCodigoEspecialidad(det.getCodigoEspecialidad());
+            e.setCodigoCiclo(det.getCodigoCiclo());
             e.setNroExistencia(det.getNroExistencia());
             e.setHoraInicio(det.getHoraInicio());
             e.setHoraFin(det.getHoraFin());
@@ -504,6 +507,15 @@ public class BibliotecaServiceImpl implements BibliotecaService {
         Long estadoAnterior = detalle.getIdEstado();
         String solicitante = detalle.getCodigoUsuario();
         detalle.setIdEstado(req.getIdEstado());
+        if (req.getCodigoPrograma() != null) {
+            detalle.setCodigoPrograma(req.getCodigoPrograma());
+        }
+        if (req.getCodigoEspecialidad() != null) {
+            detalle.setCodigoEspecialidad(req.getCodigoEspecialidad());
+        }
+        if (req.getCodigoCiclo() != null) {
+            detalle.setCodigoCiclo(req.getCodigoCiclo());
+        }
         if (req.getTipoPrestamo() != null) {
             detalle.setTipoPrestamo(req.getTipoPrestamo());
         }

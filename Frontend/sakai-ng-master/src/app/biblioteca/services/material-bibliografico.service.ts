@@ -13,6 +13,7 @@ import { Equipo } from '../interfaces/biblioteca-virtual/equipo';
 import { OcurrenciaUsuario } from '../interfaces/OcurrenciaUsuario';
 import { OcurrenciaMaterialDTO } from '../interfaces/OcurrenciaMaterialDTO';
 import { DetalleBibliotecaDTO } from '../interfaces/material-bibliografico/biblioteca.model';
+import { InformacionAcademicaDetalle, SeleccionAcademica } from '../interfaces/material-bibliografico/informacion-academica';
 import { EjemplarPrestadoDTO } from '../interfaces/reportes/ejemplar-prestado';
 import { EjemplarNoPrestadoDTO } from '../interfaces/reportes/ejemplar-no-prestado';
 import { Tesis } from '../../biblioteca/interfaces/material-bibliografico/tesis';
@@ -858,21 +859,40 @@ listarUsuariosOcurrencia(id: number): Observable<OcurrenciaUsuario[]> {
    * Llama al endpoint para marcar un detalle como “prestado”.
    * Equivale a DELETE /auth/api/prestamos/prestar con body { id }.
    */
-  prestarDetalle(idDetalle: number): Observable<any> {
+  prestarDetalle(idDetalle: number, seleccion?: SeleccionAcademica): Observable<any> {
     const headers = new HttpHeaders().set(
       'Authorization',
       `Bearer ${this.authService.getToken()}`
     );
-    const payload = {
+    const payload: any = {
       idDetalleBiblioteca: idDetalle,
       idEstado: 4,
       idUsuario: this.authService.getUser()?.sub ?? 0
     };
+    if (seleccion) {
+      payload.codigoPrograma = seleccion.programa;
+      payload.codigoEspecialidad = seleccion.especialidad;
+      payload.codigoCiclo = seleccion.ciclo;
+    }
     return this.http.put<any>(
       `${this.apiUrl}/api/biblioteca/detalles/estado`,
       payload,
       { headers }
     );
+  }
+
+  obtenerInformacionAcademica(correo: string): Observable<InformacionAcademicaDetalle[]> {
+    const headers = new HttpHeaders().set(
+      'Authorization',
+      `Bearer ${this.authService.getToken()}`
+    );
+    return this.http
+      .post<{ status: number; data: InformacionAcademicaDetalle[] }>(
+        `${this.apiUrl}/api/biblioteca/usuarios/informacion-academica`,
+        { correo },
+        { headers }
+      )
+      .pipe(map(resp => Array.isArray(resp?.data) ? resp.data : []));
   }
 
   /**
