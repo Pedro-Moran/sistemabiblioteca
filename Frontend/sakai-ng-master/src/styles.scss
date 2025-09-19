@@ -282,3 +282,25 @@ h6 {
 a {
   color: var(--primary);
 }
+
+.p-button.ms-login-button {
+  background-color: #000000;
+  border-color: #000000;
+  color: #ffffff;
+}
+
+.p-button.ms-login-button:enabled:hover,
+.p-button.ms-login-button:enabled:focus {
+  background-color: #111111;
+  border-color: #111111;
+  color: #ffffff;
+}
+
+.p-button.ms-login-button:enabled:active {
+  background-color: #000000;
+  border-color: #000000;
+}
+
+.p-button.ms-login-button .p-button-icon {
+  color: inherit;
+}
