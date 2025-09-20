@@ -145,5 +145,45 @@ public class EquipoController {
         return ResponseEntity.ok(Map.of("exists", exists));
     }
 
+    @GetMapping("/validar-bloqueo")
+    public ResponseEntity<?> validarBloqueo(@RequestParam String ip) {
+        try {
+            int estadoPrestamo = equipoService.validarBloqueo(ip);
+            boolean requiereBloqueo = estadoPrestamo == 3 || estadoPrestamo == 4 || estadoPrestamo == 9;
+            return ResponseEntity.ok(Map.of(
+                    "status", 0,
+                    "estadoPrestamo", estadoPrestamo,
+                    "requiereBloqueo", requiereBloqueo
+            ));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "status", -1,
+                            "message", ex.getMessage()
+                    ));
+        }
+    }
+
+    @PostMapping("/inactivar-por-ip")
+    public ResponseEntity<?> inactivarPorIp(@RequestParam String ip) {
+        try {
+            boolean actualizado = equipoService.inactivarEquipoPorIp(ip);
+            String message = actualizado
+                    ? "Equipo inactivado correctamente"
+                    : "No se encontraron registros activos para el equipo";
+            return ResponseEntity.ok(Map.of(
+                    "status", 0,
+                    "message", message,
+                    "actualizado", actualizado
+            ));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "status", -1,
+                            "message", ex.getMessage()
+                    ));
+        }
+    }
+
 
 }

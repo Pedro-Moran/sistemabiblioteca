@@ -60,6 +60,8 @@ public class SecurityConfig {
                             "/auth/api/biblioteca/search",
                             "/auth/api/catalogos/**",
                             "/auth/api/equipos/sedes",
+                            "/auth/api/equipos/validar-bloqueo",
+                            "/auth/api/equipos/inactivar-por-ip",
                             "/auth/sede/lista-activo",
                             "/auth/material-bibliografico/especialidad",
                             "/auth/api/nosotros",

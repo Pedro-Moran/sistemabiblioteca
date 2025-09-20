@@ -4,8 +4,15 @@ import com.miapp.model.Equipo;
 import com.miapp.model.Estado;
 import com.miapp.repository.EquipoRepository;
 import com.miapp.repository.EstadoRepository;
-import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.Types;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,10 +21,32 @@ public class EquipoService {
 
     private final EquipoRepository equipoRepository;
     private final EstadoRepository estadoRepository;
+    private final JdbcTemplate jdbcTemplate;
+    private final String validarBloqueoCall;
+    private final String inactivarEquipoCall;
 
-    public EquipoService(EquipoRepository equipoRepository, EstadoRepository estadoRepository) {
+    public EquipoService(EquipoRepository equipoRepository,
+                         EstadoRepository estadoRepository,
+                         JdbcTemplate jdbcTemplate,
+                         @Value("${app.procedures.schema:}") String procedureSchema) {
         this.equipoRepository = equipoRepository;
         this.estadoRepository = estadoRepository;
+        this.jdbcTemplate = jdbcTemplate;
+        String schema = procedureSchema == null ? "" : procedureSchema.trim();
+        this.validarBloqueoCall = buildCall(schema, "usp_DetallePrestamoEquipo_Validar", 2);
+        this.inactivarEquipoCall = buildCall(schema, "usp_DetallePrestamoEquipo_InactivarEquipo", 2);
+    }
+
+    private String buildCall(String schema, String procedure, int parameterCount) {
+        String qualifiedName = schema.isEmpty() ? procedure : schema + "." + procedure;
+        StringBuilder placeholders = new StringBuilder();
+        for (int i = 0; i < parameterCount; i++) {
+            if (i > 0) {
+                placeholders.append(", ");
+            }
+            placeholders.append("?");
+        }
+        return "{call " + qualifiedName + "(" + placeholders + ")}";
     }
 
     // Registro
@@ -127,5 +156,46 @@ public class EquipoService {
             return equipoRepository.existsByIpAndIdEquipoNot(ip, id);
         }
         return equipoRepository.existsByIp(ip);
+    }
+
+    public int validarBloqueo(String numeroIp) {
+        try {
+            Integer resultado = jdbcTemplate.execute(
+                    (Connection con) -> {
+                        CallableStatement cs = con.prepareCall(validarBloqueoCall);
+                        cs.setString(1, numeroIp);
+                        cs.registerOutParameter(2, Types.NUMERIC);
+                        return cs;
+                    },
+                    (CallableStatement cs) -> {
+                        cs.execute();
+                        Integer valor = cs.getObject(2, Integer.class);
+                        return valor != null ? valor : 2;
+                    }
+            );
+            return resultado != null ? resultado : 2;
+        } catch (DataAccessException ex) {
+            throw new RuntimeException("Error al validar el estado del equipo con IP: " + numeroIp, ex);
+        }
+    }
+
+    public boolean inactivarEquipoPorIp(String numeroIp) {
+        try {
+            Integer actualizados = jdbcTemplate.execute(
+                    (Connection con) -> {
+                        CallableStatement cs = con.prepareCall(inactivarEquipoCall);
+                        cs.setString(1, numeroIp);
+                        cs.registerOutParameter(2, Types.NUMERIC);
+                        return cs;
+                    },
+                    (CallableStatement cs) -> {
+                        cs.execute();
+                        return cs.getInt(2);
+                    }
+            );
+            return actualizados != null && actualizados > 0;
+        } catch (DataAccessException ex) {
+            throw new RuntimeException("Error al inactivar el equipo con IP: " + numeroIp, ex);
+        }
     }
 }
