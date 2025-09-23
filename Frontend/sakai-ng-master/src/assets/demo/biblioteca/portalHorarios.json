@@ -1,0 +1,17 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"sede":{"id":1,"descripcion": "Local Chorrillos", "activo": true},
+        "descripcion": "Lunes a Viernes de 8:00 a.m. a 10:00 p.m", "direccion":"av. direccion nro 123","activo": true}, 
+        {"id":2,"sede":{"id":2,"descripcion": "Local San Borja", "activo": true},
+        "descripcion": "Lunes a Viernes de 8:30 a.m. a 9:30 p.m", "direccion":"av. direccion nro 123", "activo": true}, 
+        {"id":3,"sede":{"id":3,"descripcion": "Filial Ica", "activo": true},
+        "descripcion": "Lunes a Viernes de 8:30 a.m. a 9:30 p.m", "direccion":"av. direccion nro 123", "activo": true}, 
+        {"id":4,"sede":{"id":4,"descripcion": "Filial Chincha", "activo": true},
+        "descripcion": "Lunes a Viernes de 8:00 a.m. a 10:00", "direccion":"av. direccion nro 123", "activo": true},
+        {"id":5,"sede":{"id":4,"descripcion": "Otro", "activo": true},
+        "descripcion": "Lunes a Viernes de 8:00 a.m. a 10:00", "direccion":"av. direccion nro 123", "activo": true},
+        {"id":6,"sede":{"id":4,"descripcion": "Otro", "activo": true},
+        "descripcion": "Lunes a Viernes de 8:00 a.m. a 10:00", "direccion":"av. direccion nro 123", "activo": true}
+    ]
+}

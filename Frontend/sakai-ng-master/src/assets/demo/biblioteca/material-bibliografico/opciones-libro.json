@@ -1,0 +1,8 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"descripcion": "Autor principal", "activo": true}, 
+        {"id":2,"descripcion": "Autor principal y secundario", "activo": true}, 
+        {"id":3,"descripcion": "Autor institucional", "activo": true}
+    ]
+}

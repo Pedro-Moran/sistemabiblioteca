@@ -1,0 +1,6 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"codigo":"123","estudiante":"nombre de estudiante","especialidad":"especialidad","sede":"Sede"}
+    ]
+}

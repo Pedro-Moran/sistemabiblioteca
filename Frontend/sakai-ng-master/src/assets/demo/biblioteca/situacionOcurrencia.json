@@ -1,0 +1,8 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"descripcion": "Pendiente costo", "activo": true}, 
+        {"id":2,"descripcion": "Costeado y enviado", "activo": true}, 
+        {"id":3,"descripcion": "Regularizados", "activo": true}
+    ]
+}

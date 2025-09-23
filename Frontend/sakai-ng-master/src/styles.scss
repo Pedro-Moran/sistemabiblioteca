@@ -1,0 +1,305 @@
+/* You can add global styles to this file, and also import other style files */
+@use './tailwind.css';
+@use './assets/layout/layout.scss';
+@use 'primeicons/primeicons.css';
+@use './assets/demo/demo.scss';
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+
+:root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --card: #fafafa;
+    --text: #111111;
+    --muted: #a0a7b4;
+    --border: #e5e7eb;
+    --primary: #e11d48;
+    --nav: #e11d48;
+    --text-contrast: #ffffff;
+    --overlay: #000000;
+}
+
+html.dark {
+    --bg: #0b0f14;
+    --surface: #0f1620;
+    --card: #111827;
+    --text: #e6e9ef;
+    --muted: #9aa3b2;
+    --border: #273041;
+    --primary: #f43f5e;
+    --nav: #e11d48;
+    --text-contrast: #ffffff;
+    --overlay: #000000;
+}
+
+html,
+body,
+app-root {
+    background: var(--bg) !important;
+    color: var(--text);
+}
+
+.p-component {
+    color: var(--text);
+}
+
+/* Wrappers */
+.app-layout,
+.layout-wrapper,
+.layout-main-container,
+.layout-main,
+.layout-content,
+.main,
+.layout,
+.page,
+.page-wrapper,
+.content,
+.container,
+.section,
+ .dashboard,
+router-outlet + *,
+app-root > * {
+  background: var(--surface) !important;
+  color: var(--text);
+}
+
+/* utils full-bleed */
+.full-bleed{
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  width: 100vw;
+}
+
+.site-header{
+  background: var(--nav);
+  border-radius: 0;
+}
+
+/* contenedor interno centrado */
+.nav-inner{
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* 3 zonas: brand | menu | acciones */
+.brand{ display: flex; align-items: center; gap: 12px; min-width: 180px; cursor: pointer; }
+.brand-logo{
+  height: 90px; width: auto; display: block; object-fit: contain;
+  background: transparent !important;
+  filter: none !important; mix-blend-mode: normal !important;
+}
+.brand-text{ color: #fff; font-weight: 600; letter-spacing: .5px; }
+
+.main-nav{
+  display: flex; align-items: center; gap: 28px;
+  justify-content: center; flex: 1 1 auto; min-width: 0;
+}
+.main-nav a{ color: #fff; text-decoration: none; white-space: nowrap; cursor: pointer; }
+.main-nav a.active{ box-shadow: inset 0 -2px 0 #fff; }
+
+.actions{ display: flex; align-items: center; gap: 12px; }
+.actions .login{ color: #ffd9e0; }
+.actions .btn-registrate{
+  background: #ff6b81; color: #fff; padding: 6px 12px; border-radius: 999px; text-decoration: none;
+}
+
+@media (max-width: 992px){
+  .nav-inner{ gap: 16px; }
+  .main-nav{ gap: 18px; }
+  .brand{ min-width: 150px; }
+}
+@media (max-width: 768px){
+  /* aquí puedes colapsar a hamburguesa si ya la tienes */
+}
+
+.bg-app {
+  background: var(--bg) !important;
+  color: var(--text);
+}
+
+.surface-app {
+  background: var(--surface) !important;
+  color: var(--text);
+}
+
+/* Cards and PrimeNG surfaces */
+.card,
+.panel,
+.widget,
+.stat-box,
+.p-card,
+.p-panel,
+.p-fieldset,
+.mat-card,
+.p-tabview,
+.p-tabview-nav,
+.p-tabview-panels,
+.p-toast,
+.p-dialog,
+.p-toolbar,
+.p-carousel,
+.p-datatable,
+.p-datatable-wrapper {
+  background: var(--card) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.p-card .p-card-body,
+.p-carousel-content,
+.p-carousel-items-container,
+.p-carousel-item,
+.p-tabview-panels > .p-tabview-panel,
+.p-tabpanels > .p-tabs-panel {
+  background: var(--card) !important;
+  color: var(--text) !important;
+}
+
+.p-datatable .p-datatable-thead > tr > th,
+.p-datatable .p-datatable-tbody > tr > td {
+  background: var(--card) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* Form controls */
+.p-inputtext,
+.p-dropdown,
+.p-multiselect,
+.p-calendar,
+.p-inputnumber input {
+  background: var(--card) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.p-dropdown-panel,
+.p-calendar .p-datepicker,
+.p-multiselect-panel {
+  background: var(--card) !important;
+  color: var(--text) !important;
+}
+
+::placeholder {
+  color: var(--muted) !important;
+}
+
+/* Tabs */
+.p-tabview-nav,
+.p-tabview-title {
+  color: var(--text) !important;
+}
+
+.p-tabview-nav {
+  background: var(--surface) !important;
+}
+
+/* Charts */
+.p-chart,
+.chart-container {
+  background: var(--card) !important;
+}
+
+/* Sidebar */
+.layout-sidebar,
+.layout-sidebar .layout-menu {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.layout-sidebar a {
+  color: var(--text) !important;
+}
+
+.layout-sidebar a.active-route {
+  background: rgba(255, 255, 255, .06);
+}
+
+/* Menubar over header */
+.p-menubar,
+.p-menubar .p-menubar-root-list {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+.p-menubar .p-menuitem-link {
+  color: #fff !important;
+}
+
+.p-menubar .p-menuitem-link:hover,
+.p-menubar .p-menuitem-link:focus {
+  background: rgba(255, 255, 255, .08) !important;
+  color: #fff !important;
+}
+
+.p-menubar .p-menuitem.p-highlight > .p-menuitem-link,
+a.router-link-active {
+  color: #fff !important;
+  box-shadow: inset 0 -2px 0 0 #fff;
+}
+
+.p-button.registrate,
+a.btn-registrate {
+  background: var(--primary) !important;
+  color: #fff !important;
+  border: 0 !important;
+}
+
+/* Generic sliders */
+.swiper,
+.swiper-wrapper,
+.swiper-slide,
+.slick-slider,
+.slick-list,
+.slick-track {
+  background: var(--card) !important;
+  color: var(--text);
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text);
+}
+
+a {
+  color: var(--primary);
+}
+.p-button.ms-login-button {
+  background-color: #000000;
+  border-color: #000000;
+  color: #ffffff;
+}
+
+.p-button.ms-login-button:enabled:hover,
+.p-button.ms-login-button:enabled:focus {
+  background-color: #111111;
+  border-color: #111111;
+  color: #ffffff;
+}
+
+.p-button.ms-login-button:enabled:active {
+  background-color: #000000;
+  border-color: #000000;
+}
+
+.p-button.ms-login-button .p-button-icon {
+  color: inherit;
+}

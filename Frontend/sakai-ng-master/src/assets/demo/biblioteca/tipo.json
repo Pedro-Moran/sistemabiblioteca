@@ -1,0 +1,9 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"descripcion": "Material", "activo": true}, 
+        {"id":2,"descripcion": "Ambiente", "activo": true}, 
+        {"id":3,"descripcion": "Equipo", "activo": true}, 
+        {"id":4,"descripcion": "Otro", "activo": true}
+    ]
+}

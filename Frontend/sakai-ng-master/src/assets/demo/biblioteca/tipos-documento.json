@@ -1,0 +1,9 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"descripcion": "DNI", "activo": true}, 
+        {"id":2,"descripcion": "Pasaporte", "activo": true}, 
+        {"id":3,"descripcion": "Tipo recurso C", "activo": true}, 
+        {"id":4,"descripcion": "Tipo recurso D", "activo": true}
+    ]
+}

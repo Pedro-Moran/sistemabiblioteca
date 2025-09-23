@@ -1,0 +1,5 @@
+# Created at 2025-06-25T19:08:10.887
+Boot Manifest-JAR contains absolute paths in classpath 'E:\PEDRO\PERSONAL\Proyecto Biblioteca\proyecto\login-microsoft365\target\test-classes'
+Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+'other' has different root
+

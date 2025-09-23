@@ -1,0 +1,14 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,
+        "codigo":"51",
+        "codTrabajador": "0080", 
+        "nombres":"Nombre de trabajador",
+    "activo":true},
+        {"id":2,
+        "codigo":"114",
+        "codTrabajador": "0080", 
+        "nombres":"Nombre de trabajador","activo":false}
+    ]
+}

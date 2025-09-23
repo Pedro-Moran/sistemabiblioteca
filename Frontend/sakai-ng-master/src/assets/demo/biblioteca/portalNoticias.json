@@ -1,0 +1,30 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,
+        "link":"https://www.elsevier.com/connect/coronavirus-information-center?dgcid=_SD_banner",
+        "urlPortada":"https://upcover-shreethemes.vercel.app/static/media/02.4f217e19830043f478ff.jpg",
+            "titulo":"Titulo Noticia A","subtitulo":"sub titulo",
+        "detalle":"Detalle de noticias,",
+        "fecha": "20 de febrero del 2025",     
+        "anunciante": "Equipo de Biblioteca", 
+        "activo": true}, 
+        {"id":2,
+        "link":"https://www.elsevier.com/connect/coronavirus-information-center?dgcid=_SD_banner",
+        "titulo":"Titulo Noticia B","subtitulo":"sub titulo",
+        "urlPortada":"https://upcover-shreethemes.vercel.app/static/media/02.4f217e19830043f478ff.jpg",
+            "detalle":"Detalle de noticias",
+        "fecha": "20 de febrero del 2025",     
+        "anunciante": "Equipo de Biblioteca", 
+        "activo": true},
+        {"id":3,
+        "link":"https://www.elsevier.com/connect/coronavirus-information-center?dgcid=_SD_banner",
+        "titulo":"Titulo Noticia C","subtitulo":"sub titulo",
+        "urlPortada":"https://upcover-shreethemes.vercel.app/static/media/02.4f217e19830043f478ff.jpg",
+            "detalle":"Detalle de noticias",
+        "fecha": "20 de febrero del 2025",         
+        "anunciante": "Equipo de Biblioteca", 
+        "activo": true}
+        
+    ]
+}

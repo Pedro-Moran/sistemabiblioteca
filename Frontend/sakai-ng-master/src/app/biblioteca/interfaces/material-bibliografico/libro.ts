@@ -1,0 +1,70 @@
+import { Detalle } from "./detalle";
+import { Editorial } from "./editorial";
+import { Especialidad } from "./especialidad";
+
+export class Libro {
+    id: number;
+    codigo:string;
+    titulo:string;
+    autorPrincipal:string;
+    autorSecundario:string;
+    autorInstitucional:string;
+    coordinador:string;
+    director:string;
+    editorialPublicacion:string;
+    pais:any;
+    ciudad:any;
+    numeroPaginas:any;
+    edicion:any;
+    reimpresion:any;
+    anioPublicacion:any;
+    serie:string;
+    isbn:any;
+    idioma:any;
+    numeroDeIngreso:any;
+    rutaImagen?:string;
+    nombreImagen?:string;
+    especialidad:Especialidad | null;
+    formatoDigital:boolean;
+    urlPublicacion:string;
+    descriptores:string;
+    notasContenido:string;
+    notasGeneral:string;
+    editorial:Editorial | null;
+    portada:boolean;
+    detalle:Detalle[];
+    constructor(init?: Partial<Libro>) {
+        this.id = 0;
+        this.codigo='';
+        this.titulo='';
+        this.autorPrincipal='';
+        this.autorSecundario='';
+        this.autorInstitucional='';
+        this.coordinador='';
+        this.director='';
+        this.editorialPublicacion='';
+        this.pais=null;
+        this.ciudad=null;
+        this.numeroPaginas=null;
+        this.edicion=null;
+        this.reimpresion=null;
+        this.anioPublicacion=null;
+        this.serie='';
+        this.isbn=null;
+        this.idioma=null;
+        this.numeroDeIngreso=null;
+        this.rutaImagen=undefined;
+        this.nombreImagen=undefined;
+        this.especialidad=null;
+        this.formatoDigital=false;
+        this.urlPublicacion='';
+        this.descriptores='';
+        this.notasContenido='';
+        this.notasGeneral='';
+        this.editorial=null;
+        this.portada=false;
+        this.detalle=[];
+        // Inicialización opcional si se pasa un objeto
+        Object.assign(this, init);
+    }
+  }

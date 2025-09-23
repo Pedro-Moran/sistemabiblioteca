@@ -1,0 +1,8 @@
+{
+    "status":"0",
+    "data": [
+        {"id":1,"descripcion": "En sala", "activo": true},
+        {"id":2,"descripcion": "Prestamo a domicilio", "activo": true},
+        {"id":3,"descripcion": "Sala y domicilio", "activo": true}
+    ]
+}

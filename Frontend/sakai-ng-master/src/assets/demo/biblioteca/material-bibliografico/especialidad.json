@@ -1,0 +1,9 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"descripcion": "Especialidad A", "activo": true}, 
+        {"id":2,"descripcion": "Especialidad B", "activo": true}, 
+        {"id":3,"descripcion": "Especialidad C", "activo": true}, 
+        {"id":4,"descripcion": "Especialidad D", "activo": true}
+    ]
+}

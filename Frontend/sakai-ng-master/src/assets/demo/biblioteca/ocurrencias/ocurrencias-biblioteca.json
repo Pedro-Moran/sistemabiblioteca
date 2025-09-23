@@ -1,0 +1,11 @@
+{
+    "status":"0",
+    "data": [ 
+        {"id":1,"usuario":{"id":1,"nombres": "Nombres del usuario","codigo":"02543", "activo": true},
+        "idEjemplar":"658.15/G51 - 28910",
+        "ejemplar": "nombre de ejemplar", 
+        "fechaRegistro":"06/03/2025 21:33",
+        "hora":"21:34",
+        "activo": true}
+    ]
+}
