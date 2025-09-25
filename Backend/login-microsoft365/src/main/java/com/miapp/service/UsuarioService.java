@@ -219,14 +219,20 @@ public class UsuarioService {
         try {
             DecodedJWT decoded = JWT.decode(token);
 
-            String email = decoded.getClaim("preferred_username").asString();
-            if (email == null || email.isBlank()) {
-                email = decoded.getClaim("email").asString();
-            }
+            String email = Stream.of("preferred_username", "email", "upn", "unique_name")
+                    .map(decoded::getClaim)
+                    .filter(Objects::nonNull)
+                    .map(claim -> claim.asString())
+                    .filter(valor -> valor != null && !valor.isBlank())
+                    .findFirst()
+                    .orElse(null);
 
             String id = decoded.getSubject();
+            if (id == null || id.isBlank()) {
+                id = decoded.getClaim("oid").asString();
+            }
 
-            if (email == null || id == null) {
+            if (email == null || id == null || email.isBlank() || id.isBlank()) {
                 return null;
             }
 
