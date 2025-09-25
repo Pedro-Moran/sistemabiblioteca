@@ -245,6 +245,7 @@ export class ReporteVisitantesBibliotecaVirtual {
     async reporte() {
         this.loading = true;
         this.busquedaRealizada = true;
+        this.reiniciarResumen();
         const { fechaInicio, fechaFin } = this.form.value as { fechaInicio: Date; fechaFin: Date };
         if (fechaInicio && fechaFin && fechaInicio.getTime() > fechaFin.getTime()) {
             this.loading = false;
@@ -269,10 +270,13 @@ export class ReporteVisitantesBibliotecaVirtual {
             const resultados = Array.isArray(respuesta) ? respuesta : [];
             console.log('[Reporte Visitantes Biblioteca Virtual] Total de registros recibidos:', resultados.length);
             this.resultados = resultados;
+            this.actualizarResumen();
         } catch (error: any) {
             console.error('[Reporte Visitantes Biblioteca Virtual] Error al obtener datos:', error);
             const msg = error?.status === 403 ? 'No autorizado para ver el reporte.' : 'No fue posible cargar los datos.';
             this.messageService.add({ severity: 'error', detail: msg });
+            this.resultados = [];
+            this.reiniciarResumen();
         } finally {
             this.loading = false;
         }

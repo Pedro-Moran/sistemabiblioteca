@@ -316,11 +316,67 @@ export class PrestamosService {
         );
 
         return this.http
-            .get<{ status: string; data: VisitanteBibliotecaVirtualDTO[] }>(
+            .get<{ status?: string; data?: VisitanteBibliotecaVirtualDTO[] } | VisitanteBibliotecaVirtualDTO[] | any>(
                 `${this.apiUrl}/api/prestamos/reporte/visitantes-biblioteca-virtual`,
                 { params, headers }
             )
-            .pipe(map((resp) => resp.data ?? []));
+            .pipe(
+                map((resp) => this.extraerVisitantesBibliotecaVirtual(resp)),
+                map((filas) =>
+                    filas
+                        .filter((fila) => this.esVisitaVirtual(fila))
+                        .map((fila) => this.normalizarVisitanteVirtual(fila))
+                )
+            );
+    }
+
+    private extraerVisitantesBibliotecaVirtual(
+        resp: { status?: string; data?: VisitanteBibliotecaVirtualDTO[] } | VisitanteBibliotecaVirtualDTO[] | any
+    ): VisitanteBibliotecaVirtualDTO[] {
+        if (Array.isArray(resp)) {
+            return resp;
+        }
+        if (resp?.data && Array.isArray(resp.data)) {
+            return resp.data;
+        }
+        if (resp && typeof resp === 'object') {
+            const candidato = Object.values(resp).find((valor) => Array.isArray(valor));
+            if (Array.isArray(candidato)) {
+                return candidato as VisitanteBibliotecaVirtualDTO[];
+            }
+        }
+        return [];
+    }
+
+    private esVisitaVirtual(fila: VisitanteBibliotecaVirtualDTO | undefined): boolean {
+        if (!fila) {
+            return false;
+        }
+        const flag = (fila as any).flgUsuario ?? (fila as any).flgusuario ?? (fila as any).estado ?? null;
+        if (flag == null) {
+            return true;
+        }
+        const numero = Number(flag);
+        return Number.isFinite(numero) ? numero === 3 : String(flag).trim() === '3';
+    }
+
+    private normalizarVisitanteVirtual(
+        fila: VisitanteBibliotecaVirtualDTO
+    ): VisitanteBibliotecaVirtualDTO {
+        const totalVisitas = this.normalizarConteo((fila as any).totalVisitas ?? (fila as any).total_visitas);
+        const totalSesiones = this.normalizarConteo(
+            (fila as any).totalSesiones ?? (fila as any).total_sesiones ?? (fila as any).totalSesionesUsuario ?? totalVisitas
+        );
+        return {
+            ...fila,
+            totalVisitas,
+            totalSesiones
+        } as VisitanteBibliotecaVirtualDTO;
+    }
+
+    private normalizarConteo(valor: any): number {
+        const numero = Number(valor);
+        return Number.isFinite(numero) && numero >= 0 ? numero : 0;
     }
     reporteVisitasBibliotecaIntranet(
         sede?: number | string,

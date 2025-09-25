@@ -10,4 +10,5 @@ export interface VisitanteBibliotecaVirtualDTO {
     correo: string;
     totalVisitas: number;
     totalSesiones: number;
+    flgUsuario?: number | string;
 }
