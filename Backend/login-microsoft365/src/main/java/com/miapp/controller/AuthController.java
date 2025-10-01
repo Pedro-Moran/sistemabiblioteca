@@ -294,10 +294,21 @@ public class AuthController {
             String rolConfigurado = perfilSeleccionado.getRolDescripcion();
             String rolConfiguradoUpper = rolConfigurado != null ? rolConfigurado.toUpperCase(Locale.ROOT) : null;
             if (rolConfiguradoUpper != null && !rolesUsuario.contains(rolConfiguradoUpper) && !rolesUsuario.contains(requestedUpper)) {
-                System.out.println("❌ El rol " + requestedUpper + " fue validado en Microsoft, pero el usuario no cuenta con el rol local "
-                        + rolConfiguradoUpper + ". Roles locales del usuario: " + rolesUsuario);
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("message", "Rol no autorizado para el usuario"));
+                boolean rolAsignado = false;
+                try {
+                    rolAsignado = usuarioService.asignarRolSiNoTiene(usuario, rolConfigurado);
+                } catch (IllegalStateException ex) {
+                    log.warn("No se pudo asignar automáticamente el rol {} al usuario {}", rolConfiguradoUpper, usuario.getEmail(), ex);
+                }
+                if (rolAsignado) {
+                    rolesUsuario.add(rolConfiguradoUpper);
+                    System.out.println("🆕 Se asignó automáticamente el rol local " + rolConfiguradoUpper + " tras validación con Microsoft 365.");
+                } else {
+                    System.out.println("❌ El rol " + requestedUpper + " fue validado en Microsoft, pero el usuario no cuenta con el rol local "
+                            + rolConfiguradoUpper + ". Roles locales del usuario: " + rolesUsuario);
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body(Map.of("message", "Rol no autorizado para el usuario"));
+                }
             }
             rolDescripcion = rolConfigurado != null
                     ? rolConfigurado
