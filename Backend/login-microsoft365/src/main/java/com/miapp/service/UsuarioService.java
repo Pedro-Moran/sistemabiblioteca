@@ -14,6 +14,7 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -208,6 +209,35 @@ public class UsuarioService {
         }
 
         return usuarioRepository.save(usuario);
+    }
+
+    @Transactional
+    public boolean asignarRolSiNoTiene(Usuario usuario, String rolDescripcion) {
+        if (usuario == null || rolDescripcion == null) {
+            return false;
+        }
+        String normalizada = rolDescripcion.trim();
+        if (normalizada.isEmpty()) {
+            return false;
+        }
+
+        boolean yaTieneRol = usuario.getRoles().stream()
+                .filter(Objects::nonNull)
+                .map(Rol::getDescripcion)
+                .filter(Objects::nonNull)
+                .anyMatch(descripcion -> descripcion.equalsIgnoreCase(normalizada));
+
+        if (yaTieneRol) {
+            return false;
+        }
+
+        Rol rol = rolRepository.findByDescripcionIgnoreCase(normalizada)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Rol '" + normalizada + "' no configurado en la base de datos"));
+
+        usuario.getRoles().add(rol);
+        usuarioRepository.save(usuario);
+        return true;
     }
 
     /**
