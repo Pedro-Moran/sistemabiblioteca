@@ -1,7 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { Menu } from 'primeng/menu';
 import { Message } from 'primeng/message';
@@ -36,7 +35,9 @@ interface Column {
   template: ` <div class="">
                 <div class="">
                     <div class="card flex flex-col gap-4 w-full">
-                        <h5>{{titulo}}</h5>
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <h5 class="m-0">{{titulo}}</h5>
+                        </div>
                         <p-toolbar styleClass="mb-6">
             <ng-template #start>
             <div class="flex flex-wrap gap-4">
@@ -123,7 +124,7 @@ interface Column {
                                 <tr [pSelectableRow]="objeto">
                                     <td><p-tableCheckbox [value]="objeto"></p-tableCheckbox></td>
                                     <td>
-                                        <img [src]="getImageUrl(objeto)" [alt]="objeto.titulo" width="50" class="shadow-lg" />
+                                        <img [src]="getImageUrl(objeto)" [alt]="objeto.titulo" class="shadow-lg portada-thumbnail" />
                                     </td>
                                     <td *ngFor="let col of columns">{{ objeto[col.field] }}</td>
                                     <td class="text-center">
@@ -177,6 +178,17 @@ interface Column {
 
             <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
             <p-toast></p-toast>`,
+  styles: [
+    `
+      .portada-thumbnail {
+        max-width: 80px;
+        max-height: 80px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+      }
+    `
+  ],
   imports: [TemplateModule,TooltipModule,ModalRevistaComponent,ModalLibroComponent,ModalTesisComponent,ModalOtrosComponent],
   providers: [MessageService, ConfirmationService]
 })
@@ -221,7 +233,7 @@ export class MaterialBibliografico {
   @ViewChild('modalOtros') modalOtros!: ModalOtrosComponent;
 
   constructor(private materialBibliograficoService: MaterialBibliograficoService, private genericoService: GenericoService, private fb: FormBuilder,
-    private router: Router, private authService: AuthService, private confirmationService: ConfirmationService, private messageService: MessageService) { }
+    private authService: AuthService, private confirmationService: ConfirmationService, private messageService: MessageService) { }
   private readonly columnConfig: Record<number, Column[]> = {
     1: [
       { field: 'codigoLocalizacion', header: 'Codigo' },
