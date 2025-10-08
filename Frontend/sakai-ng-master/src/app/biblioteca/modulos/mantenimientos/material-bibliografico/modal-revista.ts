@@ -137,6 +137,7 @@ import { environment } from '../../../../../environments/environment';
                 </form>
             </ng-template>
             <ng-template pTemplate="footer">
+                <button pButton pRipple type="button" icon="pi pi-arrow-left" (click)="goBack()" [disabled]="loading" label="Atrás" class="p-button-outlined p-button-secondary"></button>
                 <button pButton pRipple type="button" icon="pi pi-times" (click)="closeModal()" [disabled]="loading" label="Cancelar" class="p-button-outlined p-button-danger"></button>
                 <button pButton pRipple type="button" icon="pi pi-check" (click)="nextStepToDetalle()" [disabled]="formRevista.invalid || loading" label="Siguiente" class="p-button-success"></button>
             </ng-template>
@@ -153,6 +154,7 @@ import { environment } from '../../../../../environments/environment';
                 </form>
             </ng-template>
             <ng-template pTemplate="footer">
+                <button pButton pRipple type="button" icon="pi pi-arrow-left" (click)="goBack()" [disabled]="loading" label="Atrás" class="p-button-outlined p-button-secondary"></button>
                 <button pButton type="button" label="Cancelar" class="p-button-text" [disabled]="loading" (click)="cerrarModalEspecialidad()"></button>
                 <button pButton type="button" label="Guardar" class="p-button-success" [disabled]="formEspecialidad.invalid || loading" (click)="guardarEspecialidad()"></button>
             </ng-template>
@@ -268,6 +270,7 @@ import { environment } from '../../../../../environments/environment';
                 </p-table>
             </ng-template>
             <ng-template pTemplate="footer">
+                <button pButton pRipple type="button" icon="pi pi-arrow-left" (click)="goBack()" [disabled]="loading" label="Atrás" class="p-button-outlined p-button-secondary"></button>
                 <button pButton pRipple type="button" icon="pi pi-times" (click)="closeModalDetalle()" [disabled]="loading" label="Cancelar" class="p-button-outlined p-button-danger"></button>
                 <button pButton pRipple type="button" icon="pi pi-check" (click)="finalizar()" [disabled]="formRevista.invalid || formPortada.invalid || loading" label="Guardar" class="p-button-success"></button>
             </ng-template>
@@ -328,6 +331,7 @@ import { environment } from '../../../../../environments/environment';
                 </form>
             </ng-template>
             <ng-template pTemplate="footer">
+                <button pButton pRipple type="button" icon="pi pi-arrow-left" (click)="goBack()" [disabled]="loading" label="Atrás" class="p-button-outlined p-button-secondary"></button>
                 <button pButton pRipple type="button" icon="pi pi-times" (click)="closeModalEjemplar()" [disabled]="loading" label="Cancelar" class="p-button-outlined p-button-danger"></button>
                 <button pButton pRipple type="button" icon="pi pi-check" (click)="guardarEjemplar()" [disabled]="formDetalle.invalid || loading" label="Guardar" class="p-button-success"></button>
             </ng-template>
@@ -459,15 +463,15 @@ export class ModalRevistaComponent implements OnInit {
                 [
                     Validators.required,
                     Validators.maxLength(100),
-                    Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\\s./()-]+$') // Permite letras, números, espacios, punto, guion, slash y paréntesis
+                    Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\\s.,/()-]+$') // Permite letras, números, espacios, punto, coma, guion, slash y paréntesis
                 ]
             ],
             notaGeneral: [
                 this.objetoRevista.notaGeneral,
                 [
                     Validators.required,
-                    Validators.maxLength(100),
-                    Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\\s./()-]+$') // Permite letras, números, espacios, punto, guion, slash y paréntesis
+                    Validators.maxLength(500),
+                    Validators.pattern('^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\\s.,/()-]+$') // Permite letras, números, espacios, punto, coma, guion, slash y paréntesis
                 ]
             ]
         });
@@ -564,6 +568,32 @@ export class ModalRevistaComponent implements OnInit {
     }
     closeModalEjemplar() {
         this.displayEjemplar = false;
+    }
+    goBack(): void {
+        if (this.mostrarModalEspecialidad) {
+            this.mostrarModalEspecialidad = false;
+            return;
+        }
+
+        if (this.displayEjemplar) {
+            this.displayEjemplar = false;
+            this.displayDetalle = true;
+            return;
+        }
+
+        if (this.displayDetalle) {
+            this.displayDetalle = false;
+            this.displayEditorial = true;
+            return;
+        }
+
+        if (this.displayEditorial) {
+            this.displayEditorial = false;
+            this.display = true;
+            return;
+        }
+
+        this.closeModal();
     }
     guardarLibro() {
         this.loading = false;
