@@ -557,21 +557,24 @@ export class ModalTesisComponent implements OnInit {
         const parentTipo = t.tipoMaterialId ?? this.tipoMaterialId ?? null;
         const keepPortada = this.formPortada.get('portada')?.value;
 
-        const detalles: DetalleBibliotecaDTO[] = this.detalles.map((d) => ({
-            idDetalleBiblioteca: d.idDetalleBiblioteca ?? undefined,
-            codigoSede: d.codigoSede ?? null,
-            tipoAdquisicionId: (d.tipoAdquisicion as any)?.id ?? d.tipoAdquisicionId ?? null,
-            tipoMaterialId: (d.tipoMaterial as any)?.id ?? d.tipoMaterialId ?? parentTipo,
-            horaInicio: this.timeToString(d.horaInicio ?? null),
-            horaFin: this.timeToString(d.horaFin ?? null),
-            maxHoras: d.maxHoras ?? null,
-            costo: d.costo ?? null,
-            numeroFactura: d.numeroFactura ?? null,
-            fechaIngreso: d.fechaIngreso ?? null,
-            portadaLibroImg: d.portadaLibroImg ?? null,
-            codigoBarra: d.codigoBarra ?? null,
-            idEstado: 1
-        }));
+        const detalles: DetalleBibliotecaDTO[] = this.detalles.map((d) => {
+            const esNuevo = !d.idDetalleBiblioteca;
+            return {
+                idDetalleBiblioteca: d.idDetalleBiblioteca ?? undefined,
+                codigoSede: d.codigoSede ?? null,
+                tipoAdquisicionId: (d.tipoAdquisicion as any)?.id ?? d.tipoAdquisicionId ?? null,
+                tipoMaterialId: (d.tipoMaterial as any)?.id ?? d.tipoMaterialId ?? parentTipo,
+                horaInicio: this.timeToString(d.horaInicio ?? null),
+                horaFin: this.timeToString(d.horaFin ?? null),
+                maxHoras: d.maxHoras ?? null,
+                costo: d.costo ?? null,
+                numeroFactura: d.numeroFactura ?? null,
+                fechaIngreso: d.fechaIngreso ?? null,
+                portadaLibroImg: d.portadaLibroImg ?? null,
+                codigoBarra: d.codigoBarra ?? null,
+                idEstado: esNuevo ? (d.idEstado ?? 1) : (d.idEstado ?? undefined)
+            };
+        });
 
         return {
             id: t.id > 0 ? t.id : null,
@@ -884,10 +887,13 @@ export class ModalTesisComponent implements OnInit {
                 const tipoMat = typeof tipoMatVal === 'object' ? tipoMatVal?.id : tipoMatVal;
                 const tipoAdq = typeof tipoAdqVal === 'object' ? tipoAdqVal?.id : tipoAdqVal;
 
+                const previo = this.editingIndex != null ? this.detalles[this.editingIndex] : null;
                 const detalle: DetalleDisplay = {
-                    codigoSede: sedeId,
-                    tipoMaterialId: tipoMat,
-                    tipoAdquisicionId: tipoAdq,
+                    ...(previo ?? {}),
+                    idDetalleBiblioteca: previo?.idDetalleBiblioteca ?? undefined,
+                    codigoSede: sedeId ?? null,
+                    tipoMaterialId: tipoMat ?? null,
+                    tipoAdquisicionId: tipoAdq ?? null,
                     codigoBarra: this.formDetalle.value.codigoBarra,
                     horaInicio: this.timeToString(this.formDetalle.value.horaInicio ?? null),
                     horaFin: this.timeToString(this.formDetalle.value.horaFin ?? null),
@@ -897,10 +903,11 @@ export class ModalTesisComponent implements OnInit {
                     fechaIngreso: this.formatDateTime(this.formDetalle.value.fechaIngreso),
 
                     sede: this.sedesLista.find((s) => s.id === sedeId) ?? null,
-                    tipoMaterial: this.tipoMaterialLista.find((t) => t.id === tipoMat) ?? null,
-                    tipoAdquisicion: this.tipoAdquisicionLista.find((t) => t.id === tipoAdq) ?? null,
-                    idEstado: 1
+                    tipoMaterial: tipoMat ? (this.tipoMaterialLista.find((t) => t.id === tipoMat) ?? null) : null,
+                    tipoAdquisicion: tipoAdq ? (this.tipoAdquisicionLista.find((t) => t.id === tipoAdq) ?? null) : null
                 };
+
+                detalle.idEstado = previo?.idEstado ?? detalle.idEstado ?? 1;
 
                 if (this.editingIndex == null) {
                     this.detalles = [...this.detalles, detalle];

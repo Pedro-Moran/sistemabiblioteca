@@ -842,6 +842,7 @@ export class ModalLibroComponent implements OnInit {
         }
 
         const detalles: DetalleBibliotecaDTO[] = this.detalles.map((d) => {
+            const esNuevo = !d.idDetalleBiblioteca;
             return {
                 // aquí coaccionamos `null` → `undefined`
                 idDetalleBiblioteca: d.idDetalleBiblioteca ?? undefined,
@@ -859,8 +860,7 @@ export class ModalLibroComponent implements OnInit {
                 fechaIngreso: d.fechaIngreso ?? null,
                 portadaLibroImg: d.portadaLibroImg ?? null,
                 codigoBarra: d.codigoBarra ?? null,
-                // solo añadir idEstado si es nuevo
-                idEstado: 1
+                idEstado: esNuevo ? (d.idEstado ?? 1) : (d.idEstado ?? undefined)
             };
         });
 
@@ -1353,14 +1353,21 @@ export class ModalLibroComponent implements OnInit {
             acceptLabel: 'SI',
             rejectLabel: 'NO',
             accept: () => {
-                const tipoAdqId = this.formDetalle.value.tipoAdquisicion;
-                const sedeId = this.formDetalle.value.sede;
-                let tipoMaterialId = this.formDetalle.value.tipoMaterial as number;
+                const tipoAdqVal = this.formDetalle.value.tipoAdquisicion;
+                const sedeVal = this.formDetalle.value.sede;
+                const tipoMatVal = this.formDetalle.value.tipoMaterial;
+
+                const tipoAdqId = typeof tipoAdqVal === 'object' ? tipoAdqVal?.id : tipoAdqVal;
+                const sedeId = typeof sedeVal === 'object' ? sedeVal?.id : sedeVal;
+                const tipoMaterialId = typeof tipoMatVal === 'object' ? (tipoMatVal as any)?.id : tipoMatVal;
+                const previo = this.editingIndex != null ? this.detalles[this.editingIndex] : null;
 
                 const detDisplay: DetalleDisplay = {
-                    codigoSede: sedeId,
-                    tipoAdquisicionId: tipoAdqId,
-                    tipoMaterialId: tipoMaterialId, // ← añade esta línea
+                    ...(previo ?? {}),
+                    idDetalleBiblioteca: previo?.idDetalleBiblioteca ?? undefined,
+                    codigoSede: sedeId ?? null,
+                    tipoAdquisicionId: tipoAdqId ?? null,
+                    tipoMaterialId: tipoMaterialId ?? null,
                     codigoBarra: this.formDetalle.value.codigoBarra,
                     horaInicio: this.timeToString(this.formDetalle.value.horaInicio ?? null),
                     horaFin: this.timeToString(this.formDetalle.value.horaFin ?? null),
@@ -1373,6 +1380,8 @@ export class ModalLibroComponent implements OnInit {
                     tipoAdquisicion: this.tipoAdquisicionLista.find((t) => t.id === tipoAdqId) ?? null,
                     tipoMaterial: this.tipoMaterialLista.find((t) => t.idTipoMaterial === tipoMaterialId) ?? null
                 };
+
+                detDisplay.idEstado = previo?.idEstado ?? detDisplay.idEstado ?? 1;
 
                 if (this.editingIndex == null) {
                     this.detalles = [...this.detalles, detDisplay];
