@@ -557,21 +557,26 @@ export class ModalTesisComponent implements OnInit {
         const parentTipo = t.tipoMaterialId ?? this.tipoMaterialId ?? null;
         const keepPortada = this.formPortada.get('portada')?.value;
 
-        const detalles: DetalleBibliotecaDTO[] = this.detalles.map((d) => ({
-            idDetalleBiblioteca: d.idDetalleBiblioteca ?? undefined,
-            codigoSede: d.codigoSede ?? null,
-            tipoAdquisicionId: (d.tipoAdquisicion as any)?.id ?? d.tipoAdquisicionId ?? null,
-            tipoMaterialId: (d.tipoMaterial as any)?.id ?? d.tipoMaterialId ?? parentTipo,
-            horaInicio: this.timeToString(d.horaInicio ?? null),
-            horaFin: this.timeToString(d.horaFin ?? null),
-            maxHoras: d.maxHoras ?? null,
-            costo: d.costo ?? null,
-            numeroFactura: d.numeroFactura ?? null,
-            fechaIngreso: d.fechaIngreso ?? null,
-            portadaLibroImg: d.portadaLibroImg ?? null,
-            codigoBarra: d.codigoBarra ?? null,
-            idEstado: 1
-        }));
+        const detalles: DetalleBibliotecaDTO[] = this.detalles.map((d) => {
+            const detalleId = this.extraerIdDetalleBiblioteca(d);
+            const estadoId = this.extraerIdEstadoDetalle(d);
+            const esNuevo = !detalleId;
+            return {
+                idDetalleBiblioteca: detalleId ?? undefined,
+                codigoSede: d.codigoSede ?? null,
+                tipoAdquisicionId: (d.tipoAdquisicion as any)?.id ?? d.tipoAdquisicionId ?? null,
+                tipoMaterialId: (d.tipoMaterial as any)?.id ?? d.tipoMaterialId ?? parentTipo,
+                horaInicio: this.timeToString(d.horaInicio ?? null),
+                horaFin: this.timeToString(d.horaFin ?? null),
+                maxHoras: d.maxHoras ?? null,
+                costo: d.costo ?? null,
+                numeroFactura: d.numeroFactura ?? null,
+                fechaIngreso: d.fechaIngreso ?? null,
+                portadaLibroImg: d.portadaLibroImg ?? null,
+                codigoBarra: d.codigoBarra ?? null,
+                idEstado: esNuevo ? (estadoId ?? 1) : (estadoId ?? undefined)
+            };
+        });
 
         return {
             id: t.id > 0 ? t.id : null,
@@ -743,6 +748,8 @@ export class ModalTesisComponent implements OnInit {
             const data = await this.materialBibliograficoService.listarDetallesPorBiblioteca(idBib, false).toPromise();
 
             this.detalles = (data ?? []).map((d) => {
+                const detalleId = this.extraerIdDetalleBiblioteca(d);
+                const estadoId = this.extraerIdEstadoDetalle(d);
                 const sedeId = d.codigoSede ?? d.biblioteca?.sedeId ?? null;
                 const tipoMat = d.tipoMaterialId ?? d.biblioteca?.tipoMaterialId ?? null;
                 const tipoAdq = d.tipoAdquisicionId ?? d.biblioteca?.tipoAdquisicionId ?? null;
@@ -752,7 +759,7 @@ export class ModalTesisComponent implements OnInit {
                 const tipoAdqObj = this.tipoAdquisicionLista.find((t) => t.id === tipoAdq) ?? null;
 
                 return {
-                    idDetalleBiblioteca: d.idDetalleBiblioteca,
+                    idDetalleBiblioteca: detalleId ?? undefined,
                     codigoSede: sedeId,
                     tipoMaterialId: tipoMat,
                     tipoAdquisicionId: tipoAdq,
@@ -766,7 +773,7 @@ export class ModalTesisComponent implements OnInit {
                     sede: sedeObj,
                     tipoMaterial: tipoMatObj,
                     tipoAdquisicion: tipoAdqObj,
-                    idEstado: d.idEstado
+                    idEstado: estadoId ?? undefined
                 } as DetalleDisplay;
             });
         } catch (error) {
@@ -884,10 +891,13 @@ export class ModalTesisComponent implements OnInit {
                 const tipoMat = typeof tipoMatVal === 'object' ? tipoMatVal?.id : tipoMatVal;
                 const tipoAdq = typeof tipoAdqVal === 'object' ? tipoAdqVal?.id : tipoAdqVal;
 
+                const previo = this.editingIndex != null ? this.detalles[this.editingIndex] : null;
                 const detalle: DetalleDisplay = {
-                    codigoSede: sedeId,
-                    tipoMaterialId: tipoMat,
-                    tipoAdquisicionId: tipoAdq,
+                    ...(previo ?? {}),
+                    idDetalleBiblioteca: this.extraerIdDetalleBiblioteca(previo ?? null) ?? undefined,
+                    codigoSede: sedeId ?? null,
+                    tipoMaterialId: tipoMat ?? null,
+                    tipoAdquisicionId: tipoAdq ?? null,
                     codigoBarra: this.formDetalle.value.codigoBarra,
                     horaInicio: this.timeToString(this.formDetalle.value.horaInicio ?? null),
                     horaFin: this.timeToString(this.formDetalle.value.horaFin ?? null),
@@ -897,10 +907,12 @@ export class ModalTesisComponent implements OnInit {
                     fechaIngreso: this.formatDateTime(this.formDetalle.value.fechaIngreso),
 
                     sede: this.sedesLista.find((s) => s.id === sedeId) ?? null,
-                    tipoMaterial: this.tipoMaterialLista.find((t) => t.id === tipoMat) ?? null,
-                    tipoAdquisicion: this.tipoAdquisicionLista.find((t) => t.id === tipoAdq) ?? null,
-                    idEstado: 1
+                    tipoMaterial: tipoMat ? (this.tipoMaterialLista.find((t) => t.id === tipoMat) ?? null) : null,
+                    tipoAdquisicion: tipoAdq ? (this.tipoAdquisicionLista.find((t) => t.id === tipoAdq) ?? null) : null
                 };
+
+                const estadoId = this.extraerIdEstadoDetalle(previo ?? detalle);
+                detalle.idEstado = estadoId ?? (this.editingIndex == null ? 1 : undefined);
 
                 if (this.editingIndex == null) {
                     this.detalles = [...this.detalles, detalle];
@@ -950,6 +962,42 @@ export class ModalTesisComponent implements OnInit {
 
     idToTipo(id: number | null) {
         return this.tipoAdquisicionLista.find((t) => t.id === id);
+    }
+
+    private extraerIdDetalleBiblioteca(detalle: Partial<DetalleDisplay> | any): number | null {
+        const candidatos = [
+            detalle?.idDetalleBiblioteca,
+            detalle?.id,
+            detalle?.detalleId,
+            detalle?.detalleBibliotecaId
+        ];
+
+        for (const valor of candidatos) {
+            const id = Number(valor);
+            if (!Number.isNaN(id) && id > 0) {
+                return id;
+            }
+        }
+
+        return null;
+    }
+
+    private extraerIdEstadoDetalle(detalle: Partial<DetalleDisplay> | any): number | null {
+        const candidatos = [
+            detalle?.idEstado,
+            detalle?.estadoId,
+            detalle?.estado?.id,
+            detalle?.estado?.idEstado
+        ];
+
+        for (const valor of candidatos) {
+            const id = Number(valor);
+            if (!Number.isNaN(id) && id > 0) {
+                return id;
+            }
+        }
+
+        return null;
     }
     private buildImageUrl(path?: string | null, name?: string | null): string | null {
         if (!path) {

@@ -842,9 +842,12 @@ export class ModalLibroComponent implements OnInit {
         }
 
         const detalles: DetalleBibliotecaDTO[] = this.detalles.map((d) => {
+            const detalleId = this.extraerIdDetalleBiblioteca(d);
+            const estadoId = this.extraerIdEstadoDetalle(d);
+            const esNuevo = !detalleId;
             return {
                 // aquí coaccionamos `null` → `undefined`
-                idDetalleBiblioteca: d.idDetalleBiblioteca ?? undefined,
+                idDetalleBiblioteca: detalleId ?? undefined,
                 codigoSede: d.codigoSede ?? null,
                 tipoAdquisicionId:
                     typeof d.tipoAdquisicionId === 'object'
@@ -859,8 +862,7 @@ export class ModalLibroComponent implements OnInit {
                 fechaIngreso: d.fechaIngreso ?? null,
                 portadaLibroImg: d.portadaLibroImg ?? null,
                 codigoBarra: d.codigoBarra ?? null,
-                // solo añadir idEstado si es nuevo
-                idEstado: 1
+                idEstado: esNuevo ? (estadoId ?? 1) : (estadoId ?? undefined)
             };
         });
 
@@ -1126,12 +1128,14 @@ export class ModalLibroComponent implements OnInit {
             const data = await this.materialBibliograficoService.listarDetallesPorBiblioteca(idBib, false).toPromise();
 
             this.detalles = (data ?? []).map((d) => {
+                const detalleId = this.extraerIdDetalleBiblioteca(d);
+                const estadoId = this.extraerIdEstadoDetalle(d);
                 const sedeObj = this.sedesLista.find((s) => s.id === d.codigoSede) ?? null;
                 const tipoMatObj = this.tipoMaterialLista.find((t) => t.id === d.tipoMaterialId) ?? null;
                 const tipoAdqObj = this.tipoAdquisicionLista.find((t) => t.id === d.tipoAdquisicionId) ?? null;
 
                 return {
-                    idDetalleBiblioteca: d.idDetalleBiblioteca,
+                    idDetalleBiblioteca: detalleId ?? undefined,
                     codigoSede: d.codigoSede,
                     tipoMaterialId: d.tipoMaterialId,
                     tipoAdquisicionId: d.tipoAdquisicionId,
@@ -1145,7 +1149,7 @@ export class ModalLibroComponent implements OnInit {
                     sede: sedeObj,
                     tipoMaterial: tipoMatObj,
                     tipoAdquisicion: tipoAdqObj,
-                    idEstado: d.idEstado
+                    idEstado: estadoId ?? undefined
                 } as DetalleDisplay;
             });
         } catch (error) {
@@ -1353,14 +1357,21 @@ export class ModalLibroComponent implements OnInit {
             acceptLabel: 'SI',
             rejectLabel: 'NO',
             accept: () => {
-                const tipoAdqId = this.formDetalle.value.tipoAdquisicion;
-                const sedeId = this.formDetalle.value.sede;
-                let tipoMaterialId = this.formDetalle.value.tipoMaterial as number;
+                const tipoAdqVal = this.formDetalle.value.tipoAdquisicion;
+                const sedeVal = this.formDetalle.value.sede;
+                const tipoMatVal = this.formDetalle.value.tipoMaterial;
+
+                const tipoAdqId = typeof tipoAdqVal === 'object' ? tipoAdqVal?.id : tipoAdqVal;
+                const sedeId = typeof sedeVal === 'object' ? sedeVal?.id : sedeVal;
+                const tipoMaterialId = typeof tipoMatVal === 'object' ? (tipoMatVal as any)?.id : tipoMatVal;
+                const previo = this.editingIndex != null ? this.detalles[this.editingIndex] : null;
 
                 const detDisplay: DetalleDisplay = {
-                    codigoSede: sedeId,
-                    tipoAdquisicionId: tipoAdqId,
-                    tipoMaterialId: tipoMaterialId, // ← añade esta línea
+                    ...(previo ?? {}),
+                    idDetalleBiblioteca: previo?.idDetalleBiblioteca ?? undefined,
+                    codigoSede: sedeId ?? null,
+                    tipoAdquisicionId: tipoAdqId ?? null,
+                    tipoMaterialId: tipoMaterialId ?? null,
                     codigoBarra: this.formDetalle.value.codigoBarra,
                     horaInicio: this.timeToString(this.formDetalle.value.horaInicio ?? null),
                     horaFin: this.timeToString(this.formDetalle.value.horaFin ?? null),
@@ -1373,6 +1384,9 @@ export class ModalLibroComponent implements OnInit {
                     tipoAdquisicion: this.tipoAdquisicionLista.find((t) => t.id === tipoAdqId) ?? null,
                     tipoMaterial: this.tipoMaterialLista.find((t) => t.idTipoMaterial === tipoMaterialId) ?? null
                 };
+
+                const estadoId = this.extraerIdEstadoDetalle(previo ?? detDisplay);
+                detDisplay.idEstado = estadoId ?? (this.editingIndex == null ? 1 : undefined);
 
                 if (this.editingIndex == null) {
                     this.detalles = [...this.detalles, detDisplay];
@@ -1394,6 +1408,42 @@ export class ModalLibroComponent implements OnInit {
     }
     idToTipo(id: number | null) {
         return this.tipoAdquisicionLista.find((t) => t.id === id);
+    }
+
+    private extraerIdDetalleBiblioteca(detalle: Partial<DetalleDisplay> | any): number | null {
+        const candidatos = [
+            detalle?.idDetalleBiblioteca,
+            detalle?.id,
+            detalle?.detalleId,
+            detalle?.detalleBibliotecaId
+        ];
+
+        for (const valor of candidatos) {
+            const id = Number(valor);
+            if (!Number.isNaN(id) && id > 0) {
+                return id;
+            }
+        }
+
+        return null;
+    }
+
+    private extraerIdEstadoDetalle(detalle: Partial<DetalleDisplay> | any): number | null {
+        const candidatos = [
+            detalle?.idEstado,
+            detalle?.estadoId,
+            detalle?.estado?.id,
+            detalle?.estado?.idEstado
+        ];
+
+        for (const valor of candidatos) {
+            const id = Number(valor);
+            if (!Number.isNaN(id) && id > 0) {
+                return id;
+            }
+        }
+
+        return null;
     }
     onFileSelect(event: any) {
         const file = event.files[0]; // Obtiene el primer archivo seleccionado

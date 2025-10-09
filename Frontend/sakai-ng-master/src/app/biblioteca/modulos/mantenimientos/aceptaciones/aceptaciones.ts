@@ -249,11 +249,12 @@ export class Aceptaciones implements OnInit, AfterViewInit {
   filtros: ClaseGeneral[] = [];
   opcionFiltro: ClaseGeneral = new ClaseGeneral();
   palabraClave: string = "";
-  expandedRows = {};
+  expandedRows: Record<number | string, boolean> = {};
   tipoAdquisicionLista: TipoAdquisicion[] = [];
   tipoMaterialLista: TipoMaterial[]     = [];
   estadoLista: EstadoRecurso[]         = [];
-  detallePorId: { [bibliotecaId: number]: any[] } = {};
+  detallePorId: Record<number | string, any[]> = {};
+  private estadoDisponibleId: number | null = null;
   selectedDetalleOcurrencia: any | null = null;
   page: number = 0;
   size: number = 10;
@@ -390,12 +391,17 @@ export class Aceptaciones implements OnInit, AfterViewInit {
             const pageData = res?.data ?? res;
             let content = Array.isArray(pageData?.content) ? pageData.content : [];
             const sedeId = this.sedeFiltro?.id;
-            if (sedeId) {
-              content = content.filter((b: any) =>
-                Array.isArray(b.detalles) &&
-                b.detalles.some((d: any) => d.codigoSede == sedeId || d.sede?.id == sedeId)
-              );
-            }
+            content = content
+              .map((b: any) => {
+                const detalles = Array.isArray(b.detalles) ? b.detalles : [];
+                const pendientes = detalles.filter((d: any) => this.esDetallePendiente(d));
+                return {
+                  ...b,
+                  detallesPendientes: pendientes
+                };
+              })
+              .filter((b: any) => b.detallesPendientes.length > 0)
+              .filter((b: any) => !sedeId || b.detallesPendientes.some((d: any) => d.codigoSede == sedeId || d.sede?.id == sedeId));
 
             const mapped = content.map((b: any) => ({
               ...b,
@@ -426,6 +432,11 @@ export class Aceptaciones implements OnInit, AfterViewInit {
         });
     }
 aceptarDetalle(detalle: any) {
+  const disponibleId = this.estadoDisponibleId;
+  if (disponibleId == null) {
+    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo determinar el estado DISPONIBLE.' });
+    return;
+  }
   this.confirmationService.confirm({
     message: `¿Marcar ingreso #${detalle.numeroIngreso} como DISPONIBLE?`,
     acceptLabel: 'SI',
@@ -434,7 +445,7 @@ aceptarDetalle(detalle: any) {
       this.loading = true;
       const payload = {
         idDetalleBiblioteca: detalle.idDetalleBiblioteca, // 123
-        idEstado:            2,                           // DISPONIBLE
+        idEstado:            disponibleId,                // DISPONIBLE
         idUsuario:           this.user.idusuario
       };
       this.genericoService
@@ -443,7 +454,10 @@ aceptarDetalle(detalle: any) {
           next: (res: any) => {
             this.loading = false;
             if (res.p_status === 0) {
-              detalle.estado = this.estadoLista.find(e => e.id === 2)!;
+              const estadoDisponible = this.estadoLista.find(e => e.id === disponibleId)
+                ?? new EstadoRecurso({ id: disponibleId, descripcion: 'DISPONIBLE', activo: true });
+              detalle.estado = estadoDisponible;
+              this.removerDetalleAceptado(detalle);
               this.messageService.add({ severity:'success', detail:'Detalle DISPONIBLE.' });
             } else {
               this.messageService.add({ severity:'error', detail:'No se pudo actualizar.' });
@@ -659,8 +673,10 @@ async cargarEstados() {
       // Ajusta al interfaz EstadoRecurso { id, descripcion }
       this.estadoLista = res.data.map((e: any) => ({
         id:          e.idEstado ?? e.id,      // o la propiedad que venga del DTO
-        descripcion: e.descripcion
+        descripcion: e.descripcion,
+        activo:      e.activo ?? true
       }));
+      this.estadoDisponibleId = this.obtenerEstadoDisponibleId(this.estadoLista);
       console.log('▶ estadoLista:', this.estadoLista);
     }
   } catch (err) {
@@ -682,18 +698,97 @@ onRowExpand(event: TableRowExpandEvent) {
         const sedeId = this.sedeFiltro?.id;
         const raw = Array.isArray(res.data) ? res.data : [];
         this.detallePorId[lib.id] = raw
+          .filter((d: any) => this.esDetallePendiente(d))
           .filter((d: any) => !sedeId || d.codigoSede == sedeId || d.sede?.id == sedeId)
-          .map((d: any) => ({
-            ...d,
-            sede: this.dataSede.find(s => s.id == d.codigoSede),
-            tipoAdquisicion: this.tipoAdquisicionLista.find(t => t.id == d.tipoAdquisicionId),
-            tipoMaterial:    this.tipoMaterialLista.find(m => m.id == d.tipoMaterialId),
-            estado: this.estadoLista.find(e => e.id === Number(d.idEstado)),
-            tieneOcurrencia: this.ocurrenciaEvents.tieneOcurrencia(d.idDetalleBiblioteca),
-            highlight: false
-          }));
+          .map((d: any) => {
+            const estadoId = this.obtenerIdEstado(d);
+            return {
+              ...d,
+              bibliotecaId: lib.id,
+              sede: this.dataSede.find(s => s.id == d.codigoSede),
+              tipoAdquisicion: this.tipoAdquisicionLista.find(t => t.id == d.tipoAdquisicionId),
+              tipoMaterial:    this.tipoMaterialLista.find(m => m.id == d.tipoMaterialId),
+              estado: estadoId !== null ? this.estadoLista.find(e => e.id === estadoId) ?? d.estado : d.estado,
+              tieneOcurrencia: this.ocurrenciaEvents.tieneOcurrencia(d.idDetalleBiblioteca),
+              highlight: false
+            };
+          });
         console.log('→ mapeados:', this.detallePorId[lib.id]);
       });
+  }
+}
+
+  private obtenerIdEstado(detalle: any): number | null {
+    const candidatos = [
+      detalle?.idEstado,
+      detalle?.estado?.id,
+      detalle?.estado?.idEstado,
+      detalle?.estadoId
+    ];
+
+    for (const valor of candidatos) {
+      const id = Number(valor);
+      if (!Number.isNaN(id)) {
+        return id;
+      }
+    }
+
+    return null;
+  }
+
+  private esDetallePendiente(detalle: any): boolean {
+    const descripcion = this.obtenerDescripcionEstado(detalle);
+    if (this.descripcionEsDisponible(descripcion)) {
+      return false;
+    }
+
+    const estadoId = this.obtenerIdEstado(detalle);
+    if (estadoId !== null && this.estadoDisponibleId !== null) {
+      return estadoId !== this.estadoDisponibleId;
+    }
+
+    return true;
+  }
+
+  private obtenerDescripcionEstado(detalle: any): string {
+    return (
+      detalle?.estado?.descripcion ??
+      detalle?.estadoDescripcion ??
+      detalle?.estadoNombre ??
+      ''
+    ).toString();
+  }
+
+  private descripcionEsDisponible(valor: string | undefined | null): boolean {
+    return !!valor && valor.toUpperCase().includes('DISPONIBLE');
+  }
+
+  private obtenerEstadoDisponibleId(estados: EstadoRecurso[]): number | null {
+    for (const estado of estados) {
+      if (this.descripcionEsDisponible(estado.descripcion)) {
+        return estado.id;
+      }
+    }
+    return null;
+  }
+
+private removerDetalleAceptado(detalle: any): void {
+  const bibliotecaId = detalle?.bibliotecaId ?? detalle?.idBiblioteca ?? detalle?.biblioteca?.id;
+  const detalleId = detalle?.idDetalleBiblioteca ?? detalle?.id;
+
+  if (!bibliotecaId || !detalleId) {
+    this.listar();
+    return;
+  }
+
+  const lista = this.detallePorId[bibliotecaId] || [];
+  this.detallePorId[bibliotecaId] = lista.filter(d => (d.idDetalleBiblioteca ?? d.id) !== detalleId);
+
+  if (this.detallePorId[bibliotecaId].length === 0) {
+    delete this.detallePorId[bibliotecaId];
+    delete this.expandedRows[bibliotecaId];
+    this.data = this.data.filter(item => item.id !== bibliotecaId);
+    this.totalRecords = this.data.length;
   }
 }
 
