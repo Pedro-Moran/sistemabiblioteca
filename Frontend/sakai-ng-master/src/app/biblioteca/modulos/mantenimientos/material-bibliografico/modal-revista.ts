@@ -583,11 +583,6 @@ export class ModalRevistaComponent implements OnInit {
 
         if (this.displayDetalle) {
             this.displayDetalle = false;
-            this.displayEditorial = true;
-            return;
-        }
-
-        if (this.displayEditorial) {
             this.displayEditorial = false;
             this.display = true;
             return;
