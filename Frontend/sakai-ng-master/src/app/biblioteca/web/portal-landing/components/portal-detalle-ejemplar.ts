@@ -23,7 +23,11 @@ import { environment } from '../../../../../environments/environment';
             <div class="p-4 grid grid-cols-1 md:grid-cols-12 gap-4">
                 <!-- Imagen del libro -->
                 <div class="col-span-12 md:col-span-3 lg:col-span-6 xl:col-span-5 flex justify-center mx-8">
-                    <img [src]="getImageUrl(objeto) || 'assets/logo.png'" [alt]="objeto?.titulo || 'Portada'" class="w-full max-w-[300px] md:max-w-[350px] lg:max-w-[350px] h-auto object-cover rounded-lg shadow-lg" />
+                    <img
+                        [src]="getImageUrl(objeto) || 'assets/logo.png'"
+                        [alt]="objeto?.titulo || 'Portada'"
+                        class="max-w-full w-auto max-h-[420px] object-contain rounded-lg shadow-lg"
+                    />
                 </div>
 
                 <!-- Detalles del libro -->
