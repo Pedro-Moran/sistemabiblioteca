@@ -943,14 +943,21 @@ export class ModalRevistaComponent implements OnInit {
             acceptLabel: 'SI',
             rejectLabel: 'NO',
             accept: () => {
-                const tipoAdqId = this.formDetalle.value.tipoAdquisicion;
-                const sedeId = this.formDetalle.value.sede;
-                let tipoMaterialId = this.formDetalle.value.tipoMaterial as number;
+                const tipoAdqVal = this.formDetalle.value.tipoAdquisicion;
+                const sedeVal = this.formDetalle.value.sede;
+                const tipoMatVal = this.formDetalle.value.tipoMaterial;
+
+                const tipoAdqId = typeof tipoAdqVal === 'object' ? tipoAdqVal?.id : tipoAdqVal;
+                const sedeId = typeof sedeVal === 'object' ? sedeVal?.id : sedeVal;
+                const tipoMaterialId = typeof tipoMatVal === 'object' ? (tipoMatVal as any)?.id : tipoMatVal;
+                const previo = this.editingIndex != null ? this.detalles[this.editingIndex] : null;
 
                 const detDisplay: DetalleDisplay = {
-                    codigoSede: sedeId,
-                    tipoAdquisicionId: tipoAdqId,
-                    tipoMaterialId: tipoMaterialId, // ← añade esta línea
+                    ...(previo ?? {}),
+                    idDetalleBiblioteca: previo?.idDetalleBiblioteca ?? undefined,
+                    codigoSede: sedeId ?? null,
+                    tipoAdquisicionId: tipoAdqId ?? null,
+                    tipoMaterialId: tipoMaterialId ?? null,
                     existencias: this.formDetalle.value.existencias,
                     codigoBarra: this.formDetalle.value.codigoBarra,
                     horaInicio: this.timeToString(this.formDetalle.value.horaInicio ?? null),
@@ -959,12 +966,14 @@ export class ModalRevistaComponent implements OnInit {
                     costo: this.formDetalle.value.costo,
                     numeroFactura: this.formDetalle.value.nroFactura,
                     fechaIngreso: this.formatDateTime(this.formDetalle.value.fechaIngreso),
-                    portadaLibroImg: null,
+                    portadaLibroImg: previo?.portadaLibroImg ?? null,
                     // extras para la vista
                     sede: this.sedesLista.find((s) => s.id === sedeId) ?? null,
                     tipoAdquisicion: this.tipoAdquisicionLista.find((t) => t.id === tipoAdqId) ?? null,
                     tipoMaterial: this.tipoMaterialLista.find((t) => t.idTipoMaterial === tipoMaterialId) ?? null
                 };
+
+                detDisplay.idEstado = previo?.idEstado ?? detDisplay.idEstado ?? 1;
 
                 if (this.editingIndex == null) {
                     this.detalles = [...this.detalles, detDisplay];
@@ -999,6 +1008,7 @@ export class ModalRevistaComponent implements OnInit {
         const keepPortada = this.formPortada.get('portada')?.value;
 
         const detalles: DetalleBibliotecaDTO[] = this.detalles.map((d) => {
+            const esNuevo = !d.idDetalleBiblioteca;
             return {
                 // aquí coaccionamos `null` → `undefined`
                 idDetalleBiblioteca: d.idDetalleBiblioteca ?? undefined,
@@ -1017,7 +1027,7 @@ export class ModalRevistaComponent implements OnInit {
                 portadaLibroImg: d.portadaLibroImg ?? null,
                 codigoBarra: d.codigoBarra ?? null,
                 nroExistencia: d.nroExistencia ?? (d.existencias != null ? Number(d.existencias) : undefined),
-                idEstado: 1
+                idEstado: esNuevo ? (d.idEstado ?? 1) : (d.idEstado ?? undefined)
             };
         });
 

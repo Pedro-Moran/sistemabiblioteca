@@ -513,20 +513,23 @@ export class ModalOtrosComponent implements OnInit {
         const parentTipo = otro.tipoMaterialId ?? this.tipoMaterialId ?? null;
         const keepPortada = this.formPortada.get('portada')?.value;
 
-        const detalles: DetalleBibliotecaDTO[] = this.detalles.map((d) => ({
-            idDetalleBiblioteca: d.idDetalleBiblioteca ?? undefined,
-            codigoSede: d.codigoSede ?? null,
-            tipoAdquisicionId: (d.tipoAdquisicion as any)?.id ?? d.tipoAdquisicionId ?? null,
-            tipoMaterialId: (d.tipoMaterial as any)?.id ?? d.tipoMaterialId ?? parentTipo,
-            horaInicio: this.timeToString(d.horaInicio ?? null),
-            horaFin: this.timeToString(d.horaFin ?? null),
-            maxHoras: d.maxHoras ?? null,
-            costo: d.costo ?? null,
-            numeroFactura: d.numeroFactura ?? null,
-            fechaIngreso: d.fechaIngreso ?? null,
-            codigoBarra: d.codigoBarra ?? null,
-            idEstado: 1
-        }));
+        const detalles: DetalleBibliotecaDTO[] = this.detalles.map((d) => {
+            const esNuevo = !d.idDetalleBiblioteca;
+            return {
+                idDetalleBiblioteca: d.idDetalleBiblioteca ?? undefined,
+                codigoSede: d.codigoSede ?? null,
+                tipoAdquisicionId: (d.tipoAdquisicion as any)?.id ?? d.tipoAdquisicionId ?? null,
+                tipoMaterialId: (d.tipoMaterial as any)?.id ?? d.tipoMaterialId ?? parentTipo,
+                horaInicio: this.timeToString(d.horaInicio ?? null),
+                horaFin: this.timeToString(d.horaFin ?? null),
+                maxHoras: d.maxHoras ?? null,
+                costo: d.costo ?? null,
+                numeroFactura: d.numeroFactura ?? null,
+                fechaIngreso: d.fechaIngreso ?? null,
+                codigoBarra: d.codigoBarra ?? null,
+                idEstado: esNuevo ? (d.idEstado ?? 1) : (d.idEstado ?? undefined)
+            };
+        });
 
         return {
             id: otro.id > 0 ? otro.id : null,
@@ -838,8 +841,9 @@ export class ModalOtrosComponent implements OnInit {
 
                 const oldDet = this.editingIndex != null ? this.detalles[this.editingIndex] : null;
                 const detalle: DetalleDisplay = {
-                    idDetalleBiblioteca: oldDet?.idDetalleBiblioteca ?? null,
-                    codigoSede: sedeId,
+                    ...(oldDet ?? {}),
+                    idDetalleBiblioteca: oldDet?.idDetalleBiblioteca ?? undefined,
+                    codigoSede: sedeId ?? null,
                     tipoMaterialId: tipoMat ?? null,
                     tipoAdquisicionId: tipoAdq ?? null,
                     codigoBarra: this.formDetalle.value.codigoBarra,
@@ -852,9 +856,10 @@ export class ModalOtrosComponent implements OnInit {
 
                     sede: this.sedesLista.find((s) => s.id === sedeId) ?? null,
                     tipoMaterial: tipoMat ? (this.tipoMaterialLista.find((t) => t.id === tipoMat) ?? null) : null,
-                    tipoAdquisicion: tipoAdq ? (this.tipoAdquisicionLista.find((t) => t.id === tipoAdq) ?? null) : null,
-                    idEstado: 1
+                    tipoAdquisicion: tipoAdq ? (this.tipoAdquisicionLista.find((t) => t.id === tipoAdq) ?? null) : null
                 };
+
+                detalle.idEstado = oldDet?.idEstado ?? detalle.idEstado ?? 1;
 
                 if (this.editingIndex == null) {
                     this.detalles = [...this.detalles, detalle];
