@@ -862,7 +862,9 @@ export class ModalLibroComponent implements OnInit {
                 fechaIngreso: d.fechaIngreso ?? null,
                 portadaLibroImg: d.portadaLibroImg ?? null,
                 codigoBarra: d.codigoBarra ?? null,
+
                 idEstado: esNuevo ? (estadoId ?? 1) : (estadoId ?? undefined)
+
             };
         });
 
