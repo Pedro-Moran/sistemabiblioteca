@@ -776,6 +776,8 @@ export class ModalRevistaComponent implements OnInit {
             const data = await this.materialBibliograficoService.listarDetallesPorBiblioteca(idBib, false).toPromise();
 
             this.detalles = (data ?? []).map((d) => {
+                const detalleId = this.extraerIdDetalleBiblioteca(d);
+                const estadoId = this.extraerIdEstadoDetalle(d);
                 const sedeId = d.codigoSede ?? (d as any).sedeId ?? (d as any).sede?.id ?? d.biblioteca?.sedeId ?? null;
                 const tipoMat = d.tipoMaterialId ?? d.tipoMaterial?.id ?? d.biblioteca?.tipoMaterialId ?? null;
                 const tipoAdq = d.tipoAdquisicionId ?? d.tipoAdquisicion?.id ?? d.biblioteca?.tipoAdquisicionId ?? null;
@@ -787,7 +789,7 @@ export class ModalRevistaComponent implements OnInit {
                 const nroExist = (d as any).nroExistencia ?? (d as any).existencias ?? null;
 
                 return {
-                    idDetalleBiblioteca: d.idDetalleBiblioteca,
+                    idDetalleBiblioteca: detalleId ?? undefined,
                     codigoSede: sedeId,
                     tipoMaterialId: tipoMat,
                     tipoAdquisicionId: tipoAdq,
@@ -803,7 +805,7 @@ export class ModalRevistaComponent implements OnInit {
                     sede: sedeObj,
                     tipoMaterial: tipoMatObj,
                     tipoAdquisicion: tipoAdqObj,
-                    idEstado: d.idEstado
+                    idEstado: estadoId ?? undefined
                 } as DetalleDisplay;
             });
         } catch (error) {
@@ -954,7 +956,7 @@ export class ModalRevistaComponent implements OnInit {
 
                 const detDisplay: DetalleDisplay = {
                     ...(previo ?? {}),
-                    idDetalleBiblioteca: previo?.idDetalleBiblioteca ?? undefined,
+                    idDetalleBiblioteca: this.extraerIdDetalleBiblioteca(previo ?? null) ?? undefined,
                     codigoSede: sedeId ?? null,
                     tipoAdquisicionId: tipoAdqId ?? null,
                     tipoMaterialId: tipoMaterialId ?? null,
@@ -973,7 +975,8 @@ export class ModalRevistaComponent implements OnInit {
                     tipoMaterial: this.tipoMaterialLista.find((t) => t.idTipoMaterial === tipoMaterialId) ?? null
                 };
 
-                detDisplay.idEstado = previo?.idEstado ?? detDisplay.idEstado ?? 1;
+                const estadoId = this.extraerIdEstadoDetalle(previo ?? detDisplay);
+                detDisplay.idEstado = estadoId ?? (this.editingIndex == null ? 1 : undefined);
 
                 if (this.editingIndex == null) {
                     this.detalles = [...this.detalles, detDisplay];
@@ -1008,10 +1011,12 @@ export class ModalRevistaComponent implements OnInit {
         const keepPortada = this.formPortada.get('portada')?.value;
 
         const detalles: DetalleBibliotecaDTO[] = this.detalles.map((d) => {
-            const esNuevo = !d.idDetalleBiblioteca;
+            const detalleId = this.extraerIdDetalleBiblioteca(d);
+            const estadoId = this.extraerIdEstadoDetalle(d);
+            const esNuevo = !detalleId;
             return {
                 // aquí coaccionamos `null` → `undefined`
-                idDetalleBiblioteca: d.idDetalleBiblioteca ?? undefined,
+                idDetalleBiblioteca: detalleId ?? undefined,
                 codigoSede: d.codigoSede ?? null,
                 tipoAdquisicionId:
                     typeof d.tipoAdquisicionId === 'object'
@@ -1027,7 +1032,7 @@ export class ModalRevistaComponent implements OnInit {
                 portadaLibroImg: d.portadaLibroImg ?? null,
                 codigoBarra: d.codigoBarra ?? null,
                 nroExistencia: d.nroExistencia ?? (d.existencias != null ? Number(d.existencias) : undefined),
-                idEstado: esNuevo ? (d.idEstado ?? 1) : (d.idEstado ?? undefined)
+                idEstado: esNuevo ? (estadoId ?? 1) : (estadoId ?? undefined)
             };
         });
 
@@ -1103,6 +1108,42 @@ export class ModalRevistaComponent implements OnInit {
     }
     idToTipo(id: number | null) {
         return this.tipoAdquisicionLista.find((t) => t.id === id);
+    }
+
+    private extraerIdDetalleBiblioteca(detalle: Partial<DetalleDisplay> | any): number | null {
+        const candidatos = [
+            detalle?.idDetalleBiblioteca,
+            detalle?.id,
+            detalle?.detalleId,
+            detalle?.detalleBibliotecaId
+        ];
+
+        for (const valor of candidatos) {
+            const id = Number(valor);
+            if (!Number.isNaN(id) && id > 0) {
+                return id;
+            }
+        }
+
+        return null;
+    }
+
+    private extraerIdEstadoDetalle(detalle: Partial<DetalleDisplay> | any): number | null {
+        const candidatos = [
+            detalle?.idEstado,
+            detalle?.estadoId,
+            detalle?.estado?.id,
+            detalle?.estado?.idEstado
+        ];
+
+        for (const valor of candidatos) {
+            const id = Number(valor);
+            if (!Number.isNaN(id) && id > 0) {
+                return id;
+            }
+        }
+
+        return null;
     }
 
     private buildImageUrl(path?: string | null, name?: string | null): string | null {
